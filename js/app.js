@@ -45,27 +45,29 @@ class App {
 
     bindEvents() {
         // Login Event
-        this.loginForm.addEventListener('submit', async (e) => {
+        this.loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
             
             this.loginError.style.display = 'none';
-            const result = await login(email, password);
-            if (!result.success) {
-                this.loginError.textContent = "Fehler: " + result.error;
-                this.loginError.style.display = 'block';
-            }
+            login(email, password).then(result => {
+                if (!result.success) {
+                    this.loginError.textContent = "Fehler: " + result.error;
+                    this.loginError.style.display = 'block';
+                }
+            });
         });
 
         // Google Login Event
-        this.btnGoogleLogin.addEventListener('click', async () => {
+        this.btnGoogleLogin.addEventListener('click', () => {
             this.loginError.style.display = 'none';
-            const result = await loginWithGoogle();
-            if (!result.success) {
-                this.loginError.textContent = "Fehler: " + result.error;
-                this.loginError.style.display = 'block';
-            }
+            loginWithGoogle().then(result => {
+                if (!result.success) {
+                    this.loginError.textContent = "Fehler: " + result.error;
+                    this.loginError.style.display = 'block';
+                }
+            });
         });
 
         // Logout Event
@@ -104,7 +106,7 @@ class App {
         this.loginScreen.style.display = 'flex';
     }
 
-    async navigate(view) {
+    navigate(view) {
         this.currentView = view;
         
         this.navItems.forEach(item => {
