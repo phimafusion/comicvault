@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComicVault</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="./css/components.css">
+    <!-- Firebase SDKs (v9+ compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+</head>
+<body class="dark-mode">
+    <!-- Login Overlay -->
+    <div id="login-screen" class="login-overlay">
+        <div class="login-card">
+            <div class="sidebar-header" style="justify-content: center; border: none;">
+                <img src="comicvault_logo.png" alt="ComicVault Logo" class="logo-img">
+                <h1 class="logo-text">ComicVault</h1>
+            </div>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 24px;">Bitte melde dich an, um auf deine Sammlung zuzugreifen.</p>
+            <form id="login-form">
+                <div class="form-group">
+                    <label class="form-label">E-Mail</label>
+                    <input type="email" id="login-email" class="form-control" required placeholder="name@beispiel.de">
+                </div>
+                <div class="form-group" style="margin-top: 12px;">
+                    <label class="form-label">Passwort</label>
+                    <input type="password" id="login-password" class="form-control" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 24px;">Anmelden / Registrieren</button>
+            </form>
+            <div style="margin: 20px 0; display: flex; align-items: center; gap: 10px; color: var(--text-secondary); font-size: 0.8rem;">
+                <hr style="flex: 1; border: none; border-top: 1px solid var(--border-color);"> ODER <hr style="flex: 1; border: none; border-top: 1px solid var(--border-color);">
+            </div>
+            <button id="btn-google-login" class="btn btn-secondary" style="width: 100%; gap: 12px;">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google">
+                Mit Google anmelden
+            </button>
+            <p id="login-error" style="color: var(--danger); font-size: 0.85rem; margin-top: 12px; text-align: center; display: none;"></p>
+        </div>
+    </div>
+
+    <div class="app-container" id="app-container" style="display: none;">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="comicvault_logo.png" alt="ComicVault Logo" class="logo-img" id="app-logo">
+                <h1 class="logo-text">ComicVault</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-view="collection">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>Sammlung</span>
+                </button>
+                <button class="nav-item" data-view="stats">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Statistiken</span>
+                </button>
+                <button class="nav-item" data-view="budget">
+                    <i class="fa-solid fa-wallet"></i>
+                    <span>Budgets</span>
+                </button>
+                <button class="nav-item" data-view="wishlist">
+                    <i class="fa-solid fa-star"></i>
+                    <span>Wunschliste</span>
+                </button>
+                <button class="nav-item" data-view="import">
+                    <i class="fa-solid fa-cloud-arrow-down"></i>
+                    <span>Import</span>
+                </button>
+                <button class="nav-item" data-view="settings">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Einstellungen</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="theme-toggle" id="theme-toggle">
+                    <i class="fa-solid fa-moon"></i>
+                    <span>Dark Mode</span>
+                </button>
+                <button class="nav-item" id="btn-logout" style="margin-top: 8px; color: var(--danger); opacity: 0.7;">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Abmelden</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <div class="header-search">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="global-search" placeholder="Sammlung durchsuchen...">
+                    <button class="btn btn-secondary" id="btn-more-filters">
+                        <i class="fa-solid fa-filter"></i> Filter
+                    </button>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="btn-add-new">
+                        <i class="fa-solid fa-plus"></i> Neu
+                    </button>
+                </div>
+            </header>
+
+            <!-- Filters Panel (Hidden by default) -->
+            <div class="filters-panel" id="filters-panel" style="display: none;">
+                <!-- Filter content will be injected here -->
+            </div>
+
+            <!-- View Container -->
+            <div class="view-container" id="view-container">
+                <!-- Views will be injected here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Overlay for Add/Edit -->
+    <div class="modal-overlay" id="comic-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Neuer Eintrag</h2>
+                <button class="close-btn" id="btn-close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="comic-form">
+                    <!-- Form fields injected via JS -->
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btn-cancel-modal">Abbrechen</button>
+                <button class="btn btn-primary" id="btn-save-comic">Speichern</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <!-- Include Chart.js for stats -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module" src="./js/app.js"></script>
+</body>
+</html>
