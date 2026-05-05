@@ -127,6 +127,9 @@ class App {
             case 'wishlist':
                 renderWishlist(this.viewContainer);
                 break;
+            case 'import':
+                renderImport(this.viewContainer);
+                break;
             default:
                 this.viewContainer.innerHTML = `<h2>${view}</h2><p>Befindet sich im Aufbau...</p>`;
         }
