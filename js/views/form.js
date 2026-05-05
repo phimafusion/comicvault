@@ -139,8 +139,6 @@ function generateFormHtml(comic = {}, isWishlist = false) {
     
     // Normaler Comic-Teil ...
     const verlagOptions = ['Panini', 'Carlsen', 'Splitter', 'Egmont', 'Manga Cult', 'Kazé', 'Altraverse', 'Cross Cult', 'Marvel', 'DC'].map(v => `<option value="${v}" ${c.verlag === v ? 'selected' : ''}>${v}</option>`).join('');
-    const typOptions = ['Comic', 'Manga', 'Graphic Novel', 'Artbook'].map(v => `<option value="${v}" ${c.typ === v ? 'selected' : ''}>${v}</option>`).join('');
-    const formatOptions = ['Softcover', 'Hardcover', 'Heft', 'Album', 'Omnibus', 'Absolute'].map(v => `<option value="${v}" ${c.format === v ? 'selected' : ''}>${v}</option>`).join('');
     const zustandOptions = ['neu', 'gebraucht'].map(v => `<option value="${v}" ${c.zustand === v ? 'selected' : ''}>${v}</option>`).join('');
     const bestandOptions = ['vorhanden', 'vorbestellt', 'verkauft', 'abgegeben'].map(v => `<option value="${v}" ${c.bestand === v ? 'selected' : ''}>${v}</option>`).join('');
 
