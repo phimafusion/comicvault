@@ -40,42 +40,104 @@ btnSave.addEventListener('click', (e) => {
     const formData = new FormData(form);
     const comicData = {
         id: currentEditingId,
-        verlag: formData.get('verlag'),
-        typ: formData.get('typ'),
-        serie: formData.get('serie'),
-        nummer: formData.get('nummer') ? parseInt(formData.get('nummer')) : null,
         titel: formData.get('titel'),
+        typ: formData.get('typ'),
         format: formData.get('format'),
-        jahr: formData.get('jahr') ? parseInt(formData.get('jahr')) : null,
-        zustand: formData.get('zustand'),
-        bezugsquelle: formData.get('bezugsquelle'),
         preis: formData.get('preis') ? parseFloat(formData.get('preis')) : null,
-        sprache: formData.get('sprache'),
-        limitierung: formData.get('limitierung') === 'true',
-        limitiert_auf: formData.get('limitiert_auf') ? parseInt(formData.get('limitiert_auf')) : null,
-        variant: formData.get('variant') === 'true',
-        variantname: formData.get('variantname'),
-        kaufdatum: formData.get('kaufdatum'),
-        bemerkung: formData.get('bemerkung'),
-        bestand: formData.get('bestand'),
-        gelesen_am: formData.get('gelesen_am'),
-        bewertung: formData.get('bewertung') ? parseInt(formData.get('bewertung')) : 0,
-        bild: formData.get('bild')
+        jahr: formData.get('jahr') ? parseInt(formData.get('jahr')) : null,
+        bemerkung: formData.get('bemerkung')
     };
 
-    db.saveComic(comicData);
+    const isWishlist = form.dataset.isWishlist === 'true';
+
+    if (isWishlist) {
+        comicData.isbn = formData.get('isbn');
+        comicData.vorbestellt = formData.get('vorbestellt') === 'true';
+        comicData.besonderheit = formData.get('besonderheit');
+        await db.saveWish(comicData);
+    } else {
+        // ... alle anderen Felder für normale Comics
+        Object.assign(comicData, {
+            verlag: formData.get('verlag'),
+            serie: formData.get('serie'),
+            nummer: formData.get('nummer') ? parseInt(formData.get('nummer')) : null,
+            zustand: formData.get('zustand'),
+            bezugsquelle: formData.get('bezugsquelle'),
+            sprache: formData.get('sprache'),
+            limitierung: formData.get('limitierung') === 'true',
+            limitiert_auf: formData.get('limitiert_auf') ? parseInt(formData.get('limitiert_auf')) : null,
+            variant: formData.get('variant') === 'true',
+            variantname: formData.get('variantname'),
+            kaufdatum: formData.get('kaufdatum'),
+            bestand: formData.get('bestand'),
+            gelesen_am: formData.get('gelesen_am'),
+            bewertung: formData.get('bewertung') ? parseInt(formData.get('bewertung')) : 0,
+            bild: formData.get('bild')
+        });
+        await db.saveComic(comicData);
+    }
+
     closeModal();
     
-    // Refresh current view if applicable
-    if (window.app && window.app.currentView === 'collection') {
-        window.app.navigate('collection');
+    if (window.app) {
+        window.app.navigate(isWishlist ? 'wishlist' : 'collection');
     }
 });
 
 function generateFormHtml(comic = {}, isWishlist = false) {
     const c = comic || {};
+    form.dataset.isWishlist = isWishlist;
     
-    // Build options arrays (usually fetched from DB, mocked here for simplicity)
+    const typOptions = ['Comic', 'Manga', 'Graphic Novel', 'Artbook'].map(v => `<option value="${v}" ${c.typ === v ? 'selected' : ''}>${v}</option>`).join('');
+    const formatOptions = ['Softcover', 'Hardcover', 'Heft', 'Album', 'Omnibus', 'Absolute'].map(v => `<option value="${v}" ${c.format === v ? 'selected' : ''}>${v}</option>`).join('');
+
+    if (isWishlist) {
+        return `
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label class="form-label required">Name / Titel</label>
+                    <input type="text" name="titel" class="form-control" required value="${c.titel || ''}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Typ</label>
+                    <select name="typ" class="form-control" required>${typOptions}</select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Format</label>
+                    <select name="format" class="form-control" required>${formatOptions}</select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Preis (€)</label>
+                    <input type="number" step="0.01" name="preis" class="form-control" value="${c.preis || ''}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Veröffentlichung (Jahr)</label>
+                    <input type="number" name="jahr" class="form-control" value="${c.jahr || ''}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">ISBN</label>
+                    <input type="text" name="isbn" class="form-control" value="${c.isbn || ''}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Vorbestellt?</label>
+                    <select name="vorbestellt" class="form-control">
+                        <option value="false" ${!c.vorbestellt ? 'selected' : ''}>Nein</option>
+                        <option value="true" ${c.vorbestellt ? 'selected' : ''}>Ja</option>
+                    </select>
+                </div>
+                <div class="form-group full-width">
+                    <label class="form-label">Besonderheit</label>
+                    <input type="text" name="besonderheit" class="form-control" value="${c.besonderheit || ''}" placeholder="z.B. Signiert, Erstauflage">
+                </div>
+                <div class="form-group full-width">
+                    <label class="form-label">Bemerkung</label>
+                    <textarea name="bemerkung" class="form-control" rows="3">${c.bemerkung || ''}</textarea>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Normaler Comic-Teil ...
     const verlagOptions = ['Panini', 'Carlsen', 'Splitter', 'Egmont', 'Manga Cult', 'Kazé', 'Altraverse', 'Cross Cult', 'Marvel', 'DC'].map(v => `<option value="${v}" ${c.verlag === v ? 'selected' : ''}>${v}</option>`).join('');
     const typOptions = ['Comic', 'Manga', 'Graphic Novel', 'Artbook'].map(v => `<option value="${v}" ${c.typ === v ? 'selected' : ''}>${v}</option>`).join('');
     const formatOptions = ['Softcover', 'Hardcover', 'Heft', 'Album', 'Omnibus', 'Absolute'].map(v => `<option value="${v}" ${c.format === v ? 'selected' : ''}>${v}</option>`).join('');

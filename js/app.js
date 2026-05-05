@@ -3,6 +3,8 @@ import { onAuthStateChanged, login, loginWithGoogle, logout } from './auth.js';
 import { renderCollection, attachCollectionEvents } from './views/collection.js';
 import { renderStats } from './views/stats.js';
 import { renderBudget } from './views/budget.js';
+import { renderWishlist } from './views/wishlist.js';
+import { renderImport } from './views/import.js';
 import { openModal } from './views/form.js';
 
 class App {
@@ -121,6 +123,9 @@ class App {
                 break;
             case 'budget':
                 renderBudget(this.viewContainer);
+                break;
+            case 'wishlist':
+                renderWishlist(this.viewContainer);
                 break;
             default:
                 this.viewContainer.innerHTML = `<h2>${view}</h2><p>Befindet sich im Aufbau...</p>`;

@@ -43,6 +43,38 @@ class Database {
         }
     }
 
+    // Wunschliste
+    getWishlistCollection() {
+        const user = getCurrentUser();
+        if (!user) return null;
+        return dbFirestore.collection('users').doc(user.uid).collection('wishlist');
+    }
+
+    async getWishlist() {
+        const col = this.getWishlistCollection();
+        if (!col) return [];
+        const snapshot = await col.orderBy('titel', 'asc').get();
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    async saveWish(wish) {
+        const col = this.getWishlistCollection();
+        if (!col) return;
+        const data = { ...wish };
+        const id = data.id;
+        delete data.id;
+        if (id) {
+            await col.doc(id).set(data, { merge: true });
+        } else {
+            await col.add(data);
+        }
+    }
+
+    async deleteWish(id) {
+        const col = this.getWishlistCollection();
+        if (col) await col.doc(id).delete();
+    }
+
     getSettings() {
         return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"theme": "dark"}');
     }
