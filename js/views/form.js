@@ -33,7 +33,7 @@ btnCancel.addEventListener('click', (e) => {
     closeModal();
 });
 
-btnSave.addEventListener('click', (e) => {
+btnSave.addEventListener('click', async (e) => {
     e.preventDefault();
     if (!form.reportValidity()) return;
 
