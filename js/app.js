@@ -1,5 +1,5 @@
 import { db } from './db.js';
-import { onAuthStateChanged, login, loginWithGoogle, logout } from './auth.js';
+import { onAuthStateChanged, loginWithGoogle, logout } from './auth.js';
 import { renderCollection, attachCollectionEvents } from './views/collection.js';
 import { renderStats } from './views/stats.js';
 import { renderBudget } from './views/budget.js';
@@ -31,7 +31,6 @@ class App {
     cacheDOM() {
         this.appContainer = document.getElementById('app-container');
         this.loginScreen = document.getElementById('login-screen');
-        this.loginForm = document.getElementById('login-form');
         this.btnGoogleLogin = document.getElementById('btn-google-login');
         this.loginError = document.getElementById('login-error');
         
@@ -44,21 +43,6 @@ class App {
     }
 
     bindEvents() {
-        // Login Event
-        this.loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            
-            this.loginError.style.display = 'none';
-            login(email, password).then(result => {
-                if (!result.success) {
-                    this.loginError.textContent = "Fehler: " + result.error;
-                    this.loginError.style.display = 'block';
-                }
-            });
-        });
-
         // Google Login Event
         this.btnGoogleLogin.addEventListener('click', () => {
             this.loginError.style.display = 'none';
