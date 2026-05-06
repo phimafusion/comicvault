@@ -56,7 +56,33 @@ btnSave.addEventListener('click', async (e) => {
         comicData.besonderheit = formData.get('besonderheit');
         await db.saveWish(comicData);
     } else {
-        // ... alle anderen Felder für normale Comics
+        let finalImageUrl = formData.get('bild');
+
+        // Versuche, das Bild in Firebase Storage zu sichern, wenn es eine externe URL ist
+        if (finalImageUrl && finalImageUrl.startsWith('http') && !finalImageUrl.includes('firebasestorage')) {
+            btnSave.disabled = true;
+            btnSave.textContent = 'Sichere Bild...';
+            try {
+                // Kurzer Timeout für den Fetch-Versuch
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3000);
+                
+                const response = await fetch(finalImageUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const file = new File([blob], "synced_image.jpg", { type: blob.type });
+                    const uploadedUrl = await db.uploadImage(file);
+                    if (uploadedUrl) finalImageUrl = uploadedUrl;
+                }
+            } catch (e) {
+                console.warn("Automatisches Sichern des Bildes fehlgeschlagen (CORS/Timeout). Nutze Original-URL.");
+            }
+            btnSave.disabled = false;
+            btnSave.textContent = 'Speichern';
+        }
+
         Object.assign(comicData, {
             verlag: formData.get('verlag'),
             serie: formData.get('serie'),
@@ -72,7 +98,7 @@ btnSave.addEventListener('click', async (e) => {
             bestand: formData.get('bestand'),
             gelesen_am: formData.get('gelesen_am'),
             bewertung: formData.get('bewertung') ? parseInt(formData.get('bewertung')) : 0,
-            bild: formData.get('bild')
+            bild: finalImageUrl
         });
         await db.saveComic(comicData);
     }
@@ -250,7 +276,7 @@ function generateFormHtml(comic = {}, isWishlist = false) {
             </div>
 
             <div class="form-group full-width">
-                <label class="form-label">Bild URL</label>
+                <label class="form-label">Bild URL (wird automatisch in die Cloud kopiert)</label>
                 <input type="url" name="bild" class="form-control" value="${c.bild || ''}" placeholder="https://...">
             </div>
 

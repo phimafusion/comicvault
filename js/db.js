@@ -2,6 +2,7 @@ import { getCurrentUser } from './auth.js';
 
 // Firebase Firestore initialisieren
 const dbFirestore = firebase.firestore();
+const storage = firebase.storage();
 const SETTINGS_KEY = 'comicvault_settings';
 
 class Database {
@@ -73,6 +74,20 @@ class Database {
     async deleteWish(id) {
         const col = this.getWishlistCollection();
         if (col) await col.doc(id).delete();
+    }
+
+    async uploadImage(file) {
+        const user = getCurrentUser();
+        if (!user || !file) return null;
+        
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `users/${user.uid}/images/${fileName}`;
+        
+        const storageRef = storage.ref().child(filePath);
+        await storageRef.put(file);
+        const downloadUrl = await storageRef.getDownloadURL();
+        return downloadUrl;
     }
 
     getSettings() {
