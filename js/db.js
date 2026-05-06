@@ -30,9 +30,13 @@ class Database {
         const id = data.id;
         delete data.id; // ID wird separat behandelt
 
+        const now = new Date().toISOString();
+        data.updated_at = now;
+
         if (id) {
             await col.doc(id).set(data, { merge: true });
         } else {
+            data.created_at = now;
             await col.add(data);
         }
     }
@@ -64,9 +68,13 @@ class Database {
         const data = { ...wish };
         const id = data.id;
         delete data.id;
+        const now = new Date().toISOString();
+        data.updated_at = now;
+
         if (id) {
             await col.doc(id).set(data, { merge: true });
         } else {
+            data.created_at = now;
             await col.add(data);
         }
     }

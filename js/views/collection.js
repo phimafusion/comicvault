@@ -8,7 +8,10 @@ let sortOrder = 'asc';
 let activeFilters = {
     verlag: [],
     format: [],
-    bestand: []
+    bestand: ['vorhanden', 'vorbestellt'],
+    gelesen: [],
+    bezugsquelle: [],
+    serie: []
 };
 
 export async function renderCollection(container) {
@@ -16,6 +19,9 @@ export async function renderCollection(container) {
     const verlage = [...new Set(comics.map(c => c.verlag).filter(Boolean))].sort();
     const formate = [...new Set(comics.map(c => c.format).filter(Boolean))].sort();
     const bestände = [...new Set(comics.map(c => c.bestand).filter(Boolean))].sort();
+    const quellen = [...new Set(comics.map(c => c.bezugsquelle).filter(Boolean))].sort();
+    const serien = [...new Set(comics.map(c => c.serie).filter(Boolean))].sort();
+    const gelesenStatus = ['Ja', 'Nein'];
 
     const html = `
         <div class="view-controls" style="flex-wrap: wrap; gap: 15px; margin-bottom: 25px;">
@@ -25,12 +31,18 @@ export async function renderCollection(container) {
                 <!-- Direkt sichtbare Multi-Filter -->
                 <div class="direct-filters" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                     ${renderMultiSelect('verlag', 'Verlag', verlage)}
+                    ${renderMultiSelect('serie', 'Serie', serien)}
                     ${renderMultiSelect('format', 'Format', formate)}
                     ${renderMultiSelect('bestand', 'Bestand', bestände)}
+                    ${renderMultiSelect('bezugsquelle', 'Quelle', quellen)}
+                    ${renderMultiSelect('gelesen', 'Gelesen', gelesenStatus)}
                     
                     <button id="btn-reset-filters-direct" class="btn btn-secondary" style="height: 36px; width: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; border-color: transparent;" title="Alle Filter zurücksetzen">
                         <i class="fa-solid fa-rotate-left"></i>
                     </button>
+                </div>
+                <div id="filter-count" style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border-color); white-space: nowrap; min-width: 80px; text-align: center;">
+                    ...
                 </div>
             </div>
 
@@ -132,7 +144,7 @@ export function attachCollectionEvents() {
     // Reset Button
     document.addEventListener('click', (e) => {
         if (e.target.closest('#btn-reset-filters-direct')) {
-            activeFilters = { verlag: [], format: [], bestand: [] };
+            activeFilters = { verlag: [], format: [], bestand: ['vorhanden', 'vorbestellt'], gelesen: [], bezugsquelle: [], serie: [] };
             const container = document.getElementById('view-container');
             renderCollection(container);
         }
@@ -176,6 +188,7 @@ async function updateGrid() {
     if (!grid) return;
 
     let comics = await db.getAllComics();
+    const totalCount = comics.length;
     
     // 1. Suche
     if (searchTerm) {
@@ -196,6 +209,26 @@ async function updateGrid() {
     if (activeFilters.bestand.length > 0) {
         comics = comics.filter(c => activeFilters.bestand.includes(c.bestand));
     }
+    if (activeFilters.bezugsquelle.length > 0) {
+        comics = comics.filter(c => activeFilters.bezugsquelle.includes(c.bezugsquelle));
+    }
+    if (activeFilters.serie.length > 0) {
+        comics = comics.filter(c => activeFilters.serie.includes(c.serie));
+    }
+    if (activeFilters.gelesen.length > 0) {
+        comics = comics.filter(c => {
+            const isRead = !!c.gelesen_am;
+            const status = isRead ? 'Ja' : 'Nein';
+            return activeFilters.gelesen.includes(status);
+        });
+    }
+
+    // Anzeige der Anzahl aktualisieren
+    const filteredCount = comics.length;
+    const countEl = document.getElementById('filter-count');
+    if (countEl) {
+        countEl.textContent = `${filteredCount} / ${totalCount}`;
+    }
 
     // 3. Sortierung
     comics.sort((a, b) => {
@@ -206,6 +239,12 @@ async function updateGrid() {
             const sA = (a.serie || a.titel || '').toLowerCase();
             const sB = (b.serie || b.titel || '').toLowerCase();
             if (sA !== sB) return sortOrder === 'asc' ? sA.localeCompare(sB) : sB.localeCompare(sA);
+            
+            // Zusätzliche Sortierung nach Jahr (Aquaman 2012 vor Aquaman 2017)
+            const jA = a.jahr || 0;
+            const jB = b.jahr || 0;
+            if (jA !== jB) return sortOrder === 'asc' ? jA - jB : jB - jA;
+
             return sortOrder === 'asc' ? (a.nummer || 0) - (b.nummer || 0) : (b.nummer || 0) - (a.nummer || 0);
         }
 
@@ -239,7 +278,7 @@ async function updateGrid() {
         };
 
         grid.innerHTML = `
-            <div class="list-header" style="display: grid; grid-template-columns: 2fr 50px 1fr 60px 90px 1fr 90px 80px 90px; padding: 12px 20px; font-weight: bold; border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; background: var(--bg-main); position: sticky; top: 0; z-index: 10;">
+            <div class="list-header" style="display: grid; grid-template-columns: 2fr 45px 1fr 50px 80px 0.8fr 80px 70px 80px 80px; padding: 12px 20px; font-weight: bold; border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; background: var(--bg-main); position: sticky; top: 0; z-index: 10;">
                 <div class="sortable-header" data-sort="titel" style="cursor:pointer;">TITEL / SERIE ${getIcon('titel')}</div>
                 <div class="sortable-header" data-sort="nummer" style="cursor:pointer;">NR. ${getIcon('nummer')}</div>
                 <div class="sortable-header" data-sort="verlag" style="cursor:pointer;">VERLAG ${getIcon('verlag')}</div>
@@ -249,6 +288,7 @@ async function updateGrid() {
                 <div class="sortable-header" data-sort="kaufdatum" style="cursor:pointer;">GEKAUFT ${getIcon('kaufdatum')}</div>
                 <div class="sortable-header" data-sort="preis" style="cursor:pointer; text-align: right;">PREIS ${getIcon('preis')}</div>
                 <div class="sortable-header" data-sort="gelesen_am" style="cursor:pointer; text-align: right;">GELESEN ${getIcon('gelesen_am')}</div>
+                <div class="sortable-header" data-sort="updated_at" style="cursor:pointer; text-align: right;">ÄNDERUNG ${getIcon('updated_at')}</div>
             </div>
             <div class="list-items-container">
                 ${comics.map(comic => renderListItem(comic)).join('')}
@@ -320,7 +360,7 @@ function renderTile(comic) {
 function renderListItem(comic) {
     const bestandClass = `badge-${String(comic.bestand || '').toLowerCase().replace(/\s+/g, '-')}`;
     return `
-        <div class="list-item comic-item" data-id="${comic.id}" style="display: grid; grid-template-columns: 2fr 50px 1fr 60px 90px 1fr 90px 80px 90px; padding: 10px 20px; align-items: center; border-bottom: 1px solid var(--border-color); cursor: pointer; font-size: 0.82rem;">
+        <div class="list-item comic-item" data-id="${comic.id}" style="display: grid; grid-template-columns: 2fr 45px 1fr 50px 80px 0.8fr 80px 70px 80px 80px; padding: 12px 20px; align-items: center; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 10px; cursor: pointer; font-size: 0.82rem; background: var(--bg-surface);">
             <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px;">
                 <h3 class="comic-title" style="margin:0; font-size:0.88rem; display: inline;">${comic.titel || 'Ohne Titel'}</h3>
                 <div class="comic-series" style="font-size:0.68rem; color: var(--text-secondary);">${comic.serie || ''}</div>
@@ -331,9 +371,10 @@ function renderListItem(comic) {
             <div><span class="badge ${bestandClass}" style="font-size: 0.62rem; padding: 2px 6px;">${comic.bestand}</span></div>
             <div style="color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${comic.bezugsquelle || '-'}</div>
             <div style="font-size: 0.78rem;">${displayDate(comic.kaufdatum)}</div>
-            <div style="font-weight: bold; text-align: right; padding-right: 10px;">${comic.preis ? comic.preis.toFixed(2) + ' €' : '-'}</div>
+            <div style="font-weight: bold; text-align: right; padding-right: 10px;">${(comic.preis !== null && comic.preis !== undefined) ? comic.preis.toFixed(2) + ' €' : '-'}</div>
+            <div style="text-align: right; padding-right: 10px; font-size: 0.78rem;">${displayDate(comic.gelesen_am)}</div>
             <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
-                <span style="font-size: 0.78rem;">${displayDate(comic.gelesen_am)}</span>
+                <span style="font-size: 0.78rem;">${displayDate(comic.updated_at || comic.created_at)}</span>
                 <button class="btn-delete-item" data-id="${comic.id}" title="Löschen" style="background: none; border: none; color: var(--danger); opacity: 0.2; cursor: pointer; padding: 2px;">
                     <i class="fa-solid fa-trash"></i>
                 </button>
@@ -363,7 +404,7 @@ function renderDetailsItem(comic) {
                     <div><strong>Verlag:</strong> ${comic.verlag}</div>
                     <div><strong>Sprache:</strong> ${comic.sprache}</div>
                     <div><strong>Kaufdatum:</strong> ${displayDate(comic.kaufdatum)}</div>
-                    <div><strong>Preis:</strong> ${comic.preis ? comic.preis.toFixed(2) + ' €' : '-'}</div>
+                    <div><strong>Preis:</strong> ${(comic.preis !== null && comic.preis !== undefined) ? comic.preis.toFixed(2) + ' €' : '-'}</div>
                     <div><strong>Gelesen am:</strong> ${displayDate(comic.gelesen_am)}</div>
                 </div>
                 
