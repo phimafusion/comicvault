@@ -173,10 +173,10 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}) {
                 </div>
                 <div class="form-group">
                     <label class="form-label">Preis (€)</label>
-                    <input type="number" step="0.01" name="preis" class="form-control" value="${c.preis || ''}">
+                    <input type="number" step="0.01" name="preis" class="form-control" value="${(c.preis !== undefined && c.preis !== null) ? c.preis : ''}">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Jahr (Release)</label>
+                    <label class="form-label">Jahr (Serie/Release)</label>
                     <input type="number" name="jahr" class="form-control" value="${c.jahr || ''}">
                 </div>
                 <div class="form-group">
@@ -228,7 +228,7 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}) {
             </div>
             <div class="form-group">
                 <label class="form-label">Nummer</label>
-                <input type="number" name="nummer" class="form-control" value="${c.nummer || ''}">
+                <input type="number" name="nummer" class="form-control" value="${(c.nummer !== undefined && c.nummer !== null) ? c.nummer : ''}">
             </div>
 
             <div class="form-group">
@@ -237,7 +237,7 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}) {
                 ${renderDatalist('format-list', s.format)}
             </div>
             <div class="form-group">
-                <label class="form-label">Jahr (Release)</label>
+                <label class="form-label">Jahr (Serie/Release)</label>
                 <input type="number" name="jahr" class="form-control" value="${c.jahr || ''}" min="1900" max="2100">
             </div>
 
@@ -259,7 +259,7 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}) {
             </div>
             <div class="form-group">
                 <label class="form-label">Preis (€)</label>
-                <input type="number" step="0.01" name="preis" class="form-control" value="${c.preis || ''}">
+                <input type="number" step="0.01" name="preis" class="form-control" value="${(c.preis !== undefined && c.preis !== null) ? c.preis : ''}">
             </div>
 
             <div class="form-group">
@@ -287,7 +287,7 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}) {
                     </div>
                     <div class="form-group">
                         <label class="form-label">Limitiert auf (Stück)</label>
-                        <input type="number" name="limitiert_auf" class="form-control" value="${c.limitiert_auf || ''}">
+                        <input type="number" name="limitiert_auf" class="form-control" value="${(c.limitiert_auf !== undefined && c.limitiert_auf !== null) ? c.limitiert_auf : ''}">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Variant-Cover</label>

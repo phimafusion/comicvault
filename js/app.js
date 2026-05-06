@@ -5,6 +5,7 @@ import { renderStats } from './views/stats.js';
 import { renderBudget } from './views/budget.js';
 import { renderWishlist } from './views/wishlist.js';
 import { renderImport } from './views/import.js';
+import { renderSettings } from './views/settings.js';
 import { openModal } from './views/form.js';
 
 class App {
@@ -115,6 +116,9 @@ class App {
                 break;
             case 'import':
                 renderImport(this.viewContainer);
+                break;
+            case 'settings':
+                renderSettings(this.viewContainer);
                 break;
             default:
                 this.viewContainer.innerHTML = `<h2>${view}</h2><p>Befindet sich im Aufbau...</p>`;

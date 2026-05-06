@@ -90,6 +90,22 @@ class Database {
         return downloadUrl;
     }
 
+    async clearAllData() {
+        const user = getCurrentUser();
+        if (!user) return;
+
+        const collections = [this.getCollection(), this.getWishlistCollection()];
+        for (const col of collections) {
+            if (!col) continue;
+            const snapshot = await col.get();
+            const batch = dbFirestore.batch();
+            snapshot.docs.forEach((doc) => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+        }
+    }
+
     getSettings() {
         return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"theme": "dark"}');
     }
