@@ -81,12 +81,27 @@ async function updateGrid() {
 
     // Attach click events for editing
     grid.querySelectorAll('.comic-item').forEach(item => {
-        item.addEventListener('click', async () => {
+        item.addEventListener('click', async (e) => {
+            // Wenn auf den Löschen-Button geklickt wurde, nichts tun
+            if (e.target.closest('.btn-delete-item')) return;
+
             const id = item.dataset.id;
             const allComics = await db.getAllComics();
             const comic = allComics.find(c => c.id === id);
             if (comic) {
                 openModal(comic);
+            }
+        });
+    });
+
+    // Attach delete events
+    grid.querySelectorAll('.btn-delete-item').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            if (confirm('Möchtest du diesen Comic wirklich aus deiner Sammlung löschen?')) {
+                await db.deleteComic(id);
+                updateGrid();
             }
         });
     });
@@ -102,6 +117,9 @@ function renderTile(comic) {
     const bestandClass = `badge-${comic.bestand.toLowerCase()}`;
     return `
         <div class="comic-card comic-item" data-id="${comic.id}">
+            <button class="btn-delete-item" data-id="${comic.id}" title="Löschen">
+                <i class="fa-solid fa-trash"></i>
+            </button>
             <img src="${imgUrl}" alt="${comic.titel}" class="comic-cover" onerror="this.src='${getPlaceholderImage()}'">
             <div class="comic-info">
                 <span class="comic-series">${comic.serie || comic.verlag} ${comic.nummer ? '#' + comic.nummer : ''}</span>
@@ -127,7 +145,12 @@ function renderListItem(comic) {
             </div>
             <div>${comic.verlag} • ${comic.jahr || '-'}</div>
             <div><span class="badge ${bestandClass}">${comic.bestand}</span></div>
-            <div style="text-align: right; font-weight: bold;">${comic.preis ? comic.preis.toFixed(2) + ' €' : '-'}</div>
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px;">
+                <span style="font-weight: bold;">${comic.preis ? comic.preis.toFixed(2) + ' €' : '-'}</span>
+                <button class="btn-delete-item" data-id="${comic.id}" title="Löschen" style="background: none; border: none; color: var(--danger); cursor: pointer; padding: 4px;">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
         </div>
     `;
 }
@@ -139,7 +162,12 @@ function renderDetailsItem(comic) {
         <div class="details-card comic-item" data-id="${comic.id}">
             <img src="${imgUrl}" alt="${comic.titel}" class="details-cover" onerror="this.src='${getPlaceholderImage()}'">
             <div class="details-info">
-                <span class="comic-series">${comic.serie || comic.verlag} ${comic.nummer ? '#' + comic.nummer : ''}</span>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <span class="comic-series">${comic.serie || comic.verlag} ${comic.nummer ? '#' + comic.nummer : ''}</span>
+                    <button class="btn-delete-item" data-id="${comic.id}" title="Löschen" style="background: none; border: none; color: var(--danger); cursor: pointer; padding: 4px;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
                 <h3 class="comic-title" style="font-size: 1.4rem; margin-bottom: 12px;">${comic.titel || 'Ohne Titel'}</h3>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: auto;">
