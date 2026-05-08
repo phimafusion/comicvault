@@ -22,12 +22,7 @@ export function renderImport(container) {
                 <button class="btn btn-primary" id="btn-import-csv" style="margin-top: 16px; align-self: flex-start;">
                     <i class="fa-solid fa-upload"></i> Import starten
                 </button>
-                <div id="csv-import-status" style="margin-top: 16px; font-size: 0.9rem; padding: 12px; border-radius: 8px; background: var(--bg-main); display: none; border: 1px solid var(--border-color);">
-                    <div id="import-progress-text" style="margin-bottom: 8px;"></div>
-                    <div style="width: 100%; height: 6px; background: var(--border-color); border-radius: 3px; overflow: hidden;">
-                        <div id="import-progress-bar" style="width: 0%; height: 100%; background: var(--primary-color); transition: width 0.3s ease;"></div>
-                    </div>
-                    <div id="import-debug-info" style="margin-top: 10px; font-size: 0.75rem; color: var(--text-secondary); max-height: 100px; overflow-y: auto; font-family: monospace;"></div>
+                <div id="csv-import-status" style="margin-top: 16px; font-size: 0.9rem; padding: 12px; border-radius: 8px; background: var(--bg-main); display: none; border: 1px solid var(--border-color); color: var(--danger);">
                 </div>
             </div>
 
@@ -81,27 +76,42 @@ export function renderImport(container) {
     // Log Overlay (initially hidden)
     const logOverlayHtml = `
         <div id="import-log-overlay" class="modal-overlay" style="display: none;">
-            <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-content" style="height: 80vh;">
                 <div class="modal-header">
                     <h2>Import Protokoll</h2>
-                    <button class="close-btn" id="btn-close-log-overlay"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <div class="modal-body" id="import-log-body" style="font-family: monospace; font-size: 0.85rem; line-height: 1.4;">
+                <div style="padding: 10px 20px;">
+                    <div id="import-progress-text" style="margin-bottom: 8px;">Starte Import...</div>
+                    <div style="width: 100%; height: 6px; background: var(--border-color); border-radius: 3px; overflow: hidden;">
+                        <div id="import-progress-bar" style="width: 0%; height: 100%; background: var(--primary-color); transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+                <div class="modal-body" id="import-log-body" style="font-family: monospace; font-size: 0.85rem; line-height: 1.4; overflow-y: auto; flex: 1;">
                     <!-- Log content will be injected here -->
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-primary" id="btn-confirm-log-overlay">Verstanden</button>
+                <div id="import-live-summary" style="padding: 12px 24px; border-top: 1px solid var(--border-color); background: rgba(0,0,0,0.1); font-size: 0.85rem; display: flex; gap: 20px;">
+                    <span id="sum-new" style="color: var(--success); font-weight: bold;">0 neu</span>
+                    <span id="sum-updated" style="color: var(--secondary-color); font-weight: bold;">0 updates</span>
+                    <span id="sum-skipped" style="color: var(--text-secondary); font-weight: bold;">0 übersprungen</span>
+                </div>
+                <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                    <button class="btn btn-danger" id="btn-cancel-import"><i class="fa-solid fa-stop"></i> Import abbrechen</button>
+                    <button class="btn btn-primary" id="btn-confirm-log-overlay" style="display: none;">OK</button>
                 </div>
             </div>
         </div>
     `;
     container.insertAdjacentHTML('beforeend', logOverlayHtml);
 
-    document.getElementById('btn-close-log-overlay').addEventListener('click', () => {
-        document.getElementById('import-log-overlay').style.display = 'none';
-    });
     document.getElementById('btn-confirm-log-overlay').addEventListener('click', () => {
         document.getElementById('import-log-overlay').style.display = 'none';
+    });
+
+    document.getElementById('btn-cancel-import').addEventListener('click', () => {
+        importAborted = true;
+        const btnCancel = document.getElementById('btn-cancel-import');
+        btnCancel.disabled = true;
+        btnCancel.innerHTML = 'Breche ab...';
     });
 
     document.getElementById('btn-import-csv').addEventListener('click', handleCSVImport);
@@ -211,25 +221,38 @@ function parseDate(val) {
     }
 
     if (dateObj) {
-        // Zeitverschiebung ausgleichen für lokales Datum (YYYY-MM-DD)
+        // Zeitverschiebung ausgleichen für lokales Datum
         const d = new Date(dateObj.getTime() - (dateObj.getTimezoneOffset() * 60000));
-        return d.toISOString().split('T')[0];
+        const iso = d.toISOString().split('T')[0];
+        const [y, m, day] = iso.split('-');
+        return `${day}.${m}.${y}`;
     }
 
     let str = String(val).toLowerCase().trim();
     if (str === 'x' || str === 'nein') return '';
 
-    // Deutsches Format DD.MM.YYYY oder DD.MM.YY
-    const dateMatch = str.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
+    // Flexibles Format: DD.MM.YYYY, DD.MM.YY, DD/MM/YY, DD-MM-YYYY, YYYY-MM-DD etc.
+    const dateMatch = str.match(/(\d{1,4})[\.\-\/\s]+(\d{1,2})[\.\-\/\s]+(\d{1,4})/);
     if (dateMatch) {
-        let [_, d, m, y] = dateMatch;
-        if (y.length === 2) y = '20' + y;
-        return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+        let [_, p1, p2, p3] = dateMatch;
+        
+        let y, m, d;
+        // Wenn der erste Teil 4 Ziffern hat, gehen wir von YYYY-MM-DD aus
+        if (p1.length === 4) {
+            y = p1; m = p2; d = p3;
+        } else {
+            // Ansonsten DD-MM-YYYY oder DD-MM-YY
+            d = p1; m = p2; y = p3;
+            if (y.length === 2) {
+                const yearNum = parseInt(y, 10);
+                y = (yearNum >= 50 ? '19' : '20') + y;
+            } else if (y.length === 1) {
+                y = '200' + y;
+            }
+        }
+        
+        return `${d.padStart(2, '0')}.${m.padStart(2, '0')}.${y}`;
     }
-
-    // Internationales Format YYYY-MM-DD
-    const isoMatch = str.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
-    if (isoMatch) return str.split(' ')[0]; // Nur den Datumsteil nehmen falls Zeit dabei ist
 
     return str;
 }
@@ -240,10 +263,11 @@ async function handleCSVImport() {
     const statusDiv = document.getElementById('csv-import-status');
     const progressText = document.getElementById('import-progress-text');
     const progressBar = document.getElementById('import-progress-bar');
-    const debugInfo = document.getElementById('import-debug-info');
     
     const logOverlay = document.getElementById('import-log-overlay');
     const logBody = document.getElementById('import-log-body');
+    const btnCancel = document.getElementById('btn-cancel-import');
+    const btnConfirm = document.getElementById('btn-confirm-log-overlay');
 
     if (!fileInput.files || fileInput.files.length === 0) return alert('Bitte wähle zuerst eine Datei aus.');
 
@@ -270,63 +294,103 @@ async function handleCSVImport() {
 
             if (rows.length === 0) throw new Error("Die Datei ist leer oder konnte nicht gelesen werden.");
 
-            statusDiv.style.display = 'block';
-            debugInfo.innerHTML = '';
+            statusDiv.style.display = 'none';
             logBody.innerHTML = '';
             
-            // Add Cancel Button to status
-            if (!document.getElementById('btn-cancel-import')) {
-                const cancelBtn = document.createElement('button');
-                cancelBtn.id = 'btn-cancel-import';
-                cancelBtn.className = 'btn btn-danger';
-                cancelBtn.style.marginTop = '12px';
-                cancelBtn.style.width = '100%';
-                cancelBtn.innerHTML = '<i class="fa-solid fa-stop"></i> Import abbrechen';
-                cancelBtn.onclick = () => {
-                    importAborted = true;
-                    cancelBtn.disabled = true;
-                    cancelBtn.innerHTML = 'Breche ab...';
-                };
-                statusDiv.appendChild(cancelBtn);
-            } else {
-                document.getElementById('btn-cancel-import').disabled = false;
-                document.getElementById('btn-cancel-import').innerHTML = '<i class="fa-solid fa-stop"></i> Import abbrechen';
-            }
+            // Show Log Overlay immediately
+            logOverlay.style.display = 'flex';
+            progressText.innerHTML = 'Initialisiere Import...';
+            progressBar.style.width = '0%';
+            
+            // Reset Summary Counters
+            document.getElementById('sum-new').textContent = '0 neu';
+            document.getElementById('sum-updated').textContent = '0 updates';
+            document.getElementById('sum-skipped').textContent = '0 übersprungen';
+            
+            btnCancel.style.display = 'inline-block';
+            btnCancel.disabled = false;
+            btnCancel.innerHTML = '<i class="fa-solid fa-stop"></i> Import abbrechen';
+            btnConfirm.style.display = 'none';
 
             // Bestehende Comics für Dubletten-Prüfung laden
             const existingComics = await db.getAllComics();
+            const idMap = new Map();
+            const contentMap = new Map();
+            const coreMap = new Map();
+
+            // Helfer für einen extrem genauen "Fingerabdruck" eines Comics (als Fallback falls keine ID da ist)
+            const getExactSignature = (c) => {
+                return [
+                    c.serie, c.nummer, c.titel, c.verlag, c.format, c.sprache, 
+                    c.zustand, c.limitierung, c.variantname, c.preis, c.kaufdatum, c.bemerkung, c.bestand
+                ].map(v => String(v || '').toLowerCase().trim()).join('|');
+            };
+
+            // Helfer für einen Basis-Fingerabdruck (nur die absoluten Kern-Identifikationsmerkmale)
+            const getCoreSignature = (c) => {
+                return [
+                    c.serie, c.nummer, c.titel, c.verlag, c.format, c.sprache
+                ].map(v => String(v || '').toLowerCase().trim()).join('|');
+            };
+
+            existingComics.forEach(ex => {
+                if (ex.id) idMap.set(ex.id, ex);
+                contentMap.set(getExactSignature(ex), ex);
+                
+                const coreKey = getCoreSignature(ex);
+                if (!coreMap.has(coreKey)) coreMap.set(coreKey, []);
+                coreMap.get(coreKey).push(ex);
+            });
+
             const total = rows.length;
             let current = 0;
             let updatedCount = 0;
             let newCount = 0;
             let skipCount = 0;
 
-            const batchSize = 5;
+            const batchSize = 50; // Erhöht für besseren Durchsatz
 
             for (let i = 0; i < rows.length; i += batchSize) {
                 if (importAborted) {
-                    logBody.innerHTML += `<div style="color: var(--danger); font-weight: bold; margin-top: 10px;">[ABGEBROCHEN] Import durch Benutzer gestoppt.</div>`;
+                    logBody.insertAdjacentHTML('beforeend', `<div style="color: var(--danger); font-weight: bold; margin-top: 10px;">[ABGEBROCHEN] Import durch Benutzer gestoppt.</div>`);
                     break;
                 }
 
                 const chunk = rows.slice(i, i + batchSize);
-                await Promise.all(chunk.map(async (row) => {
-                    if (importAborted) return;
+
+                for (const row of chunk) {
+                    if (importAborted) break;
 
                     if (row['Titel'] || row['Serie']) {
                         const comicData = mapRowToComic(row);
 
-                        // Dubletten-Prüfung (Serie + Nummer + Titel)
-                        const duplicate = existingComics.find(ex =>
-                            String(ex.serie || '').toLowerCase() === String(comicData.serie || '').toLowerCase() &&
-                            ex.nummer === comicData.nummer &&
-                            String(ex.titel || '').toLowerCase() === String(comicData.titel || '').toLowerCase()
-                        );
+                        // Dubletten-Prüfung
+                        let duplicate = null;
+                        let contentKey = getExactSignature(comicData);
+
+                        if (comicData.id) {
+                            duplicate = idMap.get(comicData.id);
+                        } else {
+                            // 1. Suche nach exakter Übereinstimmung ALLER Felder
+                            duplicate = contentMap.get(contentKey);
+                            
+                            // 2. Suche nach Basis-Übereinstimmung (nur Kern-Daten) falls 1 fehlschlägt
+                            if (!duplicate) {
+                                const coreKey = getCoreSignature(comicData);
+                                const coreMatches = coreMap.get(coreKey);
+                                
+                                if (coreMatches && coreMatches.length > 0) {
+                                    // Finde den ersten, der in DIESEM Importlauf noch nicht upgedated wurde
+                                    duplicate = coreMatches.find(c => !c._importUsed);
+                                }
+                            }
+                        }
 
                         let statusText = "";
                         let logDetail = "";
 
                         if (duplicate) {
+                            duplicate._importUsed = true;
                             const changedFields = getChangedFields(duplicate, comicData);
                             
                             if (changedFields.length === 0) {
@@ -339,57 +403,54 @@ async function handleCSVImport() {
                                 logDetail = `Geänderte Felder: <span style="color: var(--warning)">${changedFields.join(', ')}</span>`;
                                 updatedCount++;
                                 await db.saveComic(comicData);
+                                if (comicData.id) idMap.set(comicData.id, comicData);
+                                contentMap.set(contentKey, comicData); // Lokale Map updaten
                             }
                         } else {
                             statusText = `<span style="color: var(--success)">[Neu]</span>`;
                             logDetail = `Datensatz neu angelegt.`;
                             newCount++;
-                            await db.saveComic(comicData);
+                            const newId = await db.saveComic(comicData);
+                            comicData.id = newId;
+                            idMap.set(newId, comicData);
+                            contentMap.set(contentKey, comicData); // Direkt in Map für Folge-Checks
                         }
 
                         current++;
 
-                        // UI Update
+                        // Log sofort updaten
+                        const logLine = `<div>> ${statusText} <strong>${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong> - ${comicData.titel}<br><span style="padding-left: 20px; color: var(--text-secondary);">${logDetail}</span></div>`;
+                        logBody.insertAdjacentHTML('beforeend', logLine);
+                        logBody.scrollTop = logBody.scrollHeight;
+                        
+                        // Fortschritt sofort aktualisieren
                         const percent = Math.round((current / total) * 100);
                         progressBar.style.width = percent + '%';
                         progressText.innerHTML = `Verarbeite: <strong>${current} von ${total}</strong> (${percent}%)`;
 
-                        // Detailliertes Log
-                        const logLine = `<div>> ${statusText} <strong>${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong> - ${comicData.titel}<br><span style="padding-left: 20px; color: var(--text-secondary);">${logDetail}</span></div>`;
-                        debugInfo.innerHTML += logLine;
-                        logBody.innerHTML += logLine;
-                        debugInfo.scrollTop = debugInfo.scrollHeight;
+                        // Live-Zusammenfassung im Footer aktualisieren
+                        document.getElementById('sum-new').textContent = `${newCount} neu`;
+                        document.getElementById('sum-updated').textContent = `${updatedCount} updates`;
+                        document.getElementById('sum-skipped').textContent = `${skipCount} übersprungen`;
                     } else {
                         current++;
                     }
-                }));
+                }
             }
 
-            const summary = `
-                <div style="margin-top: 20px; padding-top: 15px; border-top: 2px solid var(--border-color); font-weight: bold;">
-                    Zusammenfassung:<br>
-                    <span style="color: var(--success)">- ${newCount} neu angelegt</span><br>
-                    <span style="color: var(--secondary-color)">- ${updatedCount} aktualisiert</span><br>
-                    <span style="color: var(--text-secondary)">- ${skipCount} übersprungen (identisch)</span>
-                </div>
-            `;
-            logBody.innerHTML += summary;
-            
             progressText.innerHTML = `<i class="fa-solid fa-check" style="color: var(--success)"></i> Import abgeschlossen.`;
             if (importAborted) progressText.innerHTML = `<i class="fa-solid fa-stop" style="color: var(--danger)"></i> Import abgebrochen.`;
             
-            // Show Log Overlay
-            logOverlay.style.display = 'flex';
+            btnCancel.style.display = 'none';
+            btnConfirm.style.display = 'inline-block';
             
             fileInput.value = '';
-            if (document.getElementById('btn-cancel-import')) {
-                document.getElementById('btn-cancel-import').remove();
-            }
 
         } catch (error) {
             console.error("Import Error:", error);
             statusDiv.style.display = 'block';
-            progressText.innerHTML = `<i class="fa-solid fa-xmark" style="color: var(--danger)"></i> Fehler: ${error.message}`;
+            statusDiv.innerHTML = `<i class="fa-solid fa-xmark" style="color: var(--danger)"></i> Fehler: ${error.message}`;
+            if (logOverlay) logOverlay.style.display = 'none';
         }
     };
 
@@ -491,6 +552,7 @@ function mapRowToComic(row) {
     }
 
     return {
+        id: getVal(['id', 'ID']) ? String(getVal(['id', 'ID'])) : null,
         titel: titel,
         typ: String(getVal(['Typ', 'Genre']) || ''),
         serie: String(getVal(['Serie', 'Reihe']) || ''),

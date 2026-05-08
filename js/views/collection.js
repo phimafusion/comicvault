@@ -14,6 +14,37 @@ let activeFilters = {
     serie: []
 };
 
+const FIELD_CONFIG = {
+    titel: { label: 'Titel / Serie', defaultList: true, defaultTiles: true, defaultDetails: true, listWidth: '2fr' },
+    nummer: { label: 'Nr.', defaultList: true, defaultTiles: false, defaultDetails: false, listWidth: '45px' },
+    verlag: { label: 'Verlag', defaultList: true, defaultTiles: false, defaultDetails: true, listWidth: '1fr' },
+    jahr: { label: 'Jahr', defaultList: true, defaultTiles: false, defaultDetails: false, listWidth: '50px' },
+    bestand: { label: 'Bestand', defaultList: true, defaultTiles: true, defaultDetails: true, listWidth: '80px' },
+    bezugsquelle: { label: 'Quelle', defaultList: true, defaultTiles: false, defaultDetails: false, listWidth: '0.8fr' },
+    kaufdatum: { label: 'Gekauft', defaultList: true, defaultTiles: false, defaultDetails: true, listWidth: '80px' },
+    preis: { label: 'Preis', defaultList: true, defaultTiles: false, defaultDetails: true, listWidth: '70px', align: 'right' },
+    gelesen_am: { label: 'Gelesen', defaultList: true, defaultTiles: false, defaultDetails: true, listWidth: '80px', align: 'right' },
+    updated_at: { label: 'Änderung', defaultList: true, defaultTiles: false, defaultDetails: false, listWidth: '80px', align: 'right' },
+    typ: { label: 'Typ', defaultList: false, defaultTiles: false, defaultDetails: true, listWidth: '100px' },
+    format: { label: 'Format', defaultList: false, defaultTiles: false, defaultDetails: true, listWidth: '1fr' },
+    sprache: { label: 'Sprache', defaultList: false, defaultTiles: false, defaultDetails: true, listWidth: '80px' },
+    limitierung: { label: 'Limitierung', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: '80px' },
+    variant: { label: 'Variant', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: '80px' },
+    variantname: { label: 'Variantname', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: '1fr' },
+    zustand: { label: 'Zustand', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: '100px' },
+    bewertung: { label: 'Bewertung', defaultList: false, defaultTiles: true, defaultDetails: true, listWidth: '80px' },
+    bemerkung: { label: 'Bemerkung', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: '2fr' },
+    bild: { label: 'Cover-Bild', defaultList: false, defaultTiles: true, defaultDetails: true, listWidth: '0' }
+};
+
+const defaultVisibleFields = {
+    list: Object.keys(FIELD_CONFIG).filter(k => FIELD_CONFIG[k].defaultList),
+    tiles: Object.keys(FIELD_CONFIG).filter(k => FIELD_CONFIG[k].defaultTiles),
+    details: Object.keys(FIELD_CONFIG).filter(k => FIELD_CONFIG[k].defaultDetails)
+};
+
+let visibleFields = JSON.parse(localStorage.getItem('comicvault_visible_fields')) || defaultVisibleFields;
+
 export async function renderCollection(container) {
     const comics = await db.getAllComics();
     const verlage = [...new Set(comics.map(c => c.verlag).filter(Boolean))].sort();
@@ -47,6 +78,10 @@ export async function renderCollection(container) {
             </div>
 
             <div class="view-toggles">
+                <button class="view-toggle-btn" id="btn-configure-fields" title="Angezeigte Felder für diese Ansicht konfigurieren">
+                    <i class="fa-solid fa-table-columns"></i>
+                </button>
+                <div style="width: 1px; background: var(--border-color); margin: 6px 0;"></div>
                 <button class="view-toggle-btn ${currentViewType === 'list' ? 'active' : ''}" data-type="list" title="Listenansicht">
                     <i class="fa-solid fa-list"></i>
                 </button>
@@ -169,10 +204,16 @@ export function attachCollectionEvents() {
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('.view-toggle-btn');
         if (btn) {
-            document.querySelectorAll('.view-toggle-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentViewType = btn.dataset.type;
-            updateGrid();
+            if (btn.id === 'btn-configure-fields') {
+                renderFieldConfigOverlay();
+                return;
+            }
+            if (btn.dataset.type) {
+                document.querySelectorAll('.view-toggle-btn[data-type]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentViewType = btn.dataset.type;
+                updateGrid();
+            }
         }
     });
 
@@ -180,6 +221,69 @@ export function attachCollectionEvents() {
     document.addEventListener('global-search', (e) => {
         searchTerm = e.detail.query.toLowerCase();
         updateGrid();
+    });
+
+    // Drag & Drop für Spalten (Listenansicht)
+    let draggedColumnKey = null;
+
+    document.addEventListener('dragstart', (e) => {
+        const header = e.target.closest('.sortable-header');
+        if (header) {
+            draggedColumnKey = header.dataset.sort;
+            setTimeout(() => {
+                header.style.opacity = '0.4';
+                header.style.background = 'rgba(255,255,255,0.05)';
+            }, 0);
+        }
+    });
+
+    document.addEventListener('dragend', (e) => {
+        if (draggedColumnKey) {
+            const header = document.querySelector(`.sortable-header[data-sort="${draggedColumnKey}"]`);
+            if (header) {
+                header.style.opacity = '1';
+                header.style.background = 'transparent';
+            }
+            document.querySelectorAll('.sortable-header').forEach(h => h.style.borderLeft = '');
+            draggedColumnKey = null;
+        }
+    });
+
+    document.addEventListener('dragover', (e) => {
+        const header = e.target.closest('.sortable-header');
+        if (header && draggedColumnKey && header.dataset.sort !== draggedColumnKey) {
+            e.preventDefault(); // Erlaubt das Drop-Event
+            // Visuelles Feedback
+            document.querySelectorAll('.sortable-header').forEach(h => h.style.borderLeft = '');
+            header.style.borderLeft = '2px solid var(--primary-color)';
+        }
+    });
+    
+    document.addEventListener('dragleave', (e) => {
+        const header = e.target.closest('.sortable-header');
+        if (header) {
+            header.style.borderLeft = '';
+        }
+    });
+
+    document.addEventListener('drop', (e) => {
+        const header = e.target.closest('.sortable-header');
+        if (header && draggedColumnKey && header.dataset.sort !== draggedColumnKey) {
+            e.preventDefault();
+            const targetKey = header.dataset.sort;
+            
+            const list = visibleFields.list;
+            const fromIndex = list.indexOf(draggedColumnKey);
+            const toIndex = list.indexOf(targetKey);
+            
+            if (fromIndex > -1 && toIndex > -1) {
+                list.splice(fromIndex, 1);
+                list.splice(toIndex, 0, draggedColumnKey);
+                
+                localStorage.setItem('comicvault_visible_fields', JSON.stringify(visibleFields));
+                updateGrid();
+            }
+        }
     });
 }
 
@@ -277,18 +381,17 @@ async function updateGrid() {
             return sortOrder === 'asc' ? '<i class="fa-solid fa-caret-up" style="margin-left: 5px; color: var(--primary-color);"></i>' : '<i class="fa-solid fa-caret-down" style="margin-left: 5px; color: var(--primary-color);"></i>';
         };
 
+        const listFields = visibleFields.list.map(key => ({ key, ...FIELD_CONFIG[key] }));
+        const gridTemplateColumns = listFields.map(f => f.listWidth).join(' ') + ' 40px';
+
+        const headers = listFields.map(f => `
+            <div class="sortable-header" data-sort="${f.key}" draggable="true" title="Zum Sortieren klicken, zum Verschieben ziehen" style="cursor:pointer; user-select: none; ${f.align ? 'text-align: ' + f.align : ''}">${f.label} ${getIcon(f.key)}</div>
+        `).join('');
+
         grid.innerHTML = `
-            <div class="list-header" style="display: grid; grid-template-columns: 2fr 45px 1fr 50px 80px 0.8fr 80px 70px 80px 80px; padding: 12px 20px; font-weight: bold; border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; background: var(--bg-main); position: sticky; top: 0; z-index: 10;">
-                <div class="sortable-header" data-sort="titel" style="cursor:pointer;">TITEL / SERIE ${getIcon('titel')}</div>
-                <div class="sortable-header" data-sort="nummer" style="cursor:pointer;">NR. ${getIcon('nummer')}</div>
-                <div class="sortable-header" data-sort="verlag" style="cursor:pointer;">VERLAG ${getIcon('verlag')}</div>
-                <div class="sortable-header" data-sort="jahr" style="cursor:pointer;">JAHR ${getIcon('jahr')}</div>
-                <div class="sortable-header" data-sort="bestand" style="cursor:pointer;">BESTAND ${getIcon('bestand')}</div>
-                <div class="sortable-header" data-sort="bezugsquelle" style="cursor:pointer;">QUELLE ${getIcon('bezugsquelle')}</div>
-                <div class="sortable-header" data-sort="kaufdatum" style="cursor:pointer;">GEKAUFT ${getIcon('kaufdatum')}</div>
-                <div class="sortable-header" data-sort="preis" style="cursor:pointer; text-align: right;">PREIS ${getIcon('preis')}</div>
-                <div class="sortable-header" data-sort="gelesen_am" style="cursor:pointer; text-align: right;">GELESEN ${getIcon('gelesen_am')}</div>
-                <div class="sortable-header" data-sort="updated_at" style="cursor:pointer; text-align: right;">ÄNDERUNG ${getIcon('updated_at')}</div>
+            <div class="list-header" style="display: grid; grid-template-columns: ${gridTemplateColumns}; padding: 12px 20px; font-weight: bold; border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; background: var(--bg-main); position: sticky; top: 0; z-index: 10;">
+                ${headers}
+                <div style="text-align: right;"><i class="fa-solid fa-trash" style="opacity: 0.3;"></i></div>
             </div>
             <div class="list-items-container">
                 ${comics.map(comic => renderListItem(comic)).join('')}
@@ -325,57 +428,127 @@ function getPlaceholderImage() {
     return `https://placehold.co/400x600/1e293b/06b6d4?text=POW!&font=impact`;
 }
 
-function displayDate(dateStr) {
+function displayDate(dateStr, shorten = false) {
     if (!dateStr) return '-';
     const match = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (match) return `${match[3]}.${match[2]}.${match[1]}`;
+    if (match) {
+        const y = shorten ? match[1].slice(-2) : match[1];
+        return `${match[3]}.${match[2]}.${y}`;
+    }
     if (String(dateStr).length > 15) {
         const d = new Date(dateStr);
-        if (!isNaN(d)) return d.toLocaleDateString('de-DE');
+        if (!isNaN(d)) {
+            const s = d.toLocaleDateString('de-DE');
+            if (shorten) {
+                const parts = s.split('.');
+                if (parts.length === 3) return `${parts[0]}.${parts[1]}.${parts[2].slice(-2)}`;
+            }
+            return s;
+        }
     }
     return dateStr;
 }
 
 function renderTile(comic) {
-    const imgUrl = comic.bild || getPlaceholderImage();
     const bestandClass = `badge-${String(comic.bestand || '').toLowerCase().replace(/\s+/g, '-')}`;
+    
+    let imgBlock = '';
+    if (visibleFields.tiles.includes('bild')) {
+        const imgUrl = comic.bild || getPlaceholderImage();
+        imgBlock = `<img src="${imgUrl}" alt="${comic.titel}" class="comic-cover" onerror="this.src='${getPlaceholderImage()}'">`;
+    }
+
+    const stdFields = ['bild', 'serie', 'titel', 'bewertung', 'bestand'];
+    
+    let serieBlock = '';
+    if (visibleFields.tiles.includes('serie')) {
+        serieBlock = `<span class="comic-series">${comic.serie || comic.verlag || ''} ${comic.nummer ? '#' + comic.nummer : ''}</span>`;
+    }
+
+    let titelBlock = '';
+    if (visibleFields.tiles.includes('titel')) {
+        titelBlock = `<h3 class="comic-title">${comic.titel || 'Ohne Titel'}</h3>`;
+    }
+
+    let metaBlock = '';
+    if (visibleFields.tiles.includes('bewertung') || visibleFields.tiles.includes('bestand')) {
+        let bewertung = visibleFields.tiles.includes('bewertung') ? `<span><i class="fa-solid fa-star" style="color: var(--warning)"></i> ${comic.bewertung ? comic.bewertung / 2 : 0}/5</span>` : '';
+        let bestand = visibleFields.tiles.includes('bestand') ? `<span class="badge ${bestandClass}">${comic.bestand}</span>` : '';
+        metaBlock = `<div class="comic-meta">${bewertung}${bestand}</div>`;
+    }
+
+    let extraFields = '';
+    visibleFields.tiles.forEach(key => {
+        if (!stdFields.includes(key)) {
+            let val = comic[key] || '-';
+            if (key === 'preis') val = (comic.preis !== null && comic.preis !== undefined) ? Number(comic.preis).toFixed(2) + ' €' : '-';
+            if (key === 'kaufdatum' || key === 'gelesen_am' || key === 'updated_at' || key === 'created_at') val = displayDate(val);
+            extraFields += `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;"><strong>${FIELD_CONFIG[key].label}:</strong> ${val}</div>`;
+        }
+    });
+
     return `
         <div class="comic-card comic-item" data-id="${comic.id}">
             <button class="btn-delete-item" data-id="${comic.id}" title="Löschen">
                 <i class="fa-solid fa-trash"></i>
             </button>
-            <img src="${imgUrl}" alt="${comic.titel}" class="comic-cover" onerror="this.src='${getPlaceholderImage()}'">
+            ${imgBlock}
             <div class="comic-info">
-                <span class="comic-series">${comic.serie || comic.verlag} ${comic.nummer ? '#' + comic.nummer : ''}</span>
-                <h3 class="comic-title">${comic.titel || 'Ohne Titel'}</h3>
-                <div class="comic-meta">
-                    <span><i class="fa-solid fa-star" style="color: var(--warning)"></i> ${comic.bewertung ? comic.bewertung / 2 : 0}/5</span>
-                    <span class="badge ${bestandClass}">${comic.bestand}</span>
-                </div>
+                ${serieBlock}
+                ${titelBlock}
+                ${extraFields}
+                <div style="flex: 1;"></div>
+                ${metaBlock}
             </div>
         </div>
     `;
 }
 
 function renderListItem(comic) {
+    const listFields = visibleFields.list.map(key => ({ key, ...FIELD_CONFIG[key] }));
+    const gridTemplateColumns = listFields.map(f => f.listWidth).join(' ') + ' 40px';
     const bestandClass = `badge-${String(comic.bestand || '').toLowerCase().replace(/\s+/g, '-')}`;
+
+    const renderCell = (field) => {
+        let val = comic[field.key];
+        const align = field.align ? `text-align: ${field.align}; padding-right: 10px;` : '';
+        
+        switch (field.key) {
+            case 'titel':
+                return `
+                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px;">
+                    <h3 class="comic-title" style="margin:0; font-size:0.88rem; display: inline;">${comic.titel || 'Ohne Titel'}</h3>
+                    <div class="comic-series" style="font-size:0.68rem; color: var(--text-secondary);">${comic.serie || ''}</div>
+                </div>`;
+            case 'nummer':
+                return `<div style="font-weight: bold;">${val !== null && val !== undefined ? '#' + val : '-'}</div>`;
+            case 'bestand':
+                return `<div><span class="badge ${bestandClass}" style="font-size: 0.62rem; padding: 2px 6px;">${comic.bestand || '-'}</span></div>`;
+            case 'preis':
+                return `<div style="font-weight: bold; ${align}">${(val !== null && val !== undefined) ? Number(val).toFixed(2) + ' €' : '-'}</div>`;
+            case 'kaufdatum':
+                return `<div style="font-size: 0.78rem;">${displayDate(val)}</div>`;
+            case 'gelesen_am':
+            case 'updated_at':
+            case 'created_at':
+                return `<div style="${align} font-size: 0.78rem;">${displayDate(val || (field.key === 'updated_at' ? comic.created_at : ''), true)}</div>`;
+            case 'bewertung':
+                return `<div style="${align}"><i class="fa-solid fa-star" style="color: var(--warning)"></i> ${val ? val / 2 : 0}/5</div>`;
+            case 'bild':
+                const imgUrl = comic.bild || getPlaceholderImage();
+                return `<div><img src="${imgUrl}" style="height: 30px; border-radius: 4px; object-fit: cover;"></div>`;
+            default:
+                return `<div style="color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; ${align}">${val || '-'}</div>`;
+        }
+    };
+
+    const cells = listFields.map(renderCell).join('');
+
     return `
-        <div class="list-item comic-item" data-id="${comic.id}" style="display: grid; grid-template-columns: 2fr 45px 1fr 50px 80px 0.8fr 80px 70px 80px 80px; padding: 12px 20px; align-items: center; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 10px; cursor: pointer; font-size: 0.82rem; background: var(--bg-surface);">
-            <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px;">
-                <h3 class="comic-title" style="margin:0; font-size:0.88rem; display: inline;">${comic.titel || 'Ohne Titel'}</h3>
-                <div class="comic-series" style="font-size:0.68rem; color: var(--text-secondary);">${comic.serie || ''}</div>
-            </div>
-            <div style="font-weight: bold;">${comic.nummer !== null ? '#' + comic.nummer : '-'}</div>
-            <div style="color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${comic.verlag || '-'}</div>
-            <div>${comic.jahr || '-'}</div>
-            <div><span class="badge ${bestandClass}" style="font-size: 0.62rem; padding: 2px 6px;">${comic.bestand}</span></div>
-            <div style="color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${comic.bezugsquelle || '-'}</div>
-            <div style="font-size: 0.78rem;">${displayDate(comic.kaufdatum)}</div>
-            <div style="font-weight: bold; text-align: right; padding-right: 10px;">${(comic.preis !== null && comic.preis !== undefined) ? comic.preis.toFixed(2) + ' €' : '-'}</div>
-            <div style="text-align: right; padding-right: 10px; font-size: 0.78rem;">${displayDate(comic.gelesen_am)}</div>
-            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
-                <span style="font-size: 0.78rem;">${displayDate(comic.updated_at || comic.created_at)}</span>
-                <button class="btn-delete-item" data-id="${comic.id}" title="Löschen" style="background: none; border: none; color: var(--danger); opacity: 0.2; cursor: pointer; padding: 2px;">
+        <div class="list-item comic-item" data-id="${comic.id}" style="display: grid; grid-template-columns: ${gridTemplateColumns}; padding: 12px 20px; align-items: center; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 10px; cursor: pointer; font-size: 0.82rem; background: var(--bg-surface);">
+            ${cells}
+            <div style="display: flex; justify-content: flex-end;">
+                <button class="btn-delete-item list-delete-btn" data-id="${comic.id}" title="Löschen" style="background: none; border: none; color: var(--danger); opacity: 0.2; cursor: pointer; padding: 4px;">
                     <i class="fa-solid fa-trash"></i>
                 </button>
             </div>
@@ -384,35 +557,186 @@ function renderListItem(comic) {
 }
 
 function renderDetailsItem(comic) {
-    const imgUrl = comic.bild || getPlaceholderImage();
     const bestandClass = `badge-${String(comic.bestand || '').toLowerCase().replace(/\s+/g, '-')}`;
+    
+    let imgBlock = '';
+    if (visibleFields.details.includes('bild')) {
+        const imgUrl = comic.bild || getPlaceholderImage();
+        imgBlock = `<img src="${imgUrl}" alt="${comic.titel}" class="details-cover" onerror="this.src='${getPlaceholderImage()}'">`;
+    }
+
+    let headerBlock = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            ${visibleFields.details.includes('serie') ? `<span class="comic-series">${comic.serie || comic.verlag || ''} ${comic.nummer ? '#' + comic.nummer : ''}</span>` : '<div></div>'}
+            <button class="btn-delete-item" data-id="${comic.id}" title="Löschen" style="background: none; border: none; color: var(--danger); cursor: pointer; padding: 4px;">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+        </div>
+        ${visibleFields.details.includes('titel') ? `<h3 class="comic-title" style="font-size: 1.4rem; margin-bottom: 12px;">${comic.titel || 'Ohne Titel'}</h3>` : ''}
+    `;
+
+    const stdNonGridFields = ['bild', 'serie', 'titel', 'bestand', 'bewertung'];
+    let gridFieldsHtml = '';
+    visibleFields.details.forEach(key => {
+        if (!stdNonGridFields.includes(key)) {
+            let val = comic[key] || '-';
+            if (key === 'preis') val = (comic.preis !== null && comic.preis !== undefined) ? Number(comic.preis).toFixed(2) + ' €' : '-';
+            if (key === 'kaufdatum' || key === 'gelesen_am' || key === 'updated_at' || key === 'created_at') val = displayDate(val);
+            gridFieldsHtml += `<div><strong>${FIELD_CONFIG[key].label}:</strong> <span style="color: var(--text-primary);">${val}</span></div>`;
+        }
+    });
+    
+    let footerBlock = '';
+    if (visibleFields.details.includes('bestand') || visibleFields.details.includes('bewertung')) {
+        let bestand = visibleFields.details.includes('bestand') ? `<span class="badge ${bestandClass}">${comic.bestand || '-'}</span>` : '';
+        let bewertung = visibleFields.details.includes('bewertung') ? `<span style="font-size: 1.1rem; color: var(--warning)"><i class="fa-solid fa-star"></i> ${comic.bewertung ? comic.bewertung / 2 : 0}</span>` : '';
+        footerBlock = `
+            <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center;">
+                ${bestand}${bewertung}
+            </div>
+        `;
+    }
+
     return `
         <div class="details-card comic-item" data-id="${comic.id}">
-            <img src="${imgUrl}" alt="${comic.titel}" class="details-cover" onerror="this.src='${getPlaceholderImage()}'">
+            ${imgBlock}
             <div class="details-info">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <span class="comic-series">${comic.serie || comic.verlag} ${comic.nummer ? '#' + comic.nummer : ''}</span>
-                    <button class="btn-delete-item" data-id="${comic.id}" title="Löschen" style="background: none; border: none; color: var(--danger); cursor: pointer; padding: 4px;">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </div>
-                <h3 class="comic-title" style="font-size: 1.4rem; margin-bottom: 12px;">${comic.titel || 'Ohne Titel'}</h3>
-                
+                ${headerBlock}
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: auto;">
-                    <div><strong>Typ:</strong> ${comic.typ}</div>
-                    <div><strong>Format:</strong> ${comic.format}</div>
-                    <div><strong>Verlag:</strong> ${comic.verlag}</div>
-                    <div><strong>Sprache:</strong> ${comic.sprache}</div>
-                    <div><strong>Kaufdatum:</strong> ${displayDate(comic.kaufdatum)}</div>
-                    <div><strong>Preis:</strong> ${(comic.preis !== null && comic.preis !== undefined) ? comic.preis.toFixed(2) + ' €' : '-'}</div>
-                    <div><strong>Gelesen am:</strong> ${displayDate(comic.gelesen_am)}</div>
+                    ${gridFieldsHtml}
                 </div>
-                
-                <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center;">
-                    <span class="badge ${bestandClass}">${comic.bestand}</span>
-                    <span style="font-size: 1.1rem; color: var(--warning)"><i class="fa-solid fa-star"></i> ${comic.bewertung ? comic.bewertung / 2 : 0}</span>
+                ${footerBlock}
+            </div>
+        </div>
+    `;
+}
+
+function renderFieldConfigOverlay() {
+    const existing = document.getElementById('field-config-overlay');
+    if (existing) existing.remove();
+
+    const viewNames = { list: 'Listenansicht', tiles: 'Kachelansicht', details: 'Detailansicht' };
+    const currentViewName = viewNames[currentViewType];
+    const activeFields = visibleFields[currentViewType];
+
+    // Aktive Felder zuerst (in aktueller Reihenfolge), dann inaktive Felder anfügen
+    const inactiveFields = Object.keys(FIELD_CONFIG).filter(key => !activeFields.includes(key));
+    const orderedFields = [...activeFields, ...inactiveFields];
+
+    const fieldsHtml = orderedFields.map(key => {
+        const isChecked = activeFields.includes(key);
+        return `
+            <label class="field-config-item" draggable="true" style="display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--bg-main); border-radius: 8px; border: 1px solid var(--border-color); cursor: grab; user-select: none; transition: transform 0.1s ease;">
+                <i class="fa-solid fa-grip-vertical" style="color: var(--text-secondary); opacity: 0.5; padding-right: 5px; cursor: grab;"></i>
+                <input type="checkbox" class="field-config-checkbox" data-key="${key}" ${isChecked ? 'checked' : ''} style="accent-color: var(--primary-color); width: 18px; height: 18px; cursor: pointer;">
+                <span style="font-size: 0.9rem; color: var(--text-primary); flex: 1; cursor: pointer;">${FIELD_CONFIG[key].label}</span>
+            </label>
+        `;
+    }).join('');
+
+    const html = `
+        <div id="field-config-overlay" class="modal-overlay" style="display: flex; z-index: 2000;">
+            <div class="modal-content" style="max-width: 500px;">
+                <div class="modal-header">
+                    <h2>Angezeigte Felder</h2>
+                    <button class="close-btn" onclick="document.getElementById('field-config-overlay').remove()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div style="padding: 16px 24px; background: rgba(0,0,0,0.1); border-bottom: 1px solid var(--border-color); font-size: 0.85rem; color: var(--text-secondary);">
+                    Ziehe die Felder an den sechs Punkten (<i class="fa-solid fa-grip-vertical"></i>) hoch oder runter, um die Reihenfolge für die <strong>${currentViewName}</strong> zu ändern.
+                </div>
+                <div class="modal-body" id="field-config-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; padding: 16px 24px;">
+                    ${fieldsHtml}
+                </div>
+                <div class="modal-footer" style="justify-content: space-between;">
+                    <button class="btn btn-secondary" id="btn-reset-field-config" style="color: var(--warning); border-color: transparent; padding-left: 0;" title="Auf Standard-Felder zurücksetzen"><i class="fa-solid fa-rotate-left"></i> Standard</button>
+                    <div>
+                        <button class="btn btn-secondary" onclick="document.getElementById('field-config-overlay').remove()">Abbrechen</button>
+                        <button class="btn btn-primary" id="btn-save-field-config" style="margin-left: 8px;">Speichern</button>
+                    </div>
                 </div>
             </div>
         </div>
     `;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+
+    // Drag & Drop Logik
+    const list = document.getElementById('field-config-list');
+    let draggedItem = null;
+
+    list.addEventListener('dragstart', e => {
+        const item = e.target.closest('.field-config-item');
+        if (!item) return;
+        draggedItem = item;
+        setTimeout(() => {
+            item.style.opacity = '0.4';
+            item.style.background = 'var(--bg-surface)';
+        }, 0);
+    });
+
+    list.addEventListener('dragend', e => {
+        const item = e.target.closest('.field-config-item');
+        if (!item) return;
+        item.style.opacity = '1';
+        item.style.background = 'var(--bg-main)';
+        draggedItem = null;
+    });
+
+    list.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (!draggedItem) return;
+        const afterElement = getDragAfterElement(list, e.clientY);
+        if (afterElement == null) {
+            list.appendChild(draggedItem);
+        } else {
+            list.insertBefore(draggedItem, afterElement);
+        }
+    });
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.field-config-item:not([style*="opacity: 0.4"])')];
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // Standard wiederherstellen (baut HTML-Liste neu auf)
+    document.getElementById('btn-reset-field-config').addEventListener('click', () => {
+        const defaults = defaultVisibleFields[currentViewType];
+        const inactive = Object.keys(FIELD_CONFIG).filter(key => !defaults.includes(key));
+        const defaultOrdered = [...defaults, ...inactive];
+        
+        const resetHtml = defaultOrdered.map(key => {
+            const isChecked = defaults.includes(key);
+            return `
+                <label class="field-config-item" draggable="true" style="display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--bg-main); border-radius: 8px; border: 1px solid var(--border-color); cursor: grab; user-select: none; transition: transform 0.1s ease;">
+                    <i class="fa-solid fa-grip-vertical" style="color: var(--text-secondary); opacity: 0.5; padding-right: 5px; cursor: grab;"></i>
+                    <input type="checkbox" class="field-config-checkbox" data-key="${key}" ${isChecked ? 'checked' : ''} style="accent-color: var(--primary-color); width: 18px; height: 18px; cursor: pointer;">
+                    <span style="font-size: 0.9rem; color: var(--text-primary); flex: 1; cursor: pointer;">${FIELD_CONFIG[key].label}</span>
+                </label>
+            `;
+        }).join('');
+        list.innerHTML = resetHtml;
+    });
+
+    // Speichern (Reihenfolge entspricht dem DOM)
+    document.getElementById('btn-save-field-config').addEventListener('click', () => {
+        const checkboxes = document.querySelectorAll('.field-config-checkbox');
+        const newFields = [];
+        checkboxes.forEach(cb => {
+            if (cb.checked) newFields.push(cb.dataset.key);
+        });
+        
+        visibleFields[currentViewType] = newFields;
+        localStorage.setItem('comicvault_visible_fields', JSON.stringify(visibleFields));
+        
+        document.getElementById('field-config-overlay').remove();
+        updateGrid();
+    });
 }

@@ -10,6 +10,32 @@ const modalTitle = document.getElementById('modal-title');
 
 let currentEditingId = null;
 
+function toInputDate(dateStr) {
+    if (!dateStr) return '';
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dateStr;
+    const parts = dateStr.split('.');
+    if (parts.length === 3) {
+        let [d, m, y] = parts;
+        if (d.length === 1) d = '0' + d;
+        if (m.length === 1) m = '0' + m;
+        if (y.length === 2) {
+            const yr = parseInt(y);
+            y = (yr > 50 ? '19' : '20') + y;
+        }
+        return `${y}-${m}-${d}`;
+    }
+    return dateStr;
+}
+
+function toGermanDate(dateStr) {
+    if (!dateStr) return '';
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [y, m, d] = dateStr.split('-');
+        return `${d}.${m}.${y}`;
+    }
+    return dateStr;
+}
+
 export async function openModal(comic = null, isWishlist = false) {
     currentEditingId = comic ? comic.id : null;
     modalTitle.textContent = comic ? 'Comic bearbeiten' : 'Neuer Comic';
@@ -114,9 +140,17 @@ btnSave.addEventListener('click', async (e) => {
         comicData.besonderheit = formData.get('besonderheit');
         await db.saveWish(comicData);
     } else {
-        // Bild-Verarbeitung vorerst deaktiviert
-        let finalImageUrl = c.bild || ''; 
-        
+        // Bild-Verarbeitung vorerst deaktiviert, bestehendes Bild beibehalten falls vorhanden
+        let finalImageUrl = '';
+        if (currentEditingId) {
+            const allComics = await db.getAllComics();
+            const existingComic = allComics.find(c => c.id === currentEditingId);
+            if (existingComic) {
+                finalImageUrl = existingComic.bild || '';
+                if (existingComic.created_at) comicData.created_at = existingComic.created_at;
+            }
+        }
+
         Object.assign(comicData, {
             verlag: formData.get('verlag'),
             serie: formData.get('serie'),
@@ -128,9 +162,9 @@ btnSave.addEventListener('click', async (e) => {
             limitiert_auf: formData.get('limitiert_auf') ? parseInt(formData.get('limitiert_auf')) : null,
             variant: formData.get('variant') === 'true',
             variantname: formData.get('variantname'),
-            kaufdatum: formData.get('kaufdatum'),
+            kaufdatum: toGermanDate(formData.get('kaufdatum')),
             bestand: formData.get('bestand'),
-            gelesen_am: formData.get('gelesen_am'),
+            gelesen_am: toGermanDate(formData.get('gelesen_am')),
             bewertung: formData.get('bewertung') ? parseInt(formData.get('bewertung')) : 0,
             bild: finalImageUrl
         });
@@ -268,8 +302,12 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}) {
                 ${renderDatalist('bestand-list', s.bestand)}
             </div>
             <div class="form-group">
+                <label class="form-label">Kaufdatum</label>
+                <input type="date" name="kaufdatum" class="form-control" value="${toInputDate(c.kaufdatum)}">
+            </div>
+            <div class="form-group">
                 <label class="form-label">Gelesen am</label>
-                <input type="date" name="gelesen_am" class="form-control" value="${c.gelesen_am || ''}">
+                <input type="date" name="gelesen_am" class="form-control" value="${toInputDate(c.gelesen_am)}">
             </div>
             <div class="form-group">
                 <label class="form-label">Bewertung (1-10)</label>

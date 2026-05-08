@@ -259,7 +259,7 @@ select.form-control {
     border-color: var(--primary-color);
 }
 
-.btn-delete-item {
+.comic-card .btn-delete-item {
     position: absolute;
     top: 8px;
     right: 8px;

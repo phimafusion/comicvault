@@ -35,9 +35,11 @@ class Database {
 
         if (id) {
             await col.doc(id).set(data, { merge: true });
+            return id;
         } else {
             data.created_at = now;
-            await col.add(data);
+            const ref = await col.add(data);
+            return ref.id;
         }
     }
 
