@@ -78,6 +78,32 @@ export function renderImport(container) {
     `;
     container.innerHTML = html;
 
+    // Log Overlay (initially hidden)
+    const logOverlayHtml = `
+        <div id="import-log-overlay" class="modal-overlay" style="display: none;">
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-header">
+                    <h2>Import Protokoll</h2>
+                    <button class="close-btn" id="btn-close-log-overlay"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="modal-body" id="import-log-body" style="font-family: monospace; font-size: 0.85rem; line-height: 1.4;">
+                    <!-- Log content will be injected here -->
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" id="btn-confirm-log-overlay">Verstanden</button>
+                </div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', logOverlayHtml);
+
+    document.getElementById('btn-close-log-overlay').addEventListener('click', () => {
+        document.getElementById('import-log-overlay').style.display = 'none';
+    });
+    document.getElementById('btn-confirm-log-overlay').addEventListener('click', () => {
+        document.getElementById('import-log-overlay').style.display = 'none';
+    });
+
     document.getElementById('btn-import-csv').addEventListener('click', handleCSVImport);
     document.getElementById('btn-export-csv').addEventListener('click', () => handleExport('csv'));
     document.getElementById('btn-export-json').addEventListener('click', () => handleExport('json'));
@@ -111,7 +137,39 @@ async function handleUrlImport() {
     }, 1500);
 }
 
-// Robust Helpers
+// Comparison Helpers
+function getChangedFields(oldData, newData) {
+    const fields = [
+        'titel', 'typ', 'serie', 'nummer', 'verlag', 'format', 'jahr', 
+        'zustand', 'bezugsquelle', 'preis', 'sprache', 'limitierung', 
+        'limitiert_auf', 'variant', 'variantname', 'bemerkung', 
+        'kaufdatum', 'bestand', 'gelesen_am', 'bewertung'
+    ];
+    const diffs = [];
+    fields.forEach(f => {
+        let v1 = oldData[f];
+        let v2 = newData[f];
+
+        // Normalize
+        if (v1 === null || v1 === undefined) v1 = '';
+        if (v2 === null || v2 === undefined) v2 = '';
+        
+        // Special case for numbers
+        if (typeof v1 === 'number' || typeof v2 === 'number') {
+            if (Number(v1) !== Number(v2)) diffs.push(f);
+            return;
+        }
+
+        if (String(v1).trim() !== String(v2).trim()) {
+            diffs.push(f);
+        }
+    });
+    return diffs;
+}
+
+let importAborted = false;
+
+// URL Import Logic
 function parseCurrency(val) {
     if (val === undefined || val === null || val === "") return null;
     if (typeof val === 'number') return val;
@@ -183,12 +241,17 @@ async function handleCSVImport() {
     const progressText = document.getElementById('import-progress-text');
     const progressBar = document.getElementById('import-progress-bar');
     const debugInfo = document.getElementById('import-debug-info');
+    
+    const logOverlay = document.getElementById('import-log-overlay');
+    const logBody = document.getElementById('import-log-body');
 
     if (!fileInput.files || fileInput.files.length === 0) return alert('Bitte wähle zuerst eine Datei aus.');
 
     const file = fileInput.files[0];
     const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
     const reader = new FileReader();
+
+    importAborted = false;
 
     reader.onload = async (e) => {
         try {
@@ -209,6 +272,26 @@ async function handleCSVImport() {
 
             statusDiv.style.display = 'block';
             debugInfo.innerHTML = '';
+            logBody.innerHTML = '';
+            
+            // Add Cancel Button to status
+            if (!document.getElementById('btn-cancel-import')) {
+                const cancelBtn = document.createElement('button');
+                cancelBtn.id = 'btn-cancel-import';
+                cancelBtn.className = 'btn btn-danger';
+                cancelBtn.style.marginTop = '12px';
+                cancelBtn.style.width = '100%';
+                cancelBtn.innerHTML = '<i class="fa-solid fa-stop"></i> Import abbrechen';
+                cancelBtn.onclick = () => {
+                    importAborted = true;
+                    cancelBtn.disabled = true;
+                    cancelBtn.innerHTML = 'Breche ab...';
+                };
+                statusDiv.appendChild(cancelBtn);
+            } else {
+                document.getElementById('btn-cancel-import').disabled = false;
+                document.getElementById('btn-cancel-import').innerHTML = '<i class="fa-solid fa-stop"></i> Import abbrechen';
+            }
 
             // Bestehende Comics für Dubletten-Prüfung laden
             const existingComics = await db.getAllComics();
@@ -216,12 +299,20 @@ async function handleCSVImport() {
             let current = 0;
             let updatedCount = 0;
             let newCount = 0;
+            let skipCount = 0;
 
-            const batchSize = 5; // Kleiner für bessere Live-Updates im UI
+            const batchSize = 5;
 
             for (let i = 0; i < rows.length; i += batchSize) {
+                if (importAborted) {
+                    logBody.innerHTML += `<div style="color: var(--danger); font-weight: bold; margin-top: 10px;">[ABGEBROCHEN] Import durch Benutzer gestoppt.</div>`;
+                    break;
+                }
+
                 const chunk = rows.slice(i, i + batchSize);
                 await Promise.all(chunk.map(async (row) => {
+                    if (importAborted) return;
+
                     if (row['Titel'] || row['Serie']) {
                         const comicData = mapRowToComic(row);
 
@@ -233,16 +324,29 @@ async function handleCSVImport() {
                         );
 
                         let statusText = "";
+                        let logDetail = "";
+
                         if (duplicate) {
-                            comicData.id = duplicate.id; // Bestehende ID setzen für Update
-                            statusText = `<span style="color: var(--secondary-color)">[Update]</span>`;
-                            updatedCount++;
+                            const changedFields = getChangedFields(duplicate, comicData);
+                            
+                            if (changedFields.length === 0) {
+                                statusText = `<span style="color: var(--text-secondary)">[Skip]</span>`;
+                                logDetail = `Keine Änderungen erkannt.`;
+                                skipCount++;
+                            } else {
+                                comicData.id = duplicate.id; // Bestehende ID setzen für Update
+                                statusText = `<span style="color: var(--secondary-color)">[Update]</span>`;
+                                logDetail = `Geänderte Felder: <span style="color: var(--warning)">${changedFields.join(', ')}</span>`;
+                                updatedCount++;
+                                await db.saveComic(comicData);
+                            }
                         } else {
                             statusText = `<span style="color: var(--success)">[Neu]</span>`;
+                            logDetail = `Datensatz neu angelegt.`;
                             newCount++;
+                            await db.saveComic(comicData);
                         }
 
-                        await db.saveComic(comicData);
                         current++;
 
                         // UI Update
@@ -251,7 +355,9 @@ async function handleCSVImport() {
                         progressText.innerHTML = `Verarbeite: <strong>${current} von ${total}</strong> (${percent}%)`;
 
                         // Detailliertes Log
-                        debugInfo.innerHTML += `> ${statusText} ${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''} - ${comicData.titel}<br>`;
+                        const logLine = `<div>> ${statusText} <strong>${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong> - ${comicData.titel}<br><span style="padding-left: 20px; color: var(--text-secondary);">${logDetail}</span></div>`;
+                        debugInfo.innerHTML += logLine;
+                        logBody.innerHTML += logLine;
                         debugInfo.scrollTop = debugInfo.scrollHeight;
                     } else {
                         current++;
@@ -259,8 +365,26 @@ async function handleCSVImport() {
                 }));
             }
 
-            progressText.innerHTML = `<i class="fa-solid fa-check" style="color: var(--success)"></i> Abschluss: ${newCount} neu angelegt, ${updatedCount} aktualisiert.`;
+            const summary = `
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 2px solid var(--border-color); font-weight: bold;">
+                    Zusammenfassung:<br>
+                    <span style="color: var(--success)">- ${newCount} neu angelegt</span><br>
+                    <span style="color: var(--secondary-color)">- ${updatedCount} aktualisiert</span><br>
+                    <span style="color: var(--text-secondary)">- ${skipCount} übersprungen (identisch)</span>
+                </div>
+            `;
+            logBody.innerHTML += summary;
+            
+            progressText.innerHTML = `<i class="fa-solid fa-check" style="color: var(--success)"></i> Import abgeschlossen.`;
+            if (importAborted) progressText.innerHTML = `<i class="fa-solid fa-stop" style="color: var(--danger)"></i> Import abgebrochen.`;
+            
+            // Show Log Overlay
+            logOverlay.style.display = 'flex';
+            
             fileInput.value = '';
+            if (document.getElementById('btn-cancel-import')) {
+                document.getElementById('btn-cancel-import').remove();
+            }
 
         } catch (error) {
             console.error("Import Error:", error);
