@@ -15,25 +15,25 @@ let activeFilters = {
 };
 
 const FIELD_CONFIG = {
-    titel: { label: 'Titel / Serie', defaultList: true, defaultTiles: true, defaultDetails: true, listWidth: '2fr' },
-    nummer: { label: 'Nr.', defaultList: true, defaultTiles: false, defaultDetails: false, listWidth: '45px' },
-    verlag: { label: 'Verlag', defaultList: true, defaultTiles: false, defaultDetails: true, listWidth: '1fr' },
-    jahr: { label: 'Jahr', defaultList: true, defaultTiles: false, defaultDetails: false, listWidth: '50px' },
-    bestand: { label: 'Bestand', defaultList: true, defaultTiles: true, defaultDetails: true, listWidth: '80px' },
-    bezugsquelle: { label: 'Quelle', defaultList: true, defaultTiles: false, defaultDetails: false, listWidth: '0.8fr' },
-    kaufdatum: { label: 'Gekauft', defaultList: true, defaultTiles: false, defaultDetails: true, listWidth: '80px' },
-    preis: { label: 'Preis', defaultList: true, defaultTiles: false, defaultDetails: true, listWidth: '70px', align: 'right' },
-    gelesen_am: { label: 'Gelesen', defaultList: true, defaultTiles: false, defaultDetails: true, listWidth: '80px', align: 'right' },
-    updated_at: { label: 'Änderung', defaultList: true, defaultTiles: false, defaultDetails: false, listWidth: '80px', align: 'right' },
-    typ: { label: 'Typ', defaultList: false, defaultTiles: false, defaultDetails: true, listWidth: '100px' },
-    format: { label: 'Format', defaultList: false, defaultTiles: false, defaultDetails: true, listWidth: '1fr' },
-    sprache: { label: 'Sprache', defaultList: false, defaultTiles: false, defaultDetails: true, listWidth: '80px' },
-    limitierung: { label: 'Limitierung', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: '80px' },
-    variant: { label: 'Variant', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: '80px' },
-    variantname: { label: 'Variantname', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: '1fr' },
-    zustand: { label: 'Zustand', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: '100px' },
-    bewertung: { label: 'Bewertung', defaultList: false, defaultTiles: true, defaultDetails: true, listWidth: '80px' },
-    bemerkung: { label: 'Bemerkung', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: '2fr' },
+    titel: { label: 'Titel / Serie', defaultList: true, defaultTiles: true, defaultDetails: true, listWidth: 'minmax(200px, 2.5fr)' },
+    nummer: { label: 'Nr.', defaultList: true, defaultTiles: false, defaultDetails: false, listWidth: 'minmax(40px, auto)' },
+    verlag: { label: 'Verlag', defaultList: true, defaultTiles: false, defaultDetails: true, listWidth: 'minmax(100px, 1.2fr)' },
+    jahr: { label: 'Jahr', defaultList: true, defaultTiles: false, defaultDetails: false, listWidth: 'minmax(50px, auto)' },
+    bestand: { label: 'Bestand', defaultList: true, defaultTiles: true, defaultDetails: true, listWidth: 'minmax(90px, auto)' },
+    bezugsquelle: { label: 'Quelle', defaultList: true, defaultTiles: false, defaultDetails: false, listWidth: 'minmax(80px, 0.8fr)' },
+    kaufdatum: { label: 'Gekauft', defaultList: true, defaultTiles: false, defaultDetails: true, listWidth: 'minmax(85px, auto)' },
+    preis: { label: 'Preis', defaultList: true, defaultTiles: false, defaultDetails: true, listWidth: 'minmax(75px, auto)', align: 'right' },
+    gelesen_am: { label: 'Gelesen', defaultList: true, defaultTiles: false, defaultDetails: true, listWidth: 'minmax(85px, auto)', align: 'right' },
+    updated_at: { label: 'Änderung', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: 'minmax(85px, auto)', align: 'right' },
+    typ: { label: 'Typ', defaultList: false, defaultTiles: false, defaultDetails: true, listWidth: 'minmax(100px, 1fr)' },
+    format: { label: 'Format', defaultList: false, defaultTiles: false, defaultDetails: true, listWidth: 'minmax(100px, 1fr)' },
+    sprache: { label: 'Sprache', defaultList: false, defaultTiles: false, defaultDetails: true, listWidth: 'minmax(80px, auto)' },
+    limitierung: { label: 'Limitierung', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: 'minmax(80px, auto)' },
+    variant: { label: 'Variant', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: 'minmax(80px, auto)' },
+    variantname: { label: 'Variantname', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: 'minmax(100px, 1fr)' },
+    zustand: { label: 'Zustand', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: 'minmax(100px, auto)' },
+    bewertung: { label: 'Bewertung', defaultList: false, defaultTiles: true, defaultDetails: true, listWidth: 'minmax(80px, auto)' },
+    bemerkung: { label: 'Bemerkung', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: 'minmax(150px, 2fr)' },
     bild: { label: 'Cover-Bild', defaultList: false, defaultTiles: true, defaultDetails: true, listWidth: '0' }
 };
 
@@ -43,7 +43,8 @@ const defaultVisibleFields = {
     details: Object.keys(FIELD_CONFIG).filter(k => FIELD_CONFIG[k].defaultDetails)
 };
 
-let visibleFields = JSON.parse(localStorage.getItem('comicvault_visible_fields')) || defaultVisibleFields;
+let visibleFields = JSON.parse(localStorage.getItem('comicvault_visible_fields')) || JSON.parse(JSON.stringify(defaultVisibleFields));
+if (!visibleFields.columnWidths) visibleFields.columnWidths = {};
 
 export async function renderCollection(container) {
     const comics = await db.getAllComics();
@@ -265,7 +266,6 @@ export function attachCollectionEvents() {
             header.style.borderLeft = '';
         }
     });
-
     document.addEventListener('drop', (e) => {
         const header = e.target.closest('.sortable-header');
         if (header && draggedColumnKey && header.dataset.sort !== draggedColumnKey) {
@@ -284,6 +284,53 @@ export function attachCollectionEvents() {
                 updateGrid();
             }
         }
+    });
+
+    // Spaltenbreiten anpassen (Resize)
+    let isResizing = false;
+    let currentResizerKey = null;
+    let startX, startWidth, headerEl;
+
+    document.addEventListener('mousedown', e => {
+        const resizer = e.target.closest('.col-resizer');
+        if (resizer) {
+            e.preventDefault();
+            e.stopPropagation();
+            isResizing = true;
+            currentResizerKey = resizer.dataset.key;
+            startX = e.pageX;
+            headerEl = resizer.parentElement;
+            startWidth = headerEl.offsetWidth;
+            
+            document.body.style.cursor = 'col-resize';
+            headerEl.style.borderRight = '2px solid var(--primary-color)';
+        }
+    });
+
+    document.addEventListener('mousemove', e => {
+        if (!isResizing) return;
+        const diff = e.pageX - startX;
+        const newWidth = Math.max(40, startWidth + diff);
+        
+        visibleFields.columnWidths[currentResizerKey] = `${newWidth}px`;
+        
+        const listFieldsKeys = visibleFields.list.map(k => visibleFields.columnWidths[k] || FIELD_CONFIG[k].listWidth);
+        const gridTemplate = listFieldsKeys.join(' ') + ' 40px';
+        
+        const header = document.querySelector('.list-header');
+        if (header) header.style.gridTemplateColumns = gridTemplate;
+        
+        document.querySelectorAll('.list-item').forEach(item => {
+            item.style.gridTemplateColumns = gridTemplate;
+        });
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (!isResizing) return;
+        isResizing = false;
+        document.body.style.cursor = '';
+        if (headerEl) headerEl.style.borderRight = '';
+        localStorage.setItem('comicvault_visible_fields', JSON.stringify(visibleFields));
     });
 }
 
@@ -381,11 +428,18 @@ async function updateGrid() {
             return sortOrder === 'asc' ? '<i class="fa-solid fa-caret-up" style="margin-left: 5px; color: var(--primary-color);"></i>' : '<i class="fa-solid fa-caret-down" style="margin-left: 5px; color: var(--primary-color);"></i>';
         };
 
-        const listFields = visibleFields.list.map(key => ({ key, ...FIELD_CONFIG[key] }));
-        const gridTemplateColumns = listFields.map(f => f.listWidth).join(' ') + ' 40px';
+        const listFields = visibleFields.list.map(key => ({ 
+            key, 
+            ...FIELD_CONFIG[key],
+            currentWidth: visibleFields.columnWidths[key] || FIELD_CONFIG[key].listWidth
+        }));
+        const gridTemplateColumns = listFields.map(f => f.currentWidth).join(' ') + ' 40px';
 
         const headers = listFields.map(f => `
-            <div class="sortable-header" data-sort="${f.key}" draggable="true" title="Zum Sortieren klicken, zum Verschieben ziehen" style="cursor:pointer; user-select: none; ${f.align ? 'text-align: ' + f.align : ''}">${f.label} ${getIcon(f.key)}</div>
+            <div class="sortable-header" data-sort="${f.key}" draggable="true" title="Zum Sortieren klicken, zum Verschieben ziehen" style="position: relative; cursor:pointer; user-select: none; ${f.align ? 'text-align: ' + f.align : ''}; padding-right: 15px;">
+                ${f.label} ${getIcon(f.key)}
+                <div class="col-resizer" data-key="${f.key}" style="position: absolute; right: 0; top: 0; bottom: 0; width: 6px; cursor: col-resize; z-index: 20;"></div>
+            </div>
         `).join('');
 
         grid.innerHTML = `
@@ -430,11 +484,22 @@ function getPlaceholderImage() {
 
 function displayDate(dateStr, shorten = false) {
     if (!dateStr) return '-';
-    const match = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (match) {
-        const y = shorten ? match[1].slice(-2) : match[1];
-        return `${match[3]}.${match[2]}.${y}`;
+    
+    // YYYY-MM-DD (Fallback für alte Einträge)
+    const matchIso = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (matchIso) {
+        const y = shorten ? matchIso[1].slice(-2) : matchIso[1];
+        return `${matchIso[3]}.${matchIso[2]}.${y}`;
     }
+    
+    // DD.MM.YYYY (Aktuelles Standard-Format)
+    const matchGer = String(dateStr).match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (matchGer) {
+        const y = shorten ? matchGer[3].slice(-2) : matchGer[3];
+        return `${matchGer[1]}.${matchGer[2]}.${y}`;
+    }
+    
+    // Langes Format (z.B. Zeitstempel)
     if (String(dateStr).length > 15) {
         const d = new Date(dateStr);
         if (!isNaN(d)) {
@@ -446,6 +511,7 @@ function displayDate(dateStr, shorten = false) {
             return s;
         }
     }
+    
     return dateStr;
 }
 
@@ -505,8 +571,12 @@ function renderTile(comic) {
 }
 
 function renderListItem(comic) {
-    const listFields = visibleFields.list.map(key => ({ key, ...FIELD_CONFIG[key] }));
-    const gridTemplateColumns = listFields.map(f => f.listWidth).join(' ') + ' 40px';
+    const listFields = visibleFields.list.map(key => ({ 
+        key, 
+        ...FIELD_CONFIG[key],
+        currentWidth: visibleFields.columnWidths[key] || FIELD_CONFIG[key].listWidth
+    }));
+    const gridTemplateColumns = listFields.map(f => f.currentWidth).join(' ') + ' 40px';
     const bestandClass = `badge-${String(comic.bestand || '').toLowerCase().replace(/\s+/g, '-')}`;
 
     const renderCell = (field) => {
@@ -548,7 +618,7 @@ function renderListItem(comic) {
         <div class="list-item comic-item" data-id="${comic.id}" style="display: grid; grid-template-columns: ${gridTemplateColumns}; padding: 12px 20px; align-items: center; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 10px; cursor: pointer; font-size: 0.82rem; background: var(--bg-surface);">
             ${cells}
             <div style="display: flex; justify-content: flex-end;">
-                <button class="btn-delete-item list-delete-btn" data-id="${comic.id}" title="Löschen" style="background: none; border: none; color: var(--danger); opacity: 0.2; cursor: pointer; padding: 4px;">
+                <button class="btn-delete-item list-delete-btn" data-id="${comic.id}" title="Löschen" style="background: none; border: none; color: #ff4444; opacity: 0.7; cursor: pointer; padding: 4px; transition: all 0.2s;">
                     <i class="fa-solid fa-trash"></i>
                 </button>
             </div>
@@ -568,7 +638,7 @@ function renderDetailsItem(comic) {
     let headerBlock = `
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             ${visibleFields.details.includes('serie') ? `<span class="comic-series">${comic.serie || comic.verlag || ''} ${comic.nummer ? '#' + comic.nummer : ''}</span>` : '<div></div>'}
-            <button class="btn-delete-item" data-id="${comic.id}" title="Löschen" style="background: none; border: none; color: var(--danger); cursor: pointer; padding: 4px;">
+            <button class="btn-delete-item" data-id="${comic.id}" title="Löschen" style="background: none; border: none; color: #ff4444; cursor: pointer; padding: 4px; transition: transform 0.2s;">
                 <i class="fa-solid fa-trash"></i>
             </button>
         </div>
@@ -708,6 +778,7 @@ function renderFieldConfigOverlay() {
 
     // Standard wiederherstellen (baut HTML-Liste neu auf)
     document.getElementById('btn-reset-field-config').addEventListener('click', () => {
+        visibleFields.columnWidths = {}; // Auch Breiten zurücksetzen
         const defaults = defaultVisibleFields[currentViewType];
         const inactive = Object.keys(FIELD_CONFIG).filter(key => !defaults.includes(key));
         const defaultOrdered = [...defaults, ...inactive];
