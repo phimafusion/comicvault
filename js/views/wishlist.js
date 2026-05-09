@@ -3,7 +3,7 @@ import { openModal } from './form.js';
 
 export async function renderWishlist(container) {
     const html = `
-        <div class="view-controls">
+        <div class="view-controls" style="padding-top: 32px;">
             <h2 class="view-title">Wunschliste</h2>
             <div class="header-actions">
                  <button class="btn btn-primary" id="btn-add-wish">

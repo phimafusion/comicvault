@@ -15,12 +15,13 @@ let activeFilters = {
 };
 
 const FIELD_CONFIG = {
-    titel: { label: 'Titel / Serie', defaultList: true, defaultTiles: true, defaultDetails: true, listWidth: 'minmax(200px, 2.5fr)' },
+    titel: { label: 'Titel / Serie', defaultList: true, defaultTiles: true, defaultDetails: true, listWidth: 'minmax(150px, 1.5fr)' },
     nummer: { label: 'Nr.', defaultList: true, defaultTiles: false, defaultDetails: false, listWidth: 'minmax(40px, auto)' },
     verlag: { label: 'Verlag', defaultList: true, defaultTiles: false, defaultDetails: true, listWidth: 'minmax(100px, 1.2fr)' },
     jahr: { label: 'Jahr', defaultList: true, defaultTiles: false, defaultDetails: false, listWidth: 'minmax(50px, auto)' },
     bestand: { label: 'Bestand', defaultList: true, defaultTiles: true, defaultDetails: true, listWidth: 'minmax(90px, auto)' },
     bezugsquelle: { label: 'Quelle', defaultList: true, defaultTiles: false, defaultDetails: false, listWidth: 'minmax(80px, 0.8fr)' },
+    bewertung: { label: 'Bewertung', defaultList: true, defaultTiles: true, defaultDetails: true, listWidth: 'minmax(100px, auto)' },
     kaufdatum: { label: 'Gekauft', defaultList: true, defaultTiles: false, defaultDetails: true, listWidth: 'minmax(85px, auto)' },
     preis: { label: 'Preis', defaultList: true, defaultTiles: false, defaultDetails: true, listWidth: 'minmax(75px, auto)', align: 'right' },
     gelesen_am: { label: 'Gelesen', defaultList: true, defaultTiles: false, defaultDetails: true, listWidth: 'minmax(85px, auto)', align: 'right' },
@@ -32,7 +33,6 @@ const FIELD_CONFIG = {
     variant: { label: 'Variant', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: 'minmax(80px, auto)' },
     variantname: { label: 'Variantname', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: 'minmax(100px, 1fr)' },
     zustand: { label: 'Zustand', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: 'minmax(100px, auto)' },
-    bewertung: { label: 'Bewertung', defaultList: false, defaultTiles: true, defaultDetails: true, listWidth: 'minmax(80px, auto)' },
     bemerkung: { label: 'Bemerkung', defaultList: false, defaultTiles: false, defaultDetails: false, listWidth: 'minmax(150px, 2fr)' },
     bild: { label: 'Cover-Bild', defaultList: false, defaultTiles: true, defaultDetails: true, listWidth: '0' }
 };
@@ -56,7 +56,7 @@ export async function renderCollection(container) {
     const gelesenStatus = ['Ja', 'Nein'];
 
     const html = `
-        <div class="view-controls" style="flex-wrap: wrap; gap: 15px; margin-bottom: 25px;">
+        <div class="view-controls" style="flex-wrap: wrap; gap: 15px; margin-bottom: 25px; padding-top: 32px;">
             <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap; flex: 1;">
                 <h2 class="view-title" style="margin-bottom: 0; white-space: nowrap;">Sammlung</h2>
                 
@@ -132,7 +132,11 @@ function renderMultiSelect(key, label, options) {
     `;
 }
 
+let eventsAttached = false;
 export function attachCollectionEvents() {
+    if (eventsAttached) return;
+    eventsAttached = true;
+
     // Dropdown Toggles
     document.addEventListener('click', (e) => {
         const trigger = e.target.closest('.multi-select-trigger');
@@ -307,21 +311,23 @@ export function attachCollectionEvents() {
         }
     });
 
+    let resizeTick = false;
     document.addEventListener('mousemove', e => {
-        if (!isResizing) return;
-        const diff = e.pageX - startX;
-        const newWidth = Math.max(40, startWidth + diff);
+        if (!isResizing || resizeTick) return;
         
-        visibleFields.columnWidths[currentResizerKey] = `${newWidth}px`;
-        
-        const listFieldsKeys = visibleFields.list.map(k => visibleFields.columnWidths[k] || FIELD_CONFIG[k].listWidth);
-        const gridTemplate = listFieldsKeys.join(' ') + ' 40px';
-        
-        const header = document.querySelector('.list-header');
-        if (header) header.style.gridTemplateColumns = gridTemplate;
-        
-        document.querySelectorAll('.list-item').forEach(item => {
-            item.style.gridTemplateColumns = gridTemplate;
+        resizeTick = true;
+        requestAnimationFrame(() => {
+            const diff = e.pageX - startX;
+            const newWidth = Math.max(40, startWidth + diff);
+            
+            visibleFields.columnWidths[currentResizerKey] = `${newWidth}px`;
+            
+            // Performance-Optimierung: Nur die CSS-Variable am Container ändern
+            const grid = document.getElementById('collection-grid');
+            if (grid) {
+                grid.style.setProperty(`--col-width-${currentResizerKey}`, `${newWidth}px`);
+            }
+            resizeTick = false;
         });
     });
 
@@ -430,10 +436,16 @@ async function updateGrid() {
 
         const listFields = visibleFields.list.map(key => ({ 
             key, 
-            ...FIELD_CONFIG[key],
-            currentWidth: visibleFields.columnWidths[key] || FIELD_CONFIG[key].listWidth
+            ...FIELD_CONFIG[key]
         }));
-        const gridTemplateColumns = listFields.map(f => f.currentWidth).join(' ') + ' 40px';
+        
+        // CSS-Variablen am Container setzen
+        visibleFields.list.forEach(key => {
+            const width = visibleFields.columnWidths[key] || FIELD_CONFIG[key].listWidth;
+            grid.style.setProperty(`--col-width-${key}`, width);
+        });
+
+        const gridTemplateColumns = visibleFields.list.map(key => `var(--col-width-${key})`).join(' ') + ' 40px';
 
         const headers = listFields.map(f => `
             <div class="sortable-header" data-sort="${f.key}" draggable="true" title="Zum Sortieren klicken, zum Verschieben ziehen" style="position: relative; cursor:pointer; user-select: none; ${f.align ? 'text-align: ' + f.align : ''}; padding-right: 15px;">
@@ -443,7 +455,7 @@ async function updateGrid() {
         `).join('');
 
         grid.innerHTML = `
-            <div class="list-header" style="display: grid; grid-template-columns: ${gridTemplateColumns}; padding: 12px 20px; font-weight: bold; border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; background: var(--bg-main); position: sticky; top: 0; z-index: 10;">
+            <div class="list-header" style="display: grid; grid-template-columns: ${gridTemplateColumns}; padding: 12px 20px; font-weight: bold; border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; background: var(--bg-main); position: sticky; top: 0; z-index: 10; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
                 ${headers}
                 <div style="text-align: right;"><i class="fa-solid fa-trash" style="opacity: 0.3;"></i></div>
             </div>
@@ -480,6 +492,23 @@ async function updateGrid() {
 
 function getPlaceholderImage() {
     return `https://placehold.co/400x600/1e293b/06b6d4?text=POW!&font=impact`;
+}
+
+function renderStars(rating) {
+    if (!rating) return '-';
+    let starsHtml = '<div class="stars-display">';
+    for (let i = 1; i <= 5; i++) {
+        const val = i * 2;
+        if (rating >= val) {
+            starsHtml += '<i class="fa-solid fa-star"></i>';
+        } else if (rating === val - 1) {
+            starsHtml += '<i class="fa-solid fa-star-half-stroke"></i>';
+        } else {
+            starsHtml += '<i class="fa-regular fa-star" style="opacity: 0.3;"></i>';
+        }
+    }
+    starsHtml += '</div>';
+    return starsHtml;
 }
 
 function displayDate(dateStr, shorten = false) {
@@ -538,7 +567,7 @@ function renderTile(comic) {
 
     let metaBlock = '';
     if (visibleFields.tiles.includes('bewertung') || visibleFields.tiles.includes('bestand')) {
-        let bewertung = visibleFields.tiles.includes('bewertung') ? `<span><i class="fa-solid fa-star" style="color: var(--warning)"></i> ${comic.bewertung ? comic.bewertung / 2 : 0}/5</span>` : '';
+        let bewertung = visibleFields.tiles.includes('bewertung') ? `<span>${renderStars(comic.bewertung)}</span>` : '';
         let bestand = visibleFields.tiles.includes('bestand') ? `<span class="badge ${bestandClass}">${comic.bestand}</span>` : '';
         metaBlock = `<div class="comic-meta">${bewertung}${bestand}</div>`;
     }
@@ -571,12 +600,11 @@ function renderTile(comic) {
 }
 
 function renderListItem(comic) {
+    const gridTemplateColumns = visibleFields.list.map(key => `var(--col-width-${key})`).join(' ') + ' 40px';
     const listFields = visibleFields.list.map(key => ({ 
         key, 
-        ...FIELD_CONFIG[key],
-        currentWidth: visibleFields.columnWidths[key] || FIELD_CONFIG[key].listWidth
+        ...FIELD_CONFIG[key]
     }));
-    const gridTemplateColumns = listFields.map(f => f.currentWidth).join(' ') + ' 40px';
     const bestandClass = `badge-${String(comic.bestand || '').toLowerCase().replace(/\s+/g, '-')}`;
 
     const renderCell = (field) => {
@@ -603,7 +631,7 @@ function renderListItem(comic) {
             case 'created_at':
                 return `<div style="${align} font-size: 0.78rem;">${displayDate(val || (field.key === 'updated_at' ? comic.created_at : ''), true)}</div>`;
             case 'bewertung':
-                return `<div style="${align}"><i class="fa-solid fa-star" style="color: var(--warning)"></i> ${val ? val / 2 : 0}/5</div>`;
+                return `<div style="${align}">${renderStars(val)}</div>`;
             case 'bild':
                 const imgUrl = comic.bild || getPlaceholderImage();
                 return `<div><img src="${imgUrl}" style="height: 30px; border-radius: 4px; object-fit: cover;"></div>`;
@@ -659,7 +687,7 @@ function renderDetailsItem(comic) {
     let footerBlock = '';
     if (visibleFields.details.includes('bestand') || visibleFields.details.includes('bewertung')) {
         let bestand = visibleFields.details.includes('bestand') ? `<span class="badge ${bestandClass}">${comic.bestand || '-'}</span>` : '';
-        let bewertung = visibleFields.details.includes('bewertung') ? `<span style="font-size: 1.1rem; color: var(--warning)"><i class="fa-solid fa-star"></i> ${comic.bewertung ? comic.bewertung / 2 : 0}</span>` : '';
+        let bewertung = visibleFields.details.includes('bewertung') ? `<span style="font-size: 1.1rem; color: var(--warning)">${renderStars(comic.bewertung)}</span>` : '';
         footerBlock = `
             <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center;">
                 ${bestand}${bewertung}

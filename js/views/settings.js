@@ -2,7 +2,7 @@ import { db } from '../db.js';
 
 export function renderSettings(container) {
     const html = `
-        <div class="view-controls">
+        <div class="view-controls" style="padding-top: 32px;">
             <h2 class="view-title">Einstellungen</h2>
         </div>
         

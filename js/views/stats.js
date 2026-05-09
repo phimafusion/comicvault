@@ -23,7 +23,7 @@ export async function renderStats(container) {
     const gelesenStatus = ['Ja', 'Nein'];
 
     const html = `
-        <div class="view-controls" style="flex-wrap: wrap; gap: 15px; margin-bottom: 25px;">
+        <div class="view-controls" style="flex-wrap: wrap; gap: 15px; margin-bottom: 25px; padding-top: 32px;">
             <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap; flex: 1;">
                 <h2 class="view-title" style="margin-bottom: 0; white-space: nowrap;">Statistiken</h2>
                 

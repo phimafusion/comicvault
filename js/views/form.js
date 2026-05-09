@@ -45,6 +45,10 @@ export async function openModal(comic = null, isWishlist = false) {
     
     form.innerHTML = generateFormHtml(comic, isWishlist, suggestions);
     
+    if (!isWishlist) {
+        initStarRating(comic ? (comic.bewertung || 0) : 0);
+    }
+    
     // Löschen-Button nur beim Bearbeiten zeigen
     btnDelete.style.display = comic ? 'flex' : 'none';
     
@@ -178,6 +182,61 @@ btnSave.addEventListener('click', async (e) => {
     }
 });
 
+function initStarRating(currentValue) {
+    const starRatingContainer = document.querySelector('.star-rating');
+    if (!starRatingContainer) return;
+
+    const stars = starRatingContainer.querySelectorAll('.star');
+    const input = document.querySelector('input[name="bewertung"]');
+    
+    const updateStarsUI = (val) => {
+        stars.forEach(star => {
+            const index = parseInt(star.dataset.index);
+            star.classList.remove('full', 'half');
+            star.querySelector('i').className = 'fa-regular fa-star';
+            
+            if (val >= index * 2) {
+                star.classList.add('full');
+                star.querySelector('i').className = 'fa-solid fa-star';
+            } else if (val === index * 2 - 1) {
+                star.classList.add('half');
+                star.querySelector('i').className = 'fa-regular fa-star'; // CSS handles the half star
+            } else {
+                star.querySelector('i').style.opacity = '0.3';
+            }
+            
+            if (val >= index * 2 - 1) {
+                star.querySelector('i').style.opacity = '1';
+            }
+        });
+    };
+
+    stars.forEach(star => {
+        star.addEventListener('click', () => {
+            const index = parseInt(star.dataset.index);
+            let newVal;
+            const currentVal = parseInt(input.value) || 0;
+            
+            if (currentVal === index * 2) {
+                newVal = index * 2 - 1; // Halber Stern
+            } else {
+                newVal = index * 2; // Ganzer Stern
+            }
+            
+            input.value = newVal;
+            updateStarsUI(newVal);
+        });
+    });
+    
+    document.getElementById('btn-clear-rating')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        input.value = 0;
+        updateStarsUI(0);
+    });
+
+    updateStarsUI(currentValue);
+}
+
 function generateFormHtml(comic = {}, isWishlist = false, s = {}) {
     const c = comic || {};
     form.dataset.isWishlist = isWishlist;
@@ -310,8 +369,20 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}) {
                 <input type="date" name="gelesen_am" class="form-control" value="${toInputDate(c.gelesen_am)}">
             </div>
             <div class="form-group">
-                <label class="form-label">Bewertung (1-10)</label>
-                <input type="number" name="bewertung" class="form-control" min="0" max="10" value="${c.bewertung || 0}" title="1-10 (10 = 5 Sterne)">
+                <label class="form-label">Bewertung</label>
+                <div style="display: flex; align-items: center; height: 38px;">
+                    <div class="star-rating">
+                        <span class="star" data-index="1"><i class="fa-regular fa-star"></i></span>
+                        <span class="star" data-index="2"><i class="fa-regular fa-star"></i></span>
+                        <span class="star" data-index="3"><i class="fa-regular fa-star"></i></span>
+                        <span class="star" data-index="4"><i class="fa-regular fa-star"></i></span>
+                        <span class="star" data-index="5"><i class="fa-regular fa-star"></i></span>
+                    </div>
+                    <button id="btn-clear-rating" class="btn-clear-rating" title="Bewertung löschen">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                    </button>
+                    <input type="hidden" name="bewertung" value="${c.bewertung || 0}">
+                </div>
             </div>
 
             <div class="form-group full-width">

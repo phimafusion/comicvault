@@ -412,3 +412,63 @@ select.form-control {
     border-color: var(--primary-color) !important;
     box-shadow: 0 0 20px rgba(6, 182, 212, 0.3), 0 8px 20px rgba(0, 0, 0, 0.2) !important;
 }
+
+/* Star Rating */
+.star-rating {
+    display: inline-flex;
+    gap: 2px;
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    align-items: center;
+}
+
+.star-rating .star {
+    position: relative;
+    display: inline-block;
+    transition: transform 0.1s ease;
+}
+
+.star-rating .star:hover {
+    transform: scale(1.2);
+}
+
+.star-rating .star.full {
+    color: var(--warning);
+}
+
+.star-rating .star.half::after {
+    content: "\f089"; /* fa-star-half-stroke */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--warning);
+    width: 50%;
+    overflow: hidden;
+}
+
+/* For read-only display in list/tiles */
+.stars-display {
+    display: inline-flex;
+    gap: 1px;
+    color: var(--warning);
+    font-size: 0.9rem;
+}
+
+.btn-clear-rating {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin-left: 8px;
+    opacity: 0.6;
+    transition: var(--transition);
+}
+
+.btn-clear-rating:hover {
+    color: var(--danger);
+    opacity: 1;
+}

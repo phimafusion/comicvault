@@ -3,7 +3,7 @@ import { openModal } from './form.js';
 
 export function renderImport(container) {
     const html = `
-        <div class="view-controls">
+        <div class="view-controls" style="padding-top: 32px;">
             <h2 class="view-title">Import / Export</h2>
         </div>
         
