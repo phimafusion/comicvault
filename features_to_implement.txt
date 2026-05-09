@@ -1,4 +1,0 @@
-1. Datum einlesen beim Import muss ins Format TT.MM.JJJJ konvertiert werden
-2. gelesen und änderung spalten zu nah beieinader - anzeige als tt.mm.jj
-3. baue mir eine option mit der ich in jeder der drei sammlungsansichten (liste, raster, details) alle beliebigen felder ein und ausblenden kann. die aktuelle darstellung der felder soll dabei so bleiben wie sie ist und der standard  sein wenn man die app aufruft. dies soll ähnlich der filter am oberen rand auswählbar sein, mach daraus einen button auf dessen druck öffnet sich ein overlay bei dem man die angezeigten spalten auswählen kann
-4. mehrere farbschmata anbieten (sowohl hell als auch dunkel) die mit einem dropdown neben den filtern ausgewählt werden kann
