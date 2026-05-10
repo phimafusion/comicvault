@@ -86,8 +86,25 @@ export function renderImport(container) {
                         <div id="import-progress-bar" style="width: 0%; height: 100%; background: var(--primary-color); transition: width 0.3s ease;"></div>
                     </div>
                 </div>
-                <div class="modal-body" id="import-log-body" style="font-family: monospace; font-size: 0.85rem; line-height: 1.4; overflow-y: auto; flex: 1;">
-                    <!-- Log content will be injected here -->
+                <div class="modal-body" style="display: flex; gap: 0; overflow: hidden; padding: 0; border-top: 1px solid var(--border-color);">
+                    <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border-color);">
+                        <div style="padding: 10px 15px; background: rgba(16, 185, 129, 0.05); color: var(--success); font-weight: bold; border-bottom: 1px solid var(--border-color); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;">
+                            <i class="fa-solid fa-plus-circle"></i> Neu
+                        </div>
+                        <div id="log-new" style="flex: 1; overflow-y: auto; padding: 10px; font-family: monospace; font-size: 0.8rem; line-height: 1.4;"></div>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border-color);">
+                        <div style="padding: 10px 15px; background: rgba(6, 182, 212, 0.05); color: var(--secondary-color); font-weight: bold; border-bottom: 1px solid var(--border-color); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;">
+                            <i class="fa-solid fa-pen-to-square"></i> Updates
+                        </div>
+                        <div id="log-updated" style="flex: 1; overflow-y: auto; padding: 10px; font-family: monospace; font-size: 0.8rem; line-height: 1.4;"></div>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                        <div style="padding: 10px 15px; background: rgba(148, 163, 184, 0.05); color: var(--text-secondary); font-weight: bold; border-bottom: 1px solid var(--border-color); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;">
+                            <i class="fa-solid fa-forward-step"></i> Übersprungen
+                        </div>
+                        <div id="log-skipped" style="flex: 1; overflow-y: auto; padding: 10px; font-family: monospace; font-size: 0.8rem; line-height: 1.4;"></div>
+                    </div>
                 </div>
                 <div id="import-live-summary" style="padding: 12px 24px; border-top: 1px solid var(--border-color); background: rgba(0,0,0,0.1); font-size: 0.85rem; display: flex; gap: 20px;">
                     <span id="sum-new" style="color: var(--success); font-weight: bold;">0 neu</span>
@@ -265,7 +282,9 @@ async function handleCSVImport() {
     const progressBar = document.getElementById('import-progress-bar');
     
     const logOverlay = document.getElementById('import-log-overlay');
-    const logBody = document.getElementById('import-log-body');
+    const logNew = document.getElementById('log-new');
+    const logUpdated = document.getElementById('log-updated');
+    const logSkipped = document.getElementById('log-skipped');
     const btnCancel = document.getElementById('btn-cancel-import');
     const btnConfirm = document.getElementById('btn-confirm-log-overlay');
 
@@ -295,7 +314,9 @@ async function handleCSVImport() {
             if (rows.length === 0) throw new Error("Die Datei ist leer oder konnte nicht gelesen werden.");
 
             statusDiv.style.display = 'none';
-            logBody.innerHTML = '';
+            logNew.innerHTML = '';
+            logUpdated.innerHTML = '';
+            logSkipped.innerHTML = '';
             
             // Show Log Overlay immediately
             logOverlay.style.display = 'flex';
@@ -352,7 +373,10 @@ async function handleCSVImport() {
 
             for (let i = 0; i < rows.length; i += batchSize) {
                 if (importAborted) {
-                    logBody.insertAdjacentHTML('beforeend', `<div style="color: var(--danger); font-weight: bold; margin-top: 10px;">[ABGEBROCHEN] Import durch Benutzer gestoppt.</div>`);
+                    const abortMsg = `<div style="color: var(--danger); font-weight: bold; margin-top: 10px;">[ABGEBROCHEN] Import durch Benutzer gestoppt.</div>`;
+                    logNew.insertAdjacentHTML('beforeend', abortMsg);
+                    logUpdated.insertAdjacentHTML('beforeend', abortMsg);
+                    logSkipped.insertAdjacentHTML('beforeend', abortMsg);
                     break;
                 }
 
@@ -394,34 +418,40 @@ async function handleCSVImport() {
                             const changedFields = getChangedFields(duplicate, comicData);
                             
                             if (changedFields.length === 0) {
-                                statusText = `<span style="color: var(--text-secondary)">[Skip]</span>`;
-                                logDetail = `Keine Änderungen erkannt.`;
+                                statusText = `<span style="color: var(--text-secondary); font-weight:bold;">[SKIP]</span>`;
+                                logDetail = `Keine Änderungen.`;
                                 skipCount++;
+                                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${comicData.titel}</span></div>`;
+                                logSkipped.insertAdjacentHTML('beforeend', logLine);
+                                logSkipped.scrollTop = logSkipped.scrollHeight;
                             } else {
                                 comicData.id = duplicate.id; // Bestehende ID setzen für Update
-                                statusText = `<span style="color: var(--secondary-color)">[Update]</span>`;
-                                logDetail = `Geänderte Felder: <span style="color: var(--warning)">${changedFields.join(', ')}</span>`;
+                                statusText = `<span style="color: var(--secondary-color); font-weight:bold;">[UPDATE]</span>`;
+                                logDetail = `<span style="color: var(--warning)">${changedFields.join(', ')}</span>`;
                                 updatedCount++;
                                 await db.saveComic(comicData);
                                 if (comicData.id) idMap.set(comicData.id, comicData);
-                                contentMap.set(contentKey, comicData); // Lokale Map updaten
+                                contentMap.set(contentKey, comicData);
+
+                                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">Fields: ${logDetail}</span></div>`;
+                                logUpdated.insertAdjacentHTML('beforeend', logLine);
+                                logUpdated.scrollTop = logUpdated.scrollHeight;
                             }
                         } else {
-                            statusText = `<span style="color: var(--success)">[Neu]</span>`;
-                            logDetail = `Datensatz neu angelegt.`;
+                            statusText = `<span style="color: var(--success); font-weight:bold;">[NEU]</span>`;
+                            logDetail = `Angelegt`;
                             newCount++;
                             const newId = await db.saveComic(comicData);
                             comicData.id = newId;
                             idMap.set(newId, comicData);
-                            contentMap.set(contentKey, comicData); // Direkt in Map für Folge-Checks
+                            contentMap.set(contentKey, comicData);
+
+                            const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${comicData.titel}</span></div>`;
+                            logNew.insertAdjacentHTML('beforeend', logLine);
+                            logNew.scrollTop = logNew.scrollHeight;
                         }
 
                         current++;
-
-                        // Log sofort updaten
-                        const logLine = `<div>> ${statusText} <strong>${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong> - ${comicData.titel}<br><span style="padding-left: 20px; color: var(--text-secondary);">${logDetail}</span></div>`;
-                        logBody.insertAdjacentHTML('beforeend', logLine);
-                        logBody.scrollTop = logBody.scrollHeight;
                         
                         // Fortschritt sofort aktualisieren
                         const percent = Math.round((current / total) * 100);
