@@ -38,6 +38,7 @@ class App {
         this.navItems = document.querySelectorAll('.nav-item');
         this.viewContainer = document.getElementById('view-container');
         this.themeToggle = document.getElementById('theme-toggle');
+        this.themeSelect = document.getElementById('theme-select');
         this.btnAdd = document.getElementById('btn-add-new');
         this.btnLogout = document.getElementById('btn-logout');
         this.searchField = document.getElementById('global-search');
@@ -66,6 +67,10 @@ class App {
         });
 
         this.themeToggle.addEventListener('click', () => this.toggleTheme());
+        
+        if (this.themeSelect) {
+            this.themeSelect.addEventListener('change', (e) => this.setColorScheme(e.target.value));
+        }
 
         this.btnAdd.addEventListener('click', () => {
             openModal();
@@ -127,15 +132,31 @@ class App {
 
     applyTheme() {
         const settings = db.getSettings();
+        
+        // Light/Dark Mode
         document.body.classList.toggle('dark-mode', settings.theme !== 'light');
         this.themeToggle.innerHTML = settings.theme === 'light' 
             ? '<i class="fa-solid fa-sun"></i><span>Light Mode</span>' 
             : '<i class="fa-solid fa-moon"></i><span>Dark Mode</span>';
+            
+        // Color Scheme
+        const colorScheme = settings.colorScheme || 'default';
+        document.body.setAttribute('data-theme', colorScheme);
+        if (this.themeSelect) {
+            this.themeSelect.value = colorScheme;
+        }
     }
 
     toggleTheme() {
         const settings = db.getSettings();
         settings.theme = settings.theme === 'light' ? 'dark' : 'light';
+        db.saveSettings(settings);
+        this.applyTheme();
+    }
+
+    setColorScheme(scheme) {
+        const settings = db.getSettings();
+        settings.colorScheme = scheme;
         db.saveSettings(settings);
         this.applyTheme();
     }
