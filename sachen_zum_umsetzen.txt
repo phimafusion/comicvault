@@ -1,0 +1,14 @@
+# Sachen zum Umsetzen
+
+Diese Liste dient als Notizzettel für zukünftige Aufgaben und Ideen.
+
+---
+[1] Mobiles Design / Responsive / Handy
+[2] Cover Bilder / Scans
+    - Bilder suchen und hinzufügen
+    - Bilder anzeigen
+    - Bilder bearbeiten
+    - Bilder löschen
+
+[3] 
+
