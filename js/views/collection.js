@@ -576,7 +576,7 @@ function renderTile(comic) {
     visibleFields.tiles.forEach(key => {
         if (!stdFields.includes(key)) {
             let val = comic[key] || '-';
-            if (key === 'preis') val = (comic.preis !== null && comic.preis !== undefined) ? Number(comic.preis).toFixed(2) + ' €' : '-';
+            if (key === 'preis') val = (comic.preis !== null && comic.preis !== undefined) ? Number(comic.preis).toFixed(2) + ' ' + (db.getSettings().currency || '€') : '-';
             if (key === 'kaufdatum' || key === 'gelesen_am' || key === 'updated_at' || key === 'created_at') val = displayDate(val);
             extraFields += `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;"><strong>${FIELD_CONFIG[key].label}:</strong> ${val}</div>`;
         }
@@ -623,7 +623,7 @@ function renderListItem(comic) {
             case 'bestand':
                 return `<div><span class="badge ${bestandClass}" style="font-size: 0.62rem; padding: 2px 6px;">${comic.bestand || '-'}</span></div>`;
             case 'preis':
-                return `<div style="font-weight: bold; ${align}">${(val !== null && val !== undefined) ? Number(val).toFixed(2) + ' €' : '-'}</div>`;
+                return `<div style="font-weight: bold; ${align}">${(val !== null && val !== undefined) ? Number(val).toFixed(2) + ' ' + (db.getSettings().currency || '€') : '-'}</div>`;
             case 'kaufdatum':
                 return `<div style="font-size: 0.78rem;">${displayDate(val)}</div>`;
             case 'gelesen_am':
@@ -678,7 +678,7 @@ function renderDetailsItem(comic) {
     visibleFields.details.forEach(key => {
         if (!stdNonGridFields.includes(key)) {
             let val = comic[key] || '-';
-            if (key === 'preis') val = (comic.preis !== null && comic.preis !== undefined) ? Number(comic.preis).toFixed(2) + ' €' : '-';
+            if (key === 'preis') val = (comic.preis !== null && comic.preis !== undefined) ? Number(comic.preis).toFixed(2) + ' ' + (db.getSettings().currency || '€') : '-';
             if (key === 'kaufdatum' || key === 'gelesen_am' || key === 'updated_at' || key === 'created_at') val = displayDate(val);
             gridFieldsHtml += `<div><strong>${FIELD_CONFIG[key].label}:</strong> <span style="color: var(--text-primary);">${val}</span></div>`;
         }

@@ -42,8 +42,16 @@ export async function openModal(comic = null, isWishlist = false) {
     
     // Bestehende Werte für Autovervollständigung laden
     const suggestions = await getSuggestions();
+    const settings = db.getSettings();
     
-    form.innerHTML = generateFormHtml(comic, isWishlist, suggestions);
+    // Standardwerte für neue Comics
+    const defaults = !comic ? {
+        sprache: settings.defaultLanguage || 'Deutsch',
+        zustand: settings.defaultCondition || 'neu',
+        verlag: settings.defaultPublisher || ''
+    } : {};
+    
+    form.innerHTML = generateFormHtml(comic, isWishlist, suggestions, defaults);
     
     if (!isWishlist) {
         initStarRating(comic ? (comic.bewertung || 0) : 0);
@@ -237,9 +245,11 @@ function initStarRating(currentValue) {
     updateStarsUI(currentValue);
 }
 
-function generateFormHtml(comic = {}, isWishlist = false, s = {}) {
+function generateFormHtml(comic = {}, isWishlist = false, s = {}, defaults = {}) {
     const c = comic || {};
     form.dataset.isWishlist = isWishlist;
+    const settings = db.getSettings();
+    const currency = settings.currency || '€';
     
     const renderDatalist = (id, options) => `
         <datalist id="${id}">
@@ -265,7 +275,7 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}) {
                     ${renderDatalist('format-list', s.format)}
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Preis (€)</label>
+                    <label class="form-label">Preis (${currency})</label>
                     <input type="number" step="0.01" name="preis" class="form-control" value="${(c.preis !== undefined && c.preis !== null) ? c.preis : ''}">
                 </div>
                 <div class="form-group">
@@ -305,7 +315,7 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}) {
             
             <div class="form-group">
                 <label class="form-label">Verlag</label>
-                <input type="text" name="verlag" list="verlag-list" class="form-control" value="${c.verlag || ''}">
+                <input type="text" name="verlag" list="verlag-list" class="form-control" value="${c.verlag || defaults.verlag || ''}">
                 ${renderDatalist('verlag-list', s.verlag)}
             </div>
             <div class="form-group">
@@ -336,7 +346,7 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}) {
 
             <div class="form-group">
                 <label class="form-label">Zustand bei Kauf</label>
-                <input type="text" name="zustand" list="zustand-list" class="form-control" value="${c.zustand || ''}">
+                <input type="text" name="zustand" list="zustand-list" class="form-control" value="${c.zustand || defaults.zustand || ''}">
                 ${renderDatalist('zustand-list', s.zustand)}
             </div>
             <div class="form-group">
@@ -347,11 +357,11 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}) {
 
             <div class="form-group">
                 <label class="form-label">Sprache</label>
-                <input type="text" name="sprache" list="sprache-list" class="form-control" value="${c.sprache || 'Deutsch'}">
+                <input type="text" name="sprache" list="sprache-list" class="form-control" value="${c.sprache || defaults.sprache || 'Deutsch'}">
                 ${renderDatalist('sprache-list', s.sprache)}
             </div>
             <div class="form-group">
-                <label class="form-label">Preis (€)</label>
+                <label class="form-label">Preis (${currency})</label>
                 <input type="number" step="0.01" name="preis" class="form-control" value="${(c.preis !== undefined && c.preis !== null) ? c.preis : ''}">
             </div>
 

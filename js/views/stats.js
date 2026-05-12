@@ -56,7 +56,7 @@ export async function renderStats(container) {
                 <div style="position: relative; height: 300px;"><canvas id="chartAbgaenge"></canvas></div>
             </div>
             <div class="details-card" style="flex-direction: column; grid-column: 1 / -1;">
-                <h3 style="margin-bottom: 20px;"><i class="fa-solid fa-wallet"></i> Ausgaben nach Bezugsquelle (€)</h3>
+                <h3 style="margin-bottom: 20px;"><i class="fa-solid fa-wallet"></i> Ausgaben nach Bezugsquelle (${db.getSettings().currency || '€'})</h3>
                 <div style="position: relative; height: 350px;"><canvas id="chartQuellen"></canvas></div>
             </div>
         </div>
@@ -164,7 +164,7 @@ async function updateStats() {
                 <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 0.75rem; font-weight: 600; letter-spacing: 1px;">Comics (gefiltert)</div>
             </div>
             <div class="details-card" style="flex-direction: column; align-items: center; justify-content: center; padding: 24px 20px; border-left: 4px solid var(--success);">
-                <div style="font-size: 2.2rem; font-family: var(--font-display); font-weight: 800; color: var(--success)">${totalValue.toFixed(2)} €</div>
+                <div style="font-size: 2.2rem; font-family: var(--font-display); font-weight: 800; color: var(--success)">${totalValue.toFixed(2)} ${db.getSettings().currency || '€'}</div>
                 <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 0.75rem; font-weight: 600; letter-spacing: 1px;">Wert (Bestand)</div>
             </div>
             <div class="details-card" style="flex-direction: column; align-items: center; justify-content: center; padding: 24px 20px; border-left: 4px solid var(--secondary-color);">
@@ -198,7 +198,7 @@ async function updateStats() {
     initChart('chartAbgaenge', 'pie', Object.keys(abgaengeData), Object.values(abgaengeData), 'Anzahl');
     
     const sortedQuellen = Object.entries(quellenSpend).sort((a, b) => b[1] - a[1]);
-    initChart('chartQuellen', 'bar', sortedQuellen.map(e => e[0]), sortedQuellen.map(e => e[1]), 'Ausgaben in €', true);
+    initChart('chartQuellen', 'bar', sortedQuellen.map(e => e[0]), sortedQuellen.map(e => e[1]), `Ausgaben in ${db.getSettings().currency || '€'}`, true);
 }
 
 function initChart(id, type, labels, data, label, isHorizontal = false) {

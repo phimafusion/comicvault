@@ -22,26 +22,26 @@ export function renderBudget(container) {
                     <tbody>
                         <tr style="border-bottom: 1px solid var(--border-color);">
                             <td style="padding: 12px;">01-2024</td>
-                            <td style="padding: 12px;">100,00 €</td>
-                            <td style="padding: 12px;">45,50 €</td>
-                            <td style="padding: 12px; color: var(--success);">+54,50 €</td>
-                            <td style="padding: 12px; color: var(--success);">+54,50 €</td>
+                            <td style="padding: 12px;">100,00 ${db.getSettings().currency || '€'}</td>
+                            <td style="padding: 12px;">45,50 ${db.getSettings().currency || '€'}</td>
+                            <td style="padding: 12px; color: var(--success);">+54,50 ${db.getSettings().currency || '€'}</td>
+                            <td style="padding: 12px; color: var(--success);">+54,50 ${db.getSettings().currency || '€'}</td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border-color);">
                             <td style="padding: 12px;">02-2024</td>
-                            <td style="padding: 12px;">100,00 €</td>
-                            <td style="padding: 12px;">120,00 €</td>
-                            <td style="padding: 12px; color: var(--danger);">-20,00 €</td>
-                            <td style="padding: 12px; color: var(--success);">+34,50 €</td>
+                            <td style="padding: 12px;">100,00 ${db.getSettings().currency || '€'}</td>
+                            <td style="padding: 12px;">120,00 ${db.getSettings().currency || '€'}</td>
+                            <td style="padding: 12px; color: var(--danger);">-20,00 ${db.getSettings().currency || '€'}</td>
+                            <td style="padding: 12px; color: var(--success);">+34,50 ${db.getSettings().currency || '€'}</td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border-color);">
                             <td style="padding: 12px;">03-2024</td>
                             <td style="padding: 12px;">
-                                <input type="number" class="form-control" value="100" style="width: 100px; padding: 4px 8px;"> €
+                                <input type="number" class="form-control" value="100" style="width: 100px; padding: 4px 8px;"> ${db.getSettings().currency || '€'}
                             </td>
-                            <td style="padding: 12px;">0,00 €</td>
-                            <td style="padding: 12px;">0,00 €</td>
-                            <td style="padding: 12px;">+34,50 €</td>
+                            <td style="padding: 12px;">0,00 ${db.getSettings().currency || '€'}</td>
+                            <td style="padding: 12px;">0,00 ${db.getSettings().currency || '€'}</td>
+                            <td style="padding: 12px;">+34,50 ${db.getSettings().currency || '€'}</td>
                         </tr>
                     </tbody>
                 </table>
