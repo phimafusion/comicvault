@@ -61,6 +61,20 @@ class Database {
         await batch.commit();
     }
 
+    async updateComics(ids, updates) {
+        const col = this.getCollection();
+        if (!col || !ids || ids.length === 0 || Object.keys(updates).length === 0) return;
+
+        const batch = dbFirestore.batch();
+        const now = new Date().toISOString();
+        const data = { ...updates, updated_at: now };
+
+        ids.forEach(id => {
+            batch.update(col.doc(id), data);
+        });
+        await batch.commit();
+    }
+
     // Wunschliste
     getWishlistCollection() {
         const user = getCurrentUser();

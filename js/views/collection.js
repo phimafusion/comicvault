@@ -1,5 +1,5 @@
 import { db } from '../db.js';
-import { openModal } from './form.js';
+import { openModal, openBulkEditModal } from './form.js';
 import { displayDate, renderStars, getPlaceholderImage } from '../utils.js';
 
 let currentViewType = 'list'; 
@@ -89,18 +89,18 @@ export async function renderCollection(container) {
                 
                 <div class="view-toggles">
                     <button class="view-toggle-btn ${currentViewType === 'list' ? 'active' : ''}" data-type="list" title="Listenansicht">
-                        <i class="fa-solid fa-list"></i>
+                        <i class="fa-solid fa-table-list"></i>
                     </button>
                     <button class="view-toggle-btn ${currentViewType === 'tiles' ? 'active' : ''}" data-type="tiles" title="Kachelansicht">
                         <i class="fa-solid fa-grip"></i>
                     </button>
                     <button class="view-toggle-btn ${currentViewType === 'details' ? 'active' : ''}" data-type="details" title="Detailansicht">
-                        <i class="fa-solid fa-rectangle-list"></i>
+                        <i class="fa-solid fa-address-card"></i>
                     </button>
                 </div>
 
                 <button class="btn-standalone-toggle" id="btn-configure-fields" title="Angezeigte Felder für diese Ansicht konfigurieren">
-                    <i class="fa-solid fa-sliders" style="color: var(--primary-color);"></i>
+                    <i class="fa-solid fa-table-columns"></i>
                 </button>
             </div>
         </div>
@@ -1007,6 +1007,9 @@ export function updateBulkActionBar() {
             <button class="btn btn-secondary" id="bulk-action-select-all" style="height: 34px; padding: 0 12px; font-size: 0.8rem; border-radius: 6px; display: flex; align-items: center; gap: 6px;">
                 <i class="fa-solid fa-check-double"></i> Alle sichtbaren
             </button>
+            <button class="btn btn-primary" id="bulk-action-edit" ${count === 0 ? 'disabled' : ''} style="height: 34px; padding: 0 12px; font-size: 0.8rem; border-radius: 6px; background-color: var(--primary-color); border-color: var(--primary-color); color: white; display: flex; align-items: center; gap: 6px; cursor: ${count === 0 ? 'not-allowed' : 'pointer'}; opacity: ${count === 0 ? 0.5 : 1};">
+                <i class="fa-solid fa-pen"></i> Bearbeiten
+            </button>
             <button class="btn btn-danger" id="bulk-action-delete" ${count === 0 ? 'disabled' : ''} style="height: 34px; padding: 0 12px; font-size: 0.8rem; border-radius: 6px; background-color: var(--danger); border-color: var(--danger); color: white; display: flex; align-items: center; gap: 6px; cursor: ${count === 0 ? 'not-allowed' : 'pointer'}; opacity: ${count === 0 ? 0.5 : 1};">
                 <i class="fa-solid fa-trash"></i> Löschen
             </button>
@@ -1018,6 +1021,11 @@ export function updateBulkActionBar() {
 
     document.getElementById('bulk-action-select-all').addEventListener('click', () => {
         selectAllComics();
+    });
+
+    document.getElementById('bulk-action-edit').addEventListener('click', () => {
+        if (selectedComicIds.size === 0) return;
+        openBulkEditModal(Array.from(selectedComicIds));
     });
     
     document.getElementById('bulk-action-delete').addEventListener('click', () => {

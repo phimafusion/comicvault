@@ -10,6 +10,9 @@ const btnDelete = document.getElementById('btn-delete-comic');
 const modalTitle = document.getElementById('modal-title');
 
 let currentEditingId = null;
+let isBulkEditing = false;
+let bulkEditIds = [];
+const dirtyFields = new Set();
 
 export async function openModal(comic = null, isWishlist = false) {
     currentEditingId = comic ? comic.id : null;
@@ -87,6 +90,9 @@ function closeModal() {
     setTimeout(() => {
         modal.style.display = 'none';
         form.reset();
+        isBulkEditing = false;
+        bulkEditIds = [];
+        dirtyFields.clear();
     }, 300);
 }
 
@@ -118,6 +124,41 @@ btnDelete.addEventListener('click', async (e) => {
 btnSave.addEventListener('click', async (e) => {
     e.preventDefault();
     if (!form.reportValidity()) return;
+
+    if (isBulkEditing) {
+        if (dirtyFields.size === 0) {
+            closeModal();
+            return;
+        }
+
+        const formData = new FormData(form);
+        const updates = {};
+
+        const parseValue = (name, val) => {
+            if (name === 'preis') return val ? parseFloat(val) : null;
+            if (name === 'jahr' || name === 'nummer' || name === 'limitiert_auf') return val ? parseInt(val) : null;
+            if (name === 'bewertung') return val ? parseInt(val) : 0;
+            if (name === 'limitierung' || name === 'variant') return val === 'true';
+            if (name === 'kaufdatum' || name === 'gelesen_am') return toGermanDate(val);
+            return val;
+        };
+
+        dirtyFields.forEach(name => {
+            const rawVal = formData.get(name);
+            updates[name] = parseValue(name, rawVal);
+        });
+
+        await db.updateComics(bulkEditIds, updates);
+        
+        isBulkEditing = false;
+        bulkEditIds = [];
+        dirtyFields.clear();
+        closeModal();
+        if (window.app) {
+            window.app.navigate('collection');
+        }
+        return;
+    }
 
     const formData = new FormData(form);
     const comicData = {
@@ -219,6 +260,7 @@ function initStarRating(currentValue) {
             
             input.value = newVal;
             updateStarsUI(newVal);
+            input.dispatchEvent(new Event('change', { bubbles: true }));
         });
     });
     
@@ -226,6 +268,7 @@ function initStarRating(currentValue) {
         e.preventDefault();
         input.value = 0;
         updateStarsUI(0);
+        input.dispatchEvent(new Event('change', { bubbles: true }));
     });
 
     updateStarsUI(currentValue);
@@ -510,4 +553,253 @@ export function initAutocomplete(input, suggestionsList) {
             removeDropdown();
         }
     });
+}
+
+export async function openBulkEditModal(ids) {
+    isBulkEditing = true;
+    bulkEditIds = ids;
+    dirtyFields.clear();
+    
+    modalTitle.textContent = 'Mehrere Comics bearbeiten';
+    
+    // Hide delete button in bulk mode
+    btnDelete.style.display = 'none';
+    
+    const allComics = await db.getAllComics();
+    const selectedComics = allComics.filter(c => ids.includes(c.id));
+    
+    if (selectedComics.length === 0) {
+        closeModal();
+        return;
+    }
+    
+    const suggestions = await getSuggestions();
+    
+    const fields = [
+        'titel', 'verlag', 'typ', 'serie', 'nummer', 'format', 'jahr', 'zustand',
+        'bezugsquelle', 'sprache', 'preis', 'bestand', 'kaufdatum',
+        'gelesen_am', 'bewertung', 'limitierung', 'limitiert_auf',
+        'variant', 'variantname', 'bemerkung'
+    ];
+    
+    const aggregated = {};
+    const diffFields = new Set();
+    
+    fields.forEach(field => {
+        const firstVal = selectedComics[0][field];
+        const allSame = selectedComics.every(c => {
+            const val = c[field];
+            const isEmptyA = firstVal === undefined || firstVal === null || firstVal === '';
+            const isEmptyB = val === undefined || val === null || val === '';
+            if (isEmptyA && isEmptyB) return true;
+            if (isEmptyA || isEmptyB) return false;
+            return String(val) === String(firstVal);
+        });
+        
+        if (allSame) {
+            const isEmpty = firstVal === undefined || firstVal === null || firstVal === '';
+            aggregated[field] = isEmpty ? '' : firstVal;
+        } else {
+            aggregated[field] = null;
+            diffFields.add(field);
+        }
+    });
+    
+    form.innerHTML = generateBulkFormHtml(aggregated, diffFields, suggestions);
+    
+    initStarRating(aggregated.bewertung || 0);
+    
+    if (diffFields.has('bewertung')) {
+        const starContainer = form.querySelector('.star-rating');
+        if (starContainer) {
+            const note = document.createElement('span');
+            note.id = 'bulk-bewertung-note';
+            note.style.fontSize = '0.8rem';
+            note.style.color = 'var(--text-secondary)';
+            note.style.marginLeft = '8px';
+            note.textContent = '(verschiedene Bewertungen)';
+            starContainer.parentNode.appendChild(note);
+        }
+    }
+    
+    // Autocomplete for standard input fields
+    Object.keys(suggestions).forEach(field => {
+        const input = form.querySelector(`input[name="${field}"]`);
+        if (input) {
+            initAutocomplete(input, suggestions[field]);
+        }
+    });
+    
+    // Watch modifications to track dirty fields
+    const formControls = form.querySelectorAll('input, select, textarea');
+    formControls.forEach(ctrl => {
+        const name = ctrl.name;
+        if (!name) return;
+        
+        const handleDirty = () => {
+            dirtyFields.add(name);
+            if (diffFields.has(name)) {
+                ctrl.classList.remove('bulk-different-value');
+            }
+        };
+        
+        ctrl.addEventListener('input', handleDirty);
+        ctrl.addEventListener('change', handleDirty);
+    });
+    
+    const ratingInput = form.querySelector('input[name="bewertung"]');
+    if (ratingInput) {
+        ratingInput.addEventListener('change', () => {
+            dirtyFields.add('bewertung');
+            const note = document.getElementById('bulk-bewertung-note');
+            if (note) note.remove();
+        });
+    }
+    
+    modal.style.display = 'flex';
+    setTimeout(() => modal.style.opacity = '1', 10);
+}
+
+function generateBulkFormHtml(c = {}, diffFields = new Set(), s = {}) {
+    const settings = db.getSettings();
+    const currency = settings.currency || '€';
+    
+    const fieldAttrs = (name, val) => {
+        if (diffFields.has(name)) {
+            return `value="" placeholder="<verschiedene Werte>" class="form-control bulk-different-value"`;
+        }
+        return `value="${val !== undefined && val !== null ? val : ''}" class="form-control"`;
+    };
+    
+    const dateAttrs = (name, val) => {
+        if (diffFields.has(name)) {
+            return `value="" class="form-control bulk-different-value" data-placeholder="<verschiedene Werte>"`;
+        }
+        return `value="${toInputDate(val)}" class="form-control"`;
+    };
+    
+    const selectOptions = (name, val) => {
+        const hasDiff = diffFields.has(name);
+        const isTrue = val === true || val === 'true';
+        const isFalse = val === false || val === 'false';
+        
+        return `
+            ${hasDiff ? '<option value="" disabled selected>&lt;verschiedene Werte&gt;</option>' : ''}
+            <option value="false" ${!hasDiff && isFalse ? 'selected' : ''}>Nein</option>
+            <option value="true" ${!hasDiff && isTrue ? 'selected' : ''}>Ja</option>
+        `;
+    };
+
+    return `
+        <div class="form-grid">
+            <div class="form-group full-width">
+                <label class="form-label">Titel</label>
+                <input type="text" name="titel" ${fieldAttrs('titel', c.titel)}>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Verlag</label>
+                <input type="text" name="verlag" ${fieldAttrs('verlag', c.verlag)}>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Typ</label>
+                <input type="text" name="typ" ${fieldAttrs('typ', c.typ)}>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Serie</label>
+                <input type="text" name="serie" ${fieldAttrs('serie', c.serie)}>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Nummer</label>
+                <input type="number" name="nummer" ${fieldAttrs('nummer', c.nummer)}>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Format</label>
+                <input type="text" name="format" ${fieldAttrs('format', c.format)}>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Jahr (Serie/Release)</label>
+                <input type="number" name="jahr" ${fieldAttrs('jahr', c.jahr)} min="1900" max="2100">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Zustand bei Kauf</label>
+                <input type="text" name="zustand" ${fieldAttrs('zustand', c.zustand)}>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Bezugsquelle</label>
+                <input type="text" name="bezugsquelle" ${fieldAttrs('bezugsquelle', c.bezugsquelle)}>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Sprache</label>
+                <input type="text" name="sprache" ${fieldAttrs('sprache', c.sprache)}>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Preis (${currency})</label>
+                <input type="number" step="0.01" name="preis" ${fieldAttrs('preis', c.preis)}>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Bestand</label>
+                <input type="text" name="bestand" ${fieldAttrs('bestand', c.bestand)}>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Kaufdatum</label>
+                <input type="date" name="kaufdatum" ${dateAttrs('kaufdatum', c.kaufdatum)}>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Gelesen am</label>
+                <input type="date" name="gelesen_am" ${dateAttrs('gelesen_am', c.gelesen_am)}>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Bewertung</label>
+                <div style="display: flex; align-items: center; height: 38px;">
+                    <div class="star-rating">
+                        <span class="star" data-index="1"><i class="fa-regular fa-star"></i></span>
+                        <span class="star" data-index="2"><i class="fa-regular fa-star"></i></span>
+                        <span class="star" data-index="3"><i class="fa-regular fa-star"></i></span>
+                        <span class="star" data-index="4"><i class="fa-regular fa-star"></i></span>
+                        <span class="star" data-index="5"><i class="fa-regular fa-star"></i></span>
+                    </div>
+                    <button id="btn-clear-rating" class="btn-clear-rating" title="Bewertung löschen">
+                        <i class="fa-solid fa-circle-xmark"></i>
+                    </button>
+                    <input type="hidden" name="bewertung" value="${c.bewertung !== undefined && c.bewertung !== null ? c.bewertung : 0}">
+                </div>
+            </div>
+
+            <div class="form-group full-width">
+                <div style="display: grid; grid-template-columns: 0.7fr 0.7fr 0.7fr 1.9fr; gap: 20px;">
+                    <div class="form-group">
+                        <label class="form-label">Limitierung</label>
+                        <select name="limitierung" class="form-control">
+                            ${selectOptions('limitierung', c.limitierung)}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Limitiert auf (Stück)</label>
+                        <input type="number" name="limitiert_auf" ${fieldAttrs('limitiert_auf', c.limitiert_auf)}>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Variant-Cover</label>
+                        <select name="variant" class="form-control">
+                            ${selectOptions('variant', c.variant)}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Variantname</label>
+                        <input type="text" name="variantname" ${fieldAttrs('variantname', c.variantname)}>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group full-width">
+                <label class="form-label">Bemerkung</label>
+                <textarea name="bemerkung" class="form-control" rows="3" placeholder="${diffFields.has('bemerkung') ? '<verschiedene Werte>' : ''}">${!diffFields.has('bemerkung') && c.bemerkung !== undefined && c.bemerkung !== null ? c.bemerkung : ''}</textarea>
+            </div>
+        </div>
+    `;
 }
