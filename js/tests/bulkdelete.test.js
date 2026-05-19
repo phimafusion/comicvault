@@ -215,4 +215,3 @@ describe('ComicVault Bulk Delete & Multi-Select Tests', () => {
         expect(document.getElementById('bulk-action-bar')).to.be.null;
     });
 });
-});
