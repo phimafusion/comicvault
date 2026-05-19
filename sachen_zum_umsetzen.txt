@@ -10,5 +10,5 @@ Diese Liste dient als Notizzettel für zukünftige Aufgaben und Ideen.
     - Bilder bearbeiten
     - Bilder löschen
 
-[3] wenn ein neuer COmic hinzugefügt wird, dann in jedem der textfelder beim reinklicken und tippen die sachen die es im comicvault schon gibt als vorschlag anbieten
+[x] [3] wenn ein neuer COmic hinzugefügt wird, dann in jedem der textfelder beim reinklicken und tippen die sachen die es im comicvault schon gibt als vorschlag anbieten (inkl. Verwaltung der Enum-Listen in den Einstellungen)
 

@@ -32,6 +32,14 @@ export async function openModal(comic = null, isWishlist = false) {
         initStarRating(comic ? (comic.bewertung || 0) : 0);
     }
     
+    // Autocomplete initialisieren
+    Object.keys(suggestions).forEach(field => {
+        const input = form.querySelector(`input[name="${field}"]`);
+        if (input) {
+            initAutocomplete(input, suggestions[field]);
+        }
+    });
+    
     // Löschen-Button nur beim Bearbeiten zeigen
     btnDelete.style.display = comic ? 'flex' : 'none';
     
@@ -46,16 +54,19 @@ async function getSuggestions() {
     ]);
     
     const allItems = [...comics, ...wishes];
-    const fields = ['typ', 'format', 'verlag', 'zustand', 'bestand', 'serie', 'sprache', 'bezugsquelle', 'besonderheit'];
+    const fields = ['titel', 'typ', 'format', 'verlag', 'zustand', 'bestand', 'serie', 'sprache', 'bezugsquelle', 'besonderheit', 'variantname'];
     const suggestions = {};
     fields.forEach(f => suggestions[f] = new Set());
 
-    // Standardwerte hinzufügen
-    ['Comic', 'Manga', 'Graphic Novel', 'Artbook'].forEach(v => suggestions.typ.add(v));
-    ['Softcover', 'Hardcover', 'Heft', 'Album', 'Omnibus', 'Absolute'].forEach(v => suggestions.format.add(v));
-    ['Panini', 'Carlsen', 'Splitter', 'Egmont', 'Manga Cult', 'Kazé', 'Altraverse', 'Cross Cult', 'Marvel', 'DC'].forEach(v => suggestions.verlag.add(v));
-    ['neu', 'gebraucht'].forEach(v => suggestions.zustand.add(v));
-    ['vorhanden', 'vorbestellt', 'verkauft', 'abgegeben'].forEach(v => suggestions.bestand.add(v));
+    // Standardwerte aus Einstellungen hinzufügen
+    const settings = db.getSettings();
+    const customSugs = settings.customSuggestions || {};
+    
+    Object.keys(customSugs).forEach(field => {
+        if (suggestions[field] && Array.isArray(customSugs[field])) {
+            customSugs[field].forEach(v => suggestions[field].add(v));
+        }
+    });
 
     allItems.forEach(item => {
         fields.forEach(f => {
@@ -226,12 +237,6 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}, defaults = {})
     const settings = db.getSettings();
     const currency = settings.currency || '€';
     
-    const renderDatalist = (id, options) => `
-        <datalist id="${id}">
-            ${(options || []).map(v => `<option value="${v}">`).join('')}
-        </datalist>
-    `;
-
     if (isWishlist) {
         return `
             <div class="form-grid">
@@ -241,13 +246,11 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}, defaults = {})
                 </div>
                 <div class="form-group">
                     <label class="form-label">Typ</label>
-                    <input type="text" name="typ" list="typ-list" class="form-control" value="${c.typ || ''}">
-                    ${renderDatalist('typ-list', s.typ)}
+                    <input type="text" name="typ" class="form-control" value="${c.typ || ''}">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Format</label>
-                    <input type="text" name="format" list="format-list" class="form-control" value="${c.format || ''}">
-                    ${renderDatalist('format-list', s.format)}
+                    <input type="text" name="format" class="form-control" value="${c.format || ''}">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Preis (${currency})</label>
@@ -270,8 +273,7 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}, defaults = {})
                 </div>
                 <div class="form-group full-width">
                     <label class="form-label">Besonderheit</label>
-                    <input type="text" name="besonderheit" list="besonderheit-list" class="form-control" value="${c.besonderheit || ''}" placeholder="z.B. Signiert, Erstauflage">
-                    ${renderDatalist('besonderheit-list', s.besonderheit)}
+                    <input type="text" name="besonderheit" class="form-control" value="${c.besonderheit || ''}" placeholder="z.B. Signiert, Erstauflage">
                 </div>
                 <div class="form-group full-width">
                     <label class="form-label">Bemerkung</label>
@@ -290,19 +292,16 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}, defaults = {})
             
             <div class="form-group">
                 <label class="form-label">Verlag</label>
-                <input type="text" name="verlag" list="verlag-list" class="form-control" value="${c.verlag || defaults.verlag || ''}">
-                ${renderDatalist('verlag-list', s.verlag)}
+                <input type="text" name="verlag" class="form-control" value="${c.verlag || defaults.verlag || ''}">
             </div>
             <div class="form-group">
                 <label class="form-label">Typ</label>
-                <input type="text" name="typ" list="typ-list" class="form-control" value="${c.typ || ''}">
-                ${renderDatalist('typ-list', s.typ)}
+                <input type="text" name="typ" class="form-control" value="${c.typ || ''}">
             </div>
             
             <div class="form-group">
                 <label class="form-label">Serie</label>
-                <input type="text" name="serie" list="serie-list" class="form-control" value="${c.serie || ''}">
-                ${renderDatalist('serie-list', s.serie)}
+                <input type="text" name="serie" class="form-control" value="${c.serie || ''}">
             </div>
             <div class="form-group">
                 <label class="form-label">Nummer</label>
@@ -311,8 +310,7 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}, defaults = {})
 
             <div class="form-group">
                 <label class="form-label">Format</label>
-                <input type="text" name="format" list="format-list" class="form-control" value="${c.format || ''}">
-                ${renderDatalist('format-list', s.format)}
+                <input type="text" name="format" class="form-control" value="${c.format || ''}">
             </div>
             <div class="form-group">
                 <label class="form-label">Jahr (Serie/Release)</label>
@@ -321,19 +319,16 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}, defaults = {})
 
             <div class="form-group">
                 <label class="form-label">Zustand bei Kauf</label>
-                <input type="text" name="zustand" list="zustand-list" class="form-control" value="${c.zustand || defaults.zustand || ''}">
-                ${renderDatalist('zustand-list', s.zustand)}
+                <input type="text" name="zustand" class="form-control" value="${c.zustand || defaults.zustand || ''}">
             </div>
             <div class="form-group">
                 <label class="form-label">Bezugsquelle</label>
-                <input type="text" name="bezugsquelle" list="bezugsquelle-list" class="form-control" value="${c.bezugsquelle || ''}">
-                ${renderDatalist('bezugsquelle-list', s.bezugsquelle)}
+                <input type="text" name="bezugsquelle" class="form-control" value="${c.bezugsquelle || ''}">
             </div>
 
             <div class="form-group">
                 <label class="form-label">Sprache</label>
-                <input type="text" name="sprache" list="sprache-list" class="form-control" value="${c.sprache || defaults.sprache || 'Deutsch'}">
-                ${renderDatalist('sprache-list', s.sprache)}
+                <input type="text" name="sprache" class="form-control" value="${c.sprache || defaults.sprache || 'Deutsch'}">
             </div>
             <div class="form-group">
                 <label class="form-label">Preis (${currency})</label>
@@ -342,8 +337,7 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}, defaults = {})
 
             <div class="form-group">
                 <label class="form-label">Bestand</label>
-                <input type="text" name="bestand" list="bestand-list" class="form-control" value="${c.bestand || ''}">
-                ${renderDatalist('bestand-list', s.bestand)}
+                <input type="text" name="bestand" class="form-control" value="${c.bestand || ''}">
             </div>
             <div class="form-group">
                 <label class="form-label">Kaufdatum</label>
@@ -403,4 +397,117 @@ function generateFormHtml(comic = {}, isWishlist = false, s = {}, defaults = {})
             </div>
         </div>
     `;
+}
+
+export function initAutocomplete(input, suggestionsList) {
+    if (!input || !suggestionsList || suggestionsList.length === 0) return;
+
+    // Browser-eigenes Autocomplete deaktivieren, um doppelte Overlays zu verhindern
+    input.setAttribute('autocomplete', 'off');
+
+    let activeIndex = -1;
+    let dropdown = null;
+    let isSelecting = false;
+
+    const removeDropdown = () => {
+        if (dropdown) {
+            dropdown.remove();
+            dropdown = null;
+        }
+        activeIndex = -1;
+    };
+
+    const renderDropdown = (items) => {
+        removeDropdown();
+        if (items.length === 0) return;
+
+        dropdown = document.createElement('div');
+        dropdown.className = 'autocomplete-dropdown';
+
+        items.forEach((item) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'autocomplete-item';
+            itemDiv.textContent = item;
+            
+            itemDiv.addEventListener('mousedown', (e) => {
+                // Prevent input blur before click finishes
+                e.preventDefault();
+                isSelecting = true;
+                input.value = item;
+                removeDropdown();
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                isSelecting = false;
+            });
+
+            dropdown.appendChild(itemDiv);
+        });
+
+        // Append to parent form-group
+        input.parentNode.appendChild(dropdown);
+    };
+
+    const updateSelection = () => {
+        if (!dropdown) return;
+        const items = dropdown.querySelectorAll('.autocomplete-item');
+        items.forEach((item, index) => {
+            if (index === activeIndex) {
+                item.classList.add('active');
+                // Scroll into view if needed
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    };
+
+    const handleInput = () => {
+        if (isSelecting) return;
+        const val = input.value.trim().toLowerCase();
+        if (!val) {
+            renderDropdown(suggestionsList);
+            return;
+        }
+
+        const filtered = suggestionsList.filter(item => 
+            item.toLowerCase().includes(val)
+        );
+
+        renderDropdown(filtered);
+    };
+
+    input.addEventListener('input', handleInput);
+    input.addEventListener('focus', handleInput);
+
+    input.addEventListener('blur', () => {
+        // We use setTimeout so mousedown events on items can fire first
+        setTimeout(removeDropdown, 200);
+    });
+
+    input.addEventListener('keydown', (e) => {
+        if (!dropdown) return;
+        const items = dropdown.querySelectorAll('.autocomplete-item');
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            activeIndex = (activeIndex + 1) % items.length;
+            updateSelection();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            activeIndex = (activeIndex - 1 + items.length) % items.length;
+            updateSelection();
+        } else if (e.key === 'Enter') {
+            if (activeIndex > -1 && items[activeIndex]) {
+                e.preventDefault();
+                isSelecting = true;
+                input.value = items[activeIndex].textContent;
+                removeDropdown();
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                isSelecting = false;
+            }
+        } else if (e.key === 'Escape') {
+            removeDropdown();
+        }
+    });
 }

@@ -133,6 +133,7 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    position: relative;
 }
 
 .form-group.full-width {
@@ -418,6 +419,7 @@ input[type="number"] {
 .badge-vorbestellt { background-color: rgba(245, 158, 11, 0.2); color: var(--warning); }
 .badge-verkauft { background-color: rgba(239, 68, 68, 0.2); color: var(--danger); }
 .badge-abgegeben { background-color: rgba(100, 116, 139, 0.2); color: var(--text-secondary); }
+.badge-verliehen { background-color: rgba(109, 40, 217, 0.2); color: var(--primary-color); }
 
 /* Global Item Hover Effect */
 .comic-item {
@@ -527,4 +529,100 @@ input[type="number"] {
 .select-styled option {
     background-color: var(--bg-surface);
     color: var(--text-primary);
+}
+
+/* Autocomplete suggestions dropdown styles */
+.autocomplete-dropdown {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(30, 41, 59, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    z-index: 10000;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
+    margin-top: 4px;
+    animation: autocompleteFadeIn 0.15s ease-out;
+}
+
+@keyframes autocompleteFadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.autocomplete-item {
+    padding: 8px 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.autocomplete-item:hover,
+.autocomplete-item.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.autocomplete-item:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.autocomplete-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Suggestion management tag styles */
+.suggestion-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background-color: rgba(var(--primary-rgb), 0.15);
+    border: 1px solid rgba(var(--primary-rgb), 0.3);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    transition: var(--transition);
+}
+
+.suggestion-tag:hover {
+    background-color: rgba(var(--primary-rgb), 0.25);
+    border-color: var(--primary-color);
+}
+
+.suggestion-tag-remove {
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-weight: bold;
+    font-size: 0.8rem;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+}
+
+.suggestion-tag-remove:hover {
+    color: var(--danger);
+    transform: scale(1.2);
 }

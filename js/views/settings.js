@@ -1,4 +1,5 @@
 import { db } from '../db.js';
+import { initAutocomplete } from './form.js';
 
 export function renderSettings(container) {
     const settings = db.getSettings();
@@ -67,6 +68,43 @@ export function renderSettings(container) {
                 </button>
             </div>
 
+            <!-- Sektion: Vorschlagslisten verwalten -->
+            <div class="details-card" style="flex-direction: column; grid-column: span 2;">
+                <h3><i class="fa-solid fa-list-check"></i> Vorschlagslisten verwalten</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 16px;">Verwalte die vordefinierten Werte für die Autovervollständigung.</p>
+                
+                <div style="display: grid; grid-template-columns: minmax(180px, 200px) 1fr; gap: 20px; width: 100%;">
+                    <div class="form-group">
+                        <label class="form-label">Datenfeld auswählen</label>
+                        <select id="settings-suggestion-field" class="form-control">
+                            <option value="typ">Typ</option>
+                            <option value="format">Format</option>
+                            <option value="zustand">Zustand</option>
+                            <option value="bestand">Bestand</option>
+                        </select>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <label class="form-label">Aktive Vorschläge</label>
+                        <div id="settings-suggestions-tags" style="display: flex; flex-wrap: wrap; gap: 8px; min-height: 42px; padding: 10px; background-color: var(--bg-main); border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                            <!-- Tags werden dynamisch gerendert -->
+                        </div>
+                        
+                        <div id="settings-suggestions-error" style="color: var(--danger); font-size: 0.85rem; display: none; padding: 8px 12px; background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: var(--radius-sm); margin-top: 4px; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            <span class="error-msg"></span>
+                        </div>
+                        
+                        <div style="display: flex; gap: 12px; margin-top: 8px;">
+                            <input type="text" id="settings-new-suggestion" class="form-control" style="flex: 1;" placeholder="Neuen Vorschlag eingeben...">
+                            <button class="btn btn-primary" id="btn-add-suggestion" style="padding: 8px 16px; white-space: nowrap;">
+                                <i class="fa-solid fa-plus"></i> Hinzufügen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Sektion: Datenverwaltung -->
             <div class="details-card" style="flex-direction: column;">
                 <h3><i class="fa-solid fa-database"></i> Datenverwaltung</h3>
@@ -99,6 +137,113 @@ export function renderSettings(container) {
         </div>
     `;
     container.innerHTML = html;
+
+    // Vorschlagslisten-Steuerung
+    const fieldSelect = document.getElementById('settings-suggestion-field');
+    const tagsContainer = document.getElementById('settings-suggestions-tags');
+    const newSugInput = document.getElementById('settings-new-suggestion');
+    const addSugBtn = document.getElementById('btn-add-suggestion');
+    const errorContainer = document.getElementById('settings-suggestions-error');
+    const errorSpan = errorContainer.querySelector('.error-msg');
+
+    function showError(message) {
+        errorSpan.textContent = message;
+        errorContainer.style.display = 'flex';
+    }
+
+    function hideError() {
+        errorContainer.style.display = 'none';
+        errorSpan.textContent = '';
+    }
+
+    async function renderTags() {
+        const field = fieldSelect.value;
+        const currentSettings = db.getSettings();
+        const list = currentSettings.customSuggestions[field] || [];
+        
+        tagsContainer.innerHTML = '';
+        if (list.length === 0) {
+            tagsContainer.innerHTML = '<span style="color: var(--text-secondary); font-size: 0.9rem;">Keine Vorschläge definiert.</span>';
+            return;
+        }
+
+        list.forEach(val => {
+            const tag = document.createElement('div');
+            tag.className = 'suggestion-tag';
+            tag.textContent = val;
+
+            const removeSpan = document.createElement('span');
+            removeSpan.className = 'suggestion-tag-remove';
+            removeSpan.innerHTML = '&times;';
+            removeSpan.title = 'Löschen';
+            
+            removeSpan.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                hideError();
+                // 1. Prüfen, ob der Wert in Comics oder Wunschliste verwendet wird
+                const [comics, wishes] = await Promise.all([
+                    db.getAllComics(),
+                    db.getWishlist()
+                ]);
+                const allItems = [...comics, ...wishes];
+                const isUsed = allItems.some(item => String(item[field] || '').toLowerCase() === val.toLowerCase());
+                
+                if (isUsed) {
+                    showError(`Der Wert "${val}" kann nicht gelöscht werden, da er aktuell in deiner Sammlung oder Wunschliste verwendet wird.`);
+                    return;
+                }
+
+                // 2. Entfernen
+                const updatedSettings = db.getSettings();
+                updatedSettings.customSuggestions[field] = (updatedSettings.customSuggestions[field] || []).filter(v => v !== val);
+                db.saveSettings(updatedSettings);
+                renderTags();
+            });
+
+            tag.appendChild(removeSpan);
+            tagsContainer.appendChild(tag);
+        });
+    }
+
+    fieldSelect.addEventListener('change', () => {
+        hideError();
+        renderTags();
+    });
+    
+    addSugBtn.addEventListener('click', () => {
+        hideError();
+        const val = newSugInput.value.trim();
+        if (!val) return;
+
+        const field = fieldSelect.value;
+        const currentSettings = db.getSettings();
+        const list = currentSettings.customSuggestions[field] || [];
+
+        if (list.some(v => v.toLowerCase() === val.toLowerCase())) {
+            showError(`Der Wert "${val}" existiert bereits in dieser Liste.`);
+            return;
+        }
+
+        list.push(val);
+        list.sort();
+        currentSettings.customSuggestions[field] = list;
+        db.saveSettings(currentSettings);
+        
+        newSugInput.value = '';
+        newSugInput.focus();
+        renderTags();
+    });
+
+    newSugInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            addSugBtn.click();
+        }
+    });
+
+    newSugInput.addEventListener('input', hideError);
+
+    // Initial rendern
+    renderTags();
 
     // Theme Events
     document.getElementById('settings-color-scheme').addEventListener('change', (e) => {
@@ -172,6 +317,15 @@ export function renderSettings(container) {
                 }
             }
         }
+    });
+
+    // Autocomplete für Standardwerte aktivieren
+    initAutocomplete(document.getElementById('settings-default-condition'), settings.customSuggestions.zustand || []);
+    
+    // Verlage dynamisch laden und Autocomplete aktivieren
+    Promise.all([db.getAllComics(), db.getWishlist()]).then(([comics, wishes]) => {
+        const allPublishers = [...new Set([...comics, ...wishes].map(c => c.verlag).filter(Boolean))].sort();
+        initAutocomplete(document.getElementById('settings-default-publisher'), allPublishers);
     });
 }
 

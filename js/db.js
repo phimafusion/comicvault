@@ -117,7 +117,31 @@ class Database {
     }
 
     getSettings() {
-        return JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"theme": "dark"}');
+        const settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"theme": "dark"}');
+        if (!settings.customSuggestions) {
+            settings.customSuggestions = {
+                typ: ['Comic', 'Manga', 'Graphic Novel', 'Artbook'],
+                format: ['Softcover', 'Hardcover', 'Heft', 'Album', 'Omnibus', 'Absolute'],
+                zustand: ['neu', 'gebraucht'],
+                bestand: ['vorhanden', 'vorbestellt', 'verkauft', 'abgegeben', 'verliehen']
+            };
+        } else {
+            // Migration: Stellen wir sicher, dass 'verliehen' in den Bestand-Vorschlägen existiert
+            let changed = false;
+            if (settings.customSuggestions.bestand && !settings.customSuggestions.bestand.includes('verliehen')) {
+                settings.customSuggestions.bestand.push('verliehen');
+                changed = true;
+            }
+            // Migration: 'verlag' aus den customSuggestions entfernen, da kein Enum
+            if (settings.customSuggestions.verlag) {
+                delete settings.customSuggestions.verlag;
+                changed = true;
+            }
+            if (changed) {
+                this.saveSettings(settings);
+            }
+        }
+        return settings;
     }
 
     saveSettings(settings) {
