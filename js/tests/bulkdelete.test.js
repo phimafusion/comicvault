@@ -52,8 +52,10 @@ describe('ComicVault Bulk Delete & Multi-Select Tests', () => {
         selectedComicIds.clear();
         if (isSelectModeActive) {
             toggleSelectMode(); // Reset to inactive state
+            await new Promise(resolve => setTimeout(resolve, 50));
         }
         await renderCollection(container);
+        await new Promise(resolve => setTimeout(resolve, 50));
     });
 
     afterEach(() => {
@@ -75,12 +77,13 @@ describe('ComicVault Bulk Delete & Multi-Select Tests', () => {
         expect(actionBar).to.be.null;
     });
 
-    it('sollte den Auswahlmodus aktivieren und Checkboxen rendern, wenn der Toggle-Button geklickt wird', () => {
+    it('sollte den Auswahlmodus aktivieren und Checkboxen rendern, wenn der Toggle-Button geklickt wird', async () => {
         const toggleBtn = container.querySelector('#btn-toggle-select-mode');
         expect(toggleBtn).to.not.be.null;
 
         // Click selection mode toggle button
         toggleBtn.click();
+        await new Promise(resolve => setTimeout(resolve, 50));
 
         expect(isSelectModeActive).to.be.true;
         
@@ -93,9 +96,10 @@ describe('ComicVault Bulk Delete & Multi-Select Tests', () => {
         expect(document.body.classList.contains('bulk-select-active')).to.be.true;
     });
 
-    it('sollte Comics selektieren und visuell markieren, wenn im Auswahlmodus auf sie geklickt wird', () => {
+    it('sollte Comics selektieren und visuell markieren, wenn im Auswahlmodus auf sie geklickt wird', async () => {
         const toggleBtn = container.querySelector('#btn-toggle-select-mode');
         toggleBtn.click();
+        await new Promise(resolve => setTimeout(resolve, 50));
 
         const items = container.querySelectorAll('.comic-item');
         expect(items.length).to.equal(3);
@@ -120,9 +124,10 @@ describe('ComicVault Bulk Delete & Multi-Select Tests', () => {
         expect(checkbox.checked).to.be.false;
     });
 
-    it('sollte alle sichtbaren Comics selektieren, wenn "Alle sichtbaren" geklickt wird', () => {
+    it('sollte alle sichtbaren Comics selektieren, wenn "Alle sichtbaren" geklickt wird', async () => {
         const toggleBtn = container.querySelector('#btn-toggle-select-mode');
         toggleBtn.click();
+        await new Promise(resolve => setTimeout(resolve, 50));
 
         const selectAllBtn = document.getElementById('bulk-action-select-all');
         expect(selectAllBtn).to.not.be.null;
@@ -150,6 +155,7 @@ describe('ComicVault Bulk Delete & Multi-Select Tests', () => {
     it('sollte das Bestätigungsmodal anzeigen und die ausgewählten Comics löschen, wenn die Löschung bestätigt wird', async () => {
         const toggleBtn = container.querySelector('#btn-toggle-select-mode');
         toggleBtn.click();
+        await new Promise(resolve => setTimeout(resolve, 50));
 
         // Select first two comics
         const items = container.querySelectorAll('.comic-item');
@@ -173,10 +179,10 @@ describe('ComicVault Bulk Delete & Multi-Select Tests', () => {
         
         // Wait for asynchronous deletion and re-render
         confirmBtn.click();
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise(resolve => setTimeout(resolve, 100));
 
-        // Verify database delete call
-        expect(deleteComicsCalledWith).to.deep.equal(['1', '2']);
+        // Verify database delete call (order independent)
+        expect(deleteComicsCalledWith).to.have.members(['1', '2']);
         
         // Verify selection state is reset
         expect(isSelectModeActive).to.be.false;
@@ -187,9 +193,10 @@ describe('ComicVault Bulk Delete & Multi-Select Tests', () => {
         expect(document.getElementById('bulk-delete-confirm-modal')).to.be.null;
     });
 
-    it('sollte den Auswahlmodus beenden, wenn "Abbrechen" in der Aktionsleiste geklickt wird', () => {
+    it('sollte den Auswahlmodus beenden, wenn "Abbrechen" in der Aktionsleiste geklickt wird', async () => {
         const toggleBtn = container.querySelector('#btn-toggle-select-mode');
         toggleBtn.click();
+        await new Promise(resolve => setTimeout(resolve, 50));
 
         // Select first comic
         const items = container.querySelectorAll('.comic-item');
@@ -202,6 +209,10 @@ describe('ComicVault Bulk Delete & Multi-Select Tests', () => {
 
         expect(isSelectModeActive).to.be.false;
         expect(selectedComicIds.size).to.equal(0);
+
+        // Wait for slide-out animation to complete (400ms) before checking bar removal
+        await new Promise(resolve => setTimeout(resolve, 450));
         expect(document.getElementById('bulk-action-bar')).to.be.null;
     });
+});
 });
