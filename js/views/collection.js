@@ -15,6 +15,9 @@ let activeFilters = {
     serie: []
 };
 
+let isSelectModeActive = false;
+let selectedComicIds = new Set();
+
 const FIELD_CONFIG = {
     titel: { label: 'Titel / Serie', defaultList: true, defaultTiles: true, defaultDetails: true, listWidth: 'minmax(150px, 1.5fr)' },
     nummer: { label: 'Nr.', defaultList: true, defaultTiles: false, defaultDetails: false, listWidth: 'minmax(40px, auto)' },
@@ -79,19 +82,25 @@ export async function renderCollection(container) {
                 </div>
             </div>
 
-            <div class="view-toggles">
-                <button class="view-toggle-btn" id="btn-configure-fields" title="Angezeigte Felder für diese Ansicht konfigurieren">
-                    <i class="fa-solid fa-table-columns"></i>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="btn-standalone-toggle ${isSelectModeActive ? 'active' : ''}" id="btn-toggle-select-mode" title="Mehrfachauswahl aktivieren/deaktivieren">
+                    <i class="fa-solid fa-square-check"></i>
                 </button>
-                <div style="width: 1px; background: var(--border-color); margin: 6px 0;"></div>
-                <button class="view-toggle-btn ${currentViewType === 'list' ? 'active' : ''}" data-type="list" title="Listenansicht">
-                    <i class="fa-solid fa-list"></i>
-                </button>
-                <button class="view-toggle-btn ${currentViewType === 'tiles' ? 'active' : ''}" data-type="tiles" title="Kachelansicht">
-                    <i class="fa-solid fa-border-all"></i>
-                </button>
-                <button class="view-toggle-btn ${currentViewType === 'details' ? 'active' : ''}" data-type="details" title="Detailansicht">
-                    <i class="fa-solid fa-table-cells-large"></i>
+                
+                <div class="view-toggles">
+                    <button class="view-toggle-btn ${currentViewType === 'list' ? 'active' : ''}" data-type="list" title="Listenansicht">
+                        <i class="fa-solid fa-list"></i>
+                    </button>
+                    <button class="view-toggle-btn ${currentViewType === 'tiles' ? 'active' : ''}" data-type="tiles" title="Kachelansicht">
+                        <i class="fa-solid fa-grip"></i>
+                    </button>
+                    <button class="view-toggle-btn ${currentViewType === 'details' ? 'active' : ''}" data-type="details" title="Detailansicht">
+                        <i class="fa-solid fa-rectangle-list"></i>
+                    </button>
+                </div>
+
+                <button class="btn-standalone-toggle" id="btn-configure-fields" title="Angezeigte Felder für diese Ansicht konfigurieren">
+                    <i class="fa-solid fa-sliders" style="color: var(--primary-color);"></i>
                 </button>
             </div>
         </div>
@@ -178,8 +187,12 @@ const handleCollectionClick = (e) => {
     }
 
     // 4. Ansichtsumschaltung Click
-    const btn = e.target.closest('.view-toggle-btn');
+    const btn = e.target.closest('.view-toggle-btn, .btn-standalone-toggle');
     if (btn) {
+        if (btn.id === 'btn-toggle-select-mode') {
+            toggleSelectMode();
+            return;
+        }
         if (btn.id === 'btn-configure-fields') {
             renderFieldConfigOverlay();
             return;
@@ -190,6 +203,12 @@ const handleCollectionClick = (e) => {
             currentViewType = btn.dataset.type;
             updateGrid();
         }
+    }
+
+    // 5. Bulk Select All Header Checkbox Click
+    if (e.target.id === 'bulk-select-all-header') {
+        selectAllComics();
+        return;
     }
 };
 
@@ -373,9 +392,12 @@ export function cleanupCollection() {
     
     document.removeEventListener('mousedown', handleMouseDown);
     
-    // Sicherheitshalber unbinden, falls ein Drag lief
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
+    // Mehrfachauswahl zurücksetzen
+    isSelectModeActive = false;
+    selectedComicIds.clear();
+    document.body.classList.remove('bulk-select-active');
+    const bar = document.getElementById('bulk-action-bar');
+    if (bar) bar.remove();
     
     eventsAttached = false;
 }
@@ -485,7 +507,8 @@ async function updateGrid() {
             grid.style.setProperty(`--col-width-${key}`, width);
         });
 
-        const gridTemplateColumns = visibleFields.list.map(key => `var(--col-width-${key})`).join(' ') + ' 40px';
+        const selectColumn = isSelectModeActive ? '40px ' : '';
+        const gridTemplateColumns = selectColumn + visibleFields.list.map(key => `var(--col-width-${key})`).join(' ') + ' 40px';
 
         const headers = listFields.map(f => `
             <div class="sortable-header" data-sort="${f.key}" draggable="true" title="Zum Sortieren klicken, zum Verschieben ziehen" style="position: relative; cursor:pointer; user-select: none; ${f.align ? 'text-align: ' + f.align : ''}; padding-right: 15px;">
@@ -494,8 +517,15 @@ async function updateGrid() {
             </div>
         `).join('');
 
+        const selectAllHeader = isSelectModeActive ? `
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <input type="checkbox" id="bulk-select-all-header" style="accent-color: var(--primary-color); width: 16px; height: 16px; cursor: pointer;">
+            </div>
+        ` : '';
+
         grid.innerHTML = `
             <div class="list-header" style="display: grid; grid-template-columns: ${gridTemplateColumns}; padding: 12px 20px; font-weight: bold; border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; background: var(--bg-main); position: sticky; top: 0; z-index: 10; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                ${selectAllHeader}
                 ${headers}
                 <div style="text-align: right;"><i class="fa-solid fa-trash" style="opacity: 0.3;"></i></div>
             </div>
@@ -513,6 +543,10 @@ async function updateGrid() {
         item.addEventListener('click', async (e) => {
             if (e.target.closest('.btn-delete-item')) return;
             const id = item.dataset.id;
+            if (isSelectModeActive) {
+                handleComicClick(id, e.target);
+                return;
+            }
             const comic = (await db.getAllComics()).find(c => c.id === id);
             if (comic) openModal(comic);
         });
@@ -528,6 +562,11 @@ async function updateGrid() {
             }
         });
     });
+
+    // Update Header Checkbox State
+    if (isSelectModeActive && currentViewType === 'list') {
+        updateHeaderSelectAllState();
+    }
 }
 
 
@@ -570,8 +609,19 @@ function renderTile(comic) {
         }
     });
 
+    const isSelected = selectedComicIds.has(comic.id);
+    let selectBlock = '';
+    if (isSelectModeActive) {
+        selectBlock = `
+            <div class="bulk-checkbox-container">
+                <input type="checkbox" class="bulk-item-checkbox" data-id="${comic.id}" ${isSelected ? 'checked' : ''}>
+            </div>
+        `;
+    }
+
     return `
-        <div class="comic-card comic-item" data-id="${comic.id}">
+        <div class="comic-card comic-item ${isSelected ? 'selected' : ''}" data-id="${comic.id}">
+            ${selectBlock}
             <button class="btn-delete-item" data-id="${comic.id}" title="Löschen">
                 <i class="fa-solid fa-trash"></i>
             </button>
@@ -588,7 +638,9 @@ function renderTile(comic) {
 }
 
 function renderListItem(comic) {
-    const gridTemplateColumns = visibleFields.list.map(key => `var(--col-width-${key})`).join(' ') + ' 40px';
+    const isSelected = selectedComicIds.has(comic.id);
+    const selectColumn = isSelectModeActive ? '40px ' : '';
+    const gridTemplateColumns = selectColumn + visibleFields.list.map(key => `var(--col-width-${key})`).join(' ') + ' 40px';
     const listFields = visibleFields.list.map(key => ({ 
         key, 
         ...FIELD_CONFIG[key]
@@ -630,8 +682,15 @@ function renderListItem(comic) {
 
     const cells = listFields.map(renderCell).join('');
 
+    const selectCell = isSelectModeActive ? `
+        <div style="display: flex; align-items: center; justify-content: center;">
+            <input type="checkbox" class="bulk-item-checkbox" data-id="${comic.id}" ${isSelected ? 'checked' : ''} style="accent-color: var(--primary-color); width: 16px; height: 16px; cursor: pointer;">
+        </div>
+    ` : '';
+
     return `
-        <div class="list-item comic-item" data-id="${comic.id}" style="display: grid; grid-template-columns: ${gridTemplateColumns}; padding: 12px 20px; align-items: center; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 10px; cursor: pointer; font-size: 0.82rem; background: var(--bg-surface);">
+        <div class="list-item comic-item ${isSelected ? 'selected' : ''}" data-id="${comic.id}" style="display: grid; grid-template-columns: ${gridTemplateColumns}; padding: 12px 20px; align-items: center; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 10px; cursor: pointer; font-size: 0.82rem; background: var(--bg-surface);">
+            ${selectCell}
             ${cells}
             <div style="display: flex; justify-content: flex-end;">
                 <button class="btn-delete-item list-delete-btn" data-id="${comic.id}" title="Löschen" style="background: none; border: none; color: #ff4444; opacity: 0.7; cursor: pointer; padding: 4px; transition: all 0.2s;">
@@ -643,6 +702,7 @@ function renderListItem(comic) {
 }
 
 function renderDetailsItem(comic) {
+    const isSelected = selectedComicIds.has(comic.id);
     const bestandClass = `badge-${String(comic.bestand || '').toLowerCase().replace(/\s+/g, '-')}`;
     
     let imgBlock = '';
@@ -683,8 +743,18 @@ function renderDetailsItem(comic) {
         `;
     }
 
+    let selectBlock = '';
+    if (isSelectModeActive) {
+        selectBlock = `
+            <div class="bulk-checkbox-container">
+                <input type="checkbox" class="bulk-item-checkbox" data-id="${comic.id}" ${isSelected ? 'checked' : ''}>
+            </div>
+        `;
+    }
+
     return `
-        <div class="details-card comic-item" data-id="${comic.id}">
+        <div class="details-card comic-item ${isSelected ? 'selected' : ''}" data-id="${comic.id}">
+            ${selectBlock}
             ${imgBlock}
             <div class="details-info">
                 ${headerBlock}
@@ -827,3 +897,234 @@ function renderFieldConfigOverlay() {
         updateGrid();
     });
 }
+
+// --- Bulk Selection / Multi-Delete functions ---
+
+export function toggleSelectMode() {
+    isSelectModeActive = !isSelectModeActive;
+    selectedComicIds.clear();
+    
+    // Body-Klasse für CSS-Hiding setzen/entfernen
+    document.body.classList.toggle('bulk-select-active', isSelectModeActive);
+    
+    // update trigger button styling
+    const btn = document.getElementById('btn-toggle-select-mode');
+    if (btn) {
+        btn.classList.toggle('active', isSelectModeActive);
+    }
+    
+    // update grid layout to render checkboxes
+    updateGrid();
+    
+    // show/hide action bar
+    updateBulkActionBar();
+}
+
+export function handleComicClick(id, target) {
+    const isCheckbox = target.classList.contains('bulk-item-checkbox');
+    if (selectedComicIds.has(id)) {
+        if (!isCheckbox || !target.checked) {
+            selectedComicIds.delete(id);
+        }
+    } else {
+        if (!isCheckbox || target.checked) {
+            selectedComicIds.add(id);
+        }
+    }
+    
+    // Update DOM immediately for speed and fluidity
+    const itemEl = document.querySelector(`.comic-item[data-id="${id}"]`);
+    if (itemEl) {
+        itemEl.classList.toggle('selected', selectedComicIds.has(id));
+        const checkbox = itemEl.querySelector('.bulk-item-checkbox');
+        if (checkbox && !isCheckbox) {
+            checkbox.checked = selectedComicIds.has(id);
+        }
+    }
+    
+    updateHeaderSelectAllState();
+    updateBulkActionBar();
+}
+
+export function updateHeaderSelectAllState() {
+    const headerCheckbox = document.getElementById('bulk-select-all-header');
+    if (!headerCheckbox) return;
+    
+    const visibleIds = Array.from(document.querySelectorAll('.comic-item')).map(el => el.dataset.id);
+    if (visibleIds.length === 0) {
+        headerCheckbox.checked = false;
+        headerCheckbox.indeterminate = false;
+        return;
+    }
+    
+    const selectedCount = visibleIds.filter(id => selectedComicIds.has(id)).length;
+    
+    if (selectedCount === 0) {
+        headerCheckbox.checked = false;
+        headerCheckbox.indeterminate = false;
+    } else if (selectedCount === visibleIds.length) {
+        headerCheckbox.checked = true;
+        headerCheckbox.indeterminate = false;
+    } else {
+        headerCheckbox.checked = false;
+        headerCheckbox.indeterminate = true;
+    }
+}
+
+export function updateBulkActionBar() {
+    let bar = document.getElementById('bulk-action-bar');
+    if (!isSelectModeActive) {
+        if (bar) {
+            bar.classList.remove('show');
+            setTimeout(() => {
+                // Nur löschen, wenn es nicht in der Zwischenzeit wieder angezeigt wurde
+                if (!isSelectModeActive && bar.parentNode) {
+                    bar.remove();
+                }
+            }, 400);
+        }
+        return;
+    }
+
+    if (!bar) {
+        bar = document.createElement('div');
+        bar.id = 'bulk-action-bar';
+        bar.className = 'bulk-select-bar';
+        document.body.appendChild(bar);
+        
+        // Trigger reflow
+        bar.offsetHeight; 
+        bar.classList.add('show');
+    }
+
+    const count = selectedComicIds.size;
+    bar.innerHTML = `
+        <span style="font-weight: 600; font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-square-check" style="color: var(--primary-color);"></i>
+            <span>${count} ausgewählt</span>
+        </span>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <button class="btn btn-secondary" id="bulk-action-select-all" style="height: 34px; padding: 0 12px; font-size: 0.8rem; border-radius: 6px; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-check-double"></i> Alle sichtbaren
+            </button>
+            <button class="btn btn-danger" id="bulk-action-delete" ${count === 0 ? 'disabled' : ''} style="height: 34px; padding: 0 12px; font-size: 0.8rem; border-radius: 6px; background-color: var(--danger); border-color: var(--danger); color: white; display: flex; align-items: center; gap: 6px; cursor: ${count === 0 ? 'not-allowed' : 'pointer'}; opacity: ${count === 0 ? 0.5 : 1};">
+                <i class="fa-solid fa-trash"></i> Löschen
+            </button>
+            <button class="btn btn-secondary" id="bulk-action-cancel" style="height: 34px; padding: 0 12px; font-size: 0.8rem; border-radius: 6px; border-color: transparent; background: transparent;">
+                Abbrechen
+            </button>
+        </div>
+    `;
+
+    document.getElementById('bulk-action-select-all').addEventListener('click', () => {
+        selectAllComics();
+    });
+    
+    document.getElementById('bulk-action-delete').addEventListener('click', () => {
+        if (selectedComicIds.size === 0) return;
+        showBulkDeleteConfirmation();
+    });
+
+    document.getElementById('bulk-action-cancel').addEventListener('click', () => {
+        toggleSelectMode();
+    });
+}
+
+export function selectAllComics() {
+    const visibleItems = Array.from(document.querySelectorAll('.comic-item')).map(el => el.dataset.id);
+    if (visibleItems.length === 0) return;
+
+    const allSelected = visibleItems.every(id => selectedComicIds.has(id));
+    if (allSelected) {
+        visibleItems.forEach(id => selectedComicIds.delete(id));
+    } else {
+        visibleItems.forEach(id => selectedComicIds.add(id));
+    }
+    
+    // Update DOM
+    visibleItems.forEach(id => {
+        const itemEl = document.querySelector(`.comic-item[data-id="${id}"]`);
+        if (itemEl) {
+            itemEl.classList.toggle('selected', selectedComicIds.has(id));
+            const checkbox = itemEl.querySelector('.bulk-item-checkbox');
+            if (checkbox) checkbox.checked = selectedComicIds.has(id);
+        }
+    });
+    
+    updateHeaderSelectAllState();
+    updateBulkActionBar();
+}
+
+export function showBulkDeleteConfirmation() {
+    const existing = document.getElementById('bulk-delete-confirm-modal');
+    if (existing) existing.remove();
+    
+    const count = selectedComicIds.size;
+    const modalHtml = `
+        <div id="bulk-delete-confirm-modal" class="modal-overlay" style="z-index: 1100;">
+            <div class="modal-content" style="max-width: 450px;">
+                <div class="modal-header">
+                    <h2>Comics löschen</h2>
+                    <button class="close-btn" id="bulk-delete-modal-close"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="modal-body" style="padding: 24px;">
+                    <p style="margin: 0 0 12px 0; font-size: 1rem; color: var(--text-main); line-height: 1.5;">
+                        Möchtest du die <strong>${count}</strong> ausgewählten Comics wirklich dauerhaft aus deiner Sammlung löschen?
+                    </p>
+                    <p style="margin: 0; font-size: 0.85rem; color: #ff4444; font-weight: 500;">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Diese Aktion kann nicht rückgängig gemacht werden!
+                    </p>
+                </div>
+                <div class="modal-footer" style="padding: 16px 24px;">
+                    <button class="btn btn-secondary" id="bulk-delete-modal-cancel">Abbrechen</button>
+                    <button class="btn btn-danger" id="bulk-delete-modal-confirm" style="background-color: var(--danger); border-color: var(--danger); color: white;">
+                        <i class="fa-solid fa-trash"></i> ${count} Comics löschen
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    const modal = document.getElementById('bulk-delete-confirm-modal');
+    
+    const closeModal = () => {
+        modal.remove();
+    };
+    
+    document.getElementById('bulk-delete-modal-close').addEventListener('click', closeModal);
+    document.getElementById('bulk-delete-modal-cancel').addEventListener('click', closeModal);
+    
+    document.getElementById('bulk-delete-modal-confirm').addEventListener('click', async () => {
+        const confirmBtn = document.getElementById('bulk-delete-modal-confirm');
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Lösche...';
+        
+        try {
+            const idsToDelete = Array.from(selectedComicIds);
+            await db.deleteComics(idsToDelete);
+            
+            isSelectModeActive = false;
+            selectedComicIds.clear();
+            document.body.classList.remove('bulk-select-active');
+            
+            const bar = document.getElementById('bulk-action-bar');
+            if (bar) bar.remove();
+            
+            closeModal();
+            
+            // Re-render
+            const container = document.getElementById('view-container');
+            renderCollection(container);
+        } catch (error) {
+            console.error('Fehler beim Löschen der Comics:', error);
+            alert('Fehler beim Löschen: ' + error.message);
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = `<i class="fa-solid fa-trash"></i> ${count} Comics löschen`;
+        }
+    });
+}
+
+export { isSelectModeActive, selectedComicIds };
+

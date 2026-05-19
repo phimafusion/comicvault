@@ -250,6 +250,33 @@ input[type="number"] {
     color: white;
 }
 
+.btn-standalone-toggle {
+    padding: 8px 14px;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    box-sizing: border-box;
+}
+
+.btn-standalone-toggle:hover {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    border-color: var(--primary-color);
+}
+
+.btn-standalone-toggle.active {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
 /* Cards (Tiles View) */
 .cards-grid {
     display: grid;
@@ -625,4 +652,81 @@ input[type="number"] {
 .suggestion-tag-remove:hover {
     color: var(--danger);
     transform: scale(1.2);
+}
+
+/* Bulk Action Bar / Multi-Select Styles */
+.bulk-select-bar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 12px 28px;
+    background: rgba(30, 41, 59, 0.75);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-full);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+    opacity: 0;
+}
+
+.bulk-select-bar.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+/* Checkbox & Highlighting */
+.comic-card, .details-card {
+    position: relative !important;
+}
+
+.bulk-checkbox-container {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 15;
+    background: var(--bg-surface);
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+
+.bulk-checkbox-container:hover {
+    border-color: var(--primary-color);
+}
+
+.bulk-item-checkbox {
+    accent-color: var(--primary-color);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    margin: 0;
+}
+
+/* Selection Highlight States */
+.comic-item.selected {
+    border-color: var(--primary-color) !important;
+    box-shadow: var(--shadow-md), 0 0 15px rgba(6, 182, 212, 0.15) !important;
+    background-color: rgba(6, 182, 212, 0.03) !important;
+}
+
+.list-item.selected {
+    background-color: rgba(6, 182, 212, 0.05) !important;
+}
+
+/* Hide normal delete buttons in selection mode to avoid confusion */
+body.bulk-select-active .btn-delete-item,
+body.bulk-select-active .list-delete-btn {
+    display: none !important;
 }

@@ -50,6 +50,17 @@ class Database {
         }
     }
 
+    async deleteComics(ids) {
+        const col = this.getCollection();
+        if (!col || !ids || ids.length === 0) return;
+
+        const batch = dbFirestore.batch();
+        ids.forEach(id => {
+            batch.delete(col.doc(id));
+        });
+        await batch.commit();
+    }
+
     // Wunschliste
     getWishlistCollection() {
         const user = getCurrentUser();
