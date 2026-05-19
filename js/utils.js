@@ -1,0 +1,161 @@
+// ComicVault Utilities
+
+export function displayDate(dateStr, shorten = false) {
+    if (!dateStr) return '-';
+    
+    // YYYY-MM-DD (Fallback für alte Einträge)
+    const matchIso = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (matchIso) {
+        const y = shorten ? matchIso[1].slice(-2) : matchIso[1];
+        return `${matchIso[3]}.${matchIso[2]}.${y}`;
+    }
+    
+    // DD.MM.YYYY (Aktuelles Standard-Format)
+    const matchGer = String(dateStr).match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (matchGer) {
+        const y = shorten ? matchGer[3].slice(-2) : matchGer[3];
+        return `${matchGer[1]}.${matchGer[2]}.${y}`;
+    }
+    
+    // Langes Format (z.B. Zeitstempel)
+    if (String(dateStr).length > 15) {
+        const d = new Date(dateStr);
+        if (!isNaN(d)) {
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = String(d.getFullYear());
+            const y = shorten ? year.slice(-2) : year;
+            return `${day}.${month}.${y}`;
+        }
+    }
+    
+    return dateStr;
+}
+
+export function toInputDate(dateStr) {
+    if (!dateStr) return '';
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dateStr;
+    const parts = dateStr.split('.');
+    if (parts.length === 3) {
+        let [d, m, y] = parts;
+        if (d.length === 1) d = '0' + d;
+        if (m.length === 1) m = '0' + m;
+        if (y.length === 2) {
+            const yr = parseInt(y, 10);
+            y = (yr > 50 ? '19' : '20') + y;
+        }
+        return `${y}-${m}-${d}`;
+    }
+    return dateStr;
+}
+
+export function toGermanDate(dateStr) {
+    if (!dateStr) return '';
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [y, m, d] = dateStr.split('-');
+        return `${d}.${m}.${y}`;
+    }
+    return dateStr;
+}
+
+export function parseDate(val) {
+    if (val === undefined || val === null || val === "") return '';
+
+    let dateObj = null;
+
+    // 1. Falls es bereits ein Date-Objekt ist
+    if (val instanceof Date) {
+        dateObj = val;
+    }
+    // 2. Falls es ein langer String ist (z.B. Zeitstempel)
+    else if (typeof val === 'string' && val.length > 15) {
+        const d = new Date(val);
+        if (!isNaN(d)) dateObj = d;
+    }
+
+    if (dateObj) {
+        // Zeitverschiebung ausgleichen für lokales Datum
+        const d = new Date(dateObj.getTime() - (dateObj.getTimezoneOffset() * 60000));
+        const iso = d.toISOString().split('T')[0];
+        const [y, m, day] = iso.split('-');
+        return `${day}.${m}.${y}`;
+    }
+
+    let str = String(val).toLowerCase().trim();
+    if (str === 'x' || str === 'nein') return '';
+
+    // Flexibles Format: DD.MM.YYYY, DD.MM.YY, DD/MM/YY, DD-MM-YYYY, YYYY-MM-DD etc.
+    const dateMatch = str.match(/(\d{1,4})[\.\-\/\s]+(\d{1,2})[\.\-\/\s]+(\d{1,4})/);
+    if (dateMatch) {
+        let [_, p1, p2, p3] = dateMatch;
+        
+        let y, m, d;
+        // Wenn der erste Teil 4 Ziffern hat, gehen wir von YYYY-MM-DD aus
+        if (p1.length === 4) {
+            y = p1; m = p2; d = p3;
+        } else {
+            // Ansonsten DD-MM-YYYY oder DD-MM-YY
+            d = p1; m = p2; y = p3;
+            if (y.length === 2) {
+                const yearNum = parseInt(y, 10);
+                y = (yearNum >= 50 ? '19' : '20') + y;
+            } else if (y.length === 1) {
+                y = '200' + y;
+            }
+        }
+        
+        return `${d.padStart(2, '0')}.${m.padStart(2, '0')}.${y}`;
+    }
+
+    return str;
+}
+
+export function parseCurrency(val) {
+    if (val === undefined || val === null || val === "") return null;
+    if (typeof val === 'number') return val;
+    let str = String(val);
+    let clean = str.replace(/[^\d,.]/g, '');
+    if (!clean) return null;
+    const lastComma = clean.lastIndexOf(',');
+    const lastDot = clean.lastIndexOf('.');
+    if (lastComma > lastDot) clean = clean.replace(/\./g, '').replace(',', '.');
+    else if (lastDot > lastComma) clean = clean.replace(/,/g, '');
+    else if (lastComma !== -1) clean = clean.replace(',', '.');
+    return parseFloat(clean);
+}
+
+export function parseStars(val) {
+    if (val === undefined || val === null || val === "") return 0;
+    if (typeof val === 'number') return val <= 5 ? val * 2 : Math.min(val, 10);
+    let str = String(val);
+    const stars = (str.match(/[★⭐*]/g) || []).length;
+    if (stars > 0) return stars * 2;
+    
+    const digitsOnly = str.replace(/[^\d.]/g, '');
+    if (!digitsOnly) return 0;
+    
+    const num = parseFloat(digitsOnly);
+    if (!isNaN(num)) return num <= 5 ? num * 2 : Math.min(num, 10);
+    return 0;
+}
+
+export function renderStars(rating) {
+    if (!rating) return '-';
+    let starsHtml = '<div class="stars-display">';
+    for (let i = 1; i <= 5; i++) {
+        const val = i * 2;
+        if (rating >= val) {
+            starsHtml += '<i class="fa-solid fa-star"></i>';
+        } else if (rating === val - 1) {
+            starsHtml += '<i class="fa-solid fa-star-half-stroke"></i>';
+        } else {
+            starsHtml += '<i class="fa-regular fa-star" style="opacity: 0.3;"></i>';
+        }
+    }
+    starsHtml += '</div>';
+    return starsHtml;
+}
+
+export function getPlaceholderImage() {
+    return `https://placehold.co/400x600/1e293b/06b6d4?text=POW!&font=impact`;
+}

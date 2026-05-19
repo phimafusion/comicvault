@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ComicVault - Test Suite</title>
+    <!-- Mocha styles -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mocha/10.2.0/mocha.min.css">
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        #mocha {
+            background-color: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            margin: 0 auto;
+            max-width: 1000px;
+        }
+        #mocha .test.pass::after {
+            color: #10b981;
+        }
+        #mocha .test.fail::after {
+            color: #ef4444;
+        }
+        #mocha h1 a {
+            color: #06b6d4;
+        }
+        #mocha h1 {
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+        }
+        #mocha-stats {
+            background-color: #334155;
+            border-radius: 8px;
+            color: #f8fafc;
+        }
+    </style>
+</head>
+<body>
+    <div style="text-align: center; margin-bottom: 20px;">
+        <h1 style="color: #06b6d4; font-size: 2.2rem; margin-bottom: 5px;">ComicVault Test Runner</h1>
+        <p style="color: #94a3b8; margin-top: 0;">In-Browser Unit Tests mit Mocha & Chai</p>
+        <a href="index.html" style="color: #a78bfa; text-decoration: none; font-weight: bold;"><i class="fa-solid fa-arrow-left"></i> Zurück zur App</a>
+    </div>
+
+    <!-- Mocha output div -->
+    <div id="mocha"></div>
+
+    <!-- Mock UI Elements for load-time DOM selections in views -->
+    <div style="display: none;">
+        <div id="comic-modal"></div>
+        <form id="comic-form"></form>
+        <button id="btn-close-modal"></button>
+        <button id="btn-cancel-modal"></button>
+        <button id="btn-save-comic"></button>
+        <button id="btn-delete-comic"></button>
+        <div id="modal-title"></div>
+    </div>
+
+    <!-- Firebase Compatibility APIs for Mock/Import requirements -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
+
+    <!-- Mocha & Chai scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mocha/10.2.0/mocha.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chai/4.3.7/chai.min.js"></script>
+
+    <script>
+        // Setup BDD-style interface
+        mocha.setup('bdd');
+    </script>
+
+    <!-- Test Suites -->
+    <script type="module" src="./js/tests/utils.test.js"></script>
+    <script type="module" src="./js/tests/ui.test.js"></script>
+
+    <script type="module">
+        // Run tests
+        mocha.run();
+    </script>
+</body>
+</html>

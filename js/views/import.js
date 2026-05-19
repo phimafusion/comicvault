@@ -1,5 +1,6 @@
 import { db } from '../db.js';
 import { openModal } from './form.js';
+import { parseCurrency, parseStars, parseDate } from '../utils.js';
 
 export function renderImport(container) {
     const html = `
@@ -196,83 +197,7 @@ function getChangedFields(oldData, newData) {
 
 let importAborted = false;
 
-// URL Import Logic
-function parseCurrency(val) {
-    if (val === undefined || val === null || val === "") return null;
-    if (typeof val === 'number') return val;
-    let str = String(val);
-    let clean = str.replace(/[^\d,.]/g, '');
-    if (!clean) return null;
-    const lastComma = clean.lastIndexOf(',');
-    const lastDot = clean.lastIndexOf('.');
-    if (lastComma > lastDot) clean = clean.replace(/\./g, '').replace(',', '.');
-    else if (lastDot > lastComma) clean = clean.replace(/,/g, '');
-    else if (lastComma !== -1) clean = clean.replace(',', '.');
-    return parseFloat(clean);
-}
 
-function parseStars(val) {
-    if (val === undefined || val === null || val === "") return 0;
-    if (typeof val === 'number') return val <= 5 ? val * 2 : Math.min(val, 10);
-    let str = String(val);
-    const stars = (str.match(/[★⭐*]/g) || []).length;
-    if (stars > 0) return stars * 2;
-    const num = parseInt(str.replace(/[^\d]/g, ''));
-    if (!isNaN(num)) return num <= 5 ? num * 2 : Math.min(num, 10);
-    return 0;
-}
-
-function parseDate(val) {
-    if (val === undefined || val === null || val === "") return '';
-
-    let dateObj = null;
-
-    // 1. Falls es bereits ein Date-Objekt ist
-    if (val instanceof Date) {
-        dateObj = val;
-    }
-    // 2. Falls es ein langer String ist (z.B. Zeitstempel aus dem Screenshot)
-    else if (typeof val === 'string' && val.length > 15) {
-        const d = new Date(val);
-        if (!isNaN(d)) dateObj = d;
-    }
-
-    if (dateObj) {
-        // Zeitverschiebung ausgleichen für lokales Datum
-        const d = new Date(dateObj.getTime() - (dateObj.getTimezoneOffset() * 60000));
-        const iso = d.toISOString().split('T')[0];
-        const [y, m, day] = iso.split('-');
-        return `${day}.${m}.${y}`;
-    }
-
-    let str = String(val).toLowerCase().trim();
-    if (str === 'x' || str === 'nein') return '';
-
-    // Flexibles Format: DD.MM.YYYY, DD.MM.YY, DD/MM/YY, DD-MM-YYYY, YYYY-MM-DD etc.
-    const dateMatch = str.match(/(\d{1,4})[\.\-\/\s]+(\d{1,2})[\.\-\/\s]+(\d{1,4})/);
-    if (dateMatch) {
-        let [_, p1, p2, p3] = dateMatch;
-        
-        let y, m, d;
-        // Wenn der erste Teil 4 Ziffern hat, gehen wir von YYYY-MM-DD aus
-        if (p1.length === 4) {
-            y = p1; m = p2; d = p3;
-        } else {
-            // Ansonsten DD-MM-YYYY oder DD-MM-YY
-            d = p1; m = p2; y = p3;
-            if (y.length === 2) {
-                const yearNum = parseInt(y, 10);
-                y = (yearNum >= 50 ? '19' : '20') + y;
-            } else if (y.length === 1) {
-                y = '200' + y;
-            }
-        }
-        
-        return `${d.padStart(2, '0')}.${m.padStart(2, '0')}.${y}`;
-    }
-
-    return str;
-}
 
 // CSV Import Logic
 async function handleCSVImport() {

@@ -1,7 +1,7 @@
 import { db } from './db.js';
 import { onAuthStateChanged, loginWithGoogle, logout } from './auth.js';
-import { renderCollection, attachCollectionEvents } from './views/collection.js';
-import { renderStats } from './views/stats.js';
+import { renderCollection, attachCollectionEvents, cleanupCollection } from './views/collection.js';
+import { renderStats, cleanupStats } from './views/stats.js';
 import { renderBudget } from './views/budget.js';
 import { renderWishlist } from './views/wishlist.js';
 import { renderImport } from './views/import.js';
@@ -97,6 +97,13 @@ class App {
     }
 
     navigate(view) {
+        // Clean up previous view before navigating
+        if (this.currentView === 'collection') {
+            cleanupCollection();
+        } else if (this.currentView === 'stats') {
+            cleanupStats();
+        }
+
         this.currentView = view;
         
         this.navItems.forEach(item => {

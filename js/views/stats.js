@@ -92,6 +92,11 @@ function renderStatsMultiSelect(key, label, options) {
     `;
 }
 
+let statsEventsAttached = false;
+const handleGlobalStatsClick = () => {
+    document.querySelectorAll('.multi-select-dropdown').forEach(d => d.style.display = 'none');
+};
+
 function attachStatsEvents() {
     document.querySelectorAll('.stats-filter-trigger').forEach(trigger => {
         trigger.addEventListener('click', (e) => {
@@ -104,9 +109,10 @@ function attachStatsEvents() {
         });
     });
 
-    document.addEventListener('click', () => {
-        document.querySelectorAll('.multi-select-dropdown').forEach(d => d.style.display = 'none');
-    });
+    if (!statsEventsAttached) {
+        document.addEventListener('click', handleGlobalStatsClick);
+        statsEventsAttached = true;
+    }
 
     document.querySelectorAll('.stats-filter-checkbox').forEach(cb => {
         cb.addEventListener('change', (e) => {
@@ -129,6 +135,11 @@ function attachStatsEvents() {
             renderStats(container);
         });
     }
+}
+
+export function cleanupStats() {
+    document.removeEventListener('click', handleGlobalStatsClick);
+    statsEventsAttached = false;
 }
 
 async function updateStats() {

@@ -1,3 +1,5 @@
+import { db } from '../db.js';
+
 // Simple Budget View Prototype
 export function renderBudget(container) {
     const html = `

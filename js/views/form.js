@@ -1,4 +1,5 @@
 import { db } from '../db.js';
+import { toInputDate, toGermanDate } from '../utils.js';
 
 const modal = document.getElementById('comic-modal');
 const form = document.getElementById('comic-form');
@@ -9,32 +10,6 @@ const btnDelete = document.getElementById('btn-delete-comic');
 const modalTitle = document.getElementById('modal-title');
 
 let currentEditingId = null;
-
-function toInputDate(dateStr) {
-    if (!dateStr) return '';
-    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dateStr;
-    const parts = dateStr.split('.');
-    if (parts.length === 3) {
-        let [d, m, y] = parts;
-        if (d.length === 1) d = '0' + d;
-        if (m.length === 1) m = '0' + m;
-        if (y.length === 2) {
-            const yr = parseInt(y);
-            y = (yr > 50 ? '19' : '20') + y;
-        }
-        return `${y}-${m}-${d}`;
-    }
-    return dateStr;
-}
-
-function toGermanDate(dateStr) {
-    if (!dateStr) return '';
-    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        const [y, m, d] = dateStr.split('-');
-        return `${d}.${m}.${y}`;
-    }
-    return dateStr;
-}
 
 export async function openModal(comic = null, isWishlist = false) {
     currentEditingId = comic ? comic.id : null;

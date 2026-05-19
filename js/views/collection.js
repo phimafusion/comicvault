@@ -1,5 +1,6 @@
 import { db } from '../db.js';
 import { openModal } from './form.js';
+import { displayDate, renderStars, getPlaceholderImage } from '../utils.js';
 
 let currentViewType = 'list'; 
 let searchTerm = '';
@@ -133,41 +134,79 @@ function renderMultiSelect(key, label, options) {
 }
 
 let eventsAttached = false;
-export function attachCollectionEvents() {
-    if (eventsAttached) return;
-    eventsAttached = true;
+let draggedColumnKey = null;
 
-    // Dropdown Toggles
-    document.addEventListener('click', (e) => {
-        const trigger = e.target.closest('.multi-select-trigger');
-        if (trigger) {
-            const key = trigger.dataset.key;
-            const dropdown = document.getElementById(`dropdown-${key}`);
-            const isVisible = dropdown.style.display === 'block';
-            
-            // Andere schließen
-            document.querySelectorAll('.multi-select-dropdown').forEach(d => d.style.display = 'none');
-            
-            if (!isVisible) dropdown.style.display = 'block';
-            e.stopPropagation();
-        } else if (!e.target.closest('.multi-select-dropdown')) {
-            document.querySelectorAll('.multi-select-dropdown').forEach(d => d.style.display = 'none');
+// Combined Click Handler for all collection actions
+const handleCollectionClick = (e) => {
+    // 1. Dropdown Toggles
+    const trigger = e.target.closest('.multi-select-trigger');
+    if (trigger) {
+        const key = trigger.dataset.key;
+        const dropdown = document.getElementById(`dropdown-${key}`);
+        const isVisible = dropdown.style.display === 'block';
+        
+        // Andere schließen
+        document.querySelectorAll('.multi-select-dropdown').forEach(d => d.style.display = 'none');
+        
+        if (!isVisible) dropdown.style.display = 'block';
+        e.stopPropagation();
+        return;
+    } else if (!e.target.closest('.multi-select-dropdown')) {
+        document.querySelectorAll('.multi-select-dropdown').forEach(d => d.style.display = 'none');
+    }
+
+    // 2. Reset Button Click
+    if (e.target.closest('#btn-reset-filters-direct')) {
+        activeFilters = { verlag: [], format: [], bestand: ['vorhanden', 'vorbestellt'], gelesen: [], bezugsquelle: [], serie: [] };
+        const container = document.getElementById('view-container');
+        renderCollection(container);
+        return;
+    }
+
+    // 3. Sortierung über Header Click
+    const header = e.target.closest('.sortable-header');
+    if (header) {
+        const newSortBy = header.dataset.sort;
+        if (sortBy === newSortBy) {
+            sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortBy = newSortBy;
+            sortOrder = 'asc';
         }
-    });
+        updateGrid();
+        return;
+    }
 
-    // Checkbox Events
-    document.addEventListener('change', (e) => {
-        if (e.target.classList.contains('filter-checkbox')) {
-            const key = e.target.dataset.key;
-            const value = e.target.value;
-            if (e.target.checked) {
-                if (!activeFilters[key].includes(value)) activeFilters[key].push(value);
-            } else {
-                activeFilters[key] = activeFilters[key].filter(v => v !== value);
-            }
-            
-            // Button-Text und Stil aktualisieren
-            const trigger = document.querySelector(`.multi-select-trigger[data-key="${key}"]`);
+    // 4. Ansichtsumschaltung Click
+    const btn = e.target.closest('.view-toggle-btn');
+    if (btn) {
+        if (btn.id === 'btn-configure-fields') {
+            renderFieldConfigOverlay();
+            return;
+        }
+        if (btn.dataset.type) {
+            document.querySelectorAll('.view-toggle-btn[data-type]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentViewType = btn.dataset.type;
+            updateGrid();
+        }
+    }
+};
+
+// Checkbox Filter Change Handler
+const handleCheckboxChange = (e) => {
+    if (e.target.classList.contains('filter-checkbox')) {
+        const key = e.target.dataset.key;
+        const value = e.target.value;
+        if (e.target.checked) {
+            if (!activeFilters[key].includes(value)) activeFilters[key].push(value);
+        } else {
+            activeFilters[key] = activeFilters[key].filter(v => v !== value);
+        }
+        
+        // Button-Text und Stil aktualisieren
+        const trigger = document.querySelector(`.multi-select-trigger[data-key="${key}"]`);
+        if (trigger) {
             const label = key.charAt(0).toUpperCase() + key.slice(1);
             const selectedCount = activeFilters[key].length;
             const isActive = selectedCount > 0;
@@ -176,168 +215,169 @@ export function attachCollectionEvents() {
             trigger.style.background = isActive ? 'rgba(6, 182, 212, 0.1)' : 'var(--bg-card)';
             trigger.style.borderColor = isActive ? 'var(--primary-color)' : 'var(--border-color)';
             trigger.style.color = isActive ? 'var(--primary-color)' : 'inherit';
-
-            updateGrid();
         }
-    });
 
-    // Reset Button
-    document.addEventListener('click', (e) => {
-        if (e.target.closest('#btn-reset-filters-direct')) {
-            activeFilters = { verlag: [], format: [], bestand: ['vorhanden', 'vorbestellt'], gelesen: [], bezugsquelle: [], serie: [] };
-            const container = document.getElementById('view-container');
-            renderCollection(container);
-        }
-    });
-
-    // Sortierung über Header
-    document.addEventListener('click', (e) => {
-        const header = e.target.closest('.sortable-header');
-        if (header) {
-            const newSortBy = header.dataset.sort;
-            if (sortBy === newSortBy) {
-                sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-            } else {
-                sortBy = newSortBy;
-                sortOrder = 'asc';
-            }
-            updateGrid();
-        }
-    });
-
-    // Ansichtsumschaltung
-    document.addEventListener('click', (e) => {
-        const btn = e.target.closest('.view-toggle-btn');
-        if (btn) {
-            if (btn.id === 'btn-configure-fields') {
-                renderFieldConfigOverlay();
-                return;
-            }
-            if (btn.dataset.type) {
-                document.querySelectorAll('.view-toggle-btn[data-type]').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentViewType = btn.dataset.type;
-                updateGrid();
-            }
-        }
-    });
-
-    // Globale Suche
-    document.addEventListener('global-search', (e) => {
-        searchTerm = e.detail.query.toLowerCase();
         updateGrid();
-    });
+    }
+};
 
-    // Drag & Drop für Spalten (Listenansicht)
-    let draggedColumnKey = null;
+// Global Search Event Handler
+const handleGlobalSearch = (e) => {
+    searchTerm = e.detail.query.toLowerCase();
+    updateGrid();
+};
 
-    document.addEventListener('dragstart', (e) => {
-        const header = e.target.closest('.sortable-header');
+// Drag & Drop Handlers
+const handleDragStart = (e) => {
+    const header = e.target.closest('.sortable-header');
+    if (header) {
+        draggedColumnKey = header.dataset.sort;
+        setTimeout(() => {
+            header.style.opacity = '0.4';
+            header.style.background = 'rgba(255,255,255,0.05)';
+        }, 0);
+    }
+};
+
+const handleDragEnd = (e) => {
+    if (draggedColumnKey) {
+        const header = document.querySelector(`.sortable-header[data-sort="${draggedColumnKey}"]`);
         if (header) {
-            draggedColumnKey = header.dataset.sort;
-            setTimeout(() => {
-                header.style.opacity = '0.4';
-                header.style.background = 'rgba(255,255,255,0.05)';
-            }, 0);
+            header.style.opacity = '1';
+            header.style.background = 'transparent';
         }
-    });
+        document.querySelectorAll('.sortable-header').forEach(h => h.style.borderLeft = '');
+        draggedColumnKey = null;
+    }
+};
 
-    document.addEventListener('dragend', (e) => {
-        if (draggedColumnKey) {
-            const header = document.querySelector(`.sortable-header[data-sort="${draggedColumnKey}"]`);
-            if (header) {
-                header.style.opacity = '1';
-                header.style.background = 'transparent';
-            }
-            document.querySelectorAll('.sortable-header').forEach(h => h.style.borderLeft = '');
-            draggedColumnKey = null;
-        }
-    });
+const handleDragOver = (e) => {
+    const header = e.target.closest('.sortable-header');
+    if (header && draggedColumnKey && header.dataset.sort !== draggedColumnKey) {
+        e.preventDefault(); // Erlaubt das Drop-Event
+        document.querySelectorAll('.sortable-header').forEach(h => h.style.borderLeft = '');
+        header.style.borderLeft = '2px solid var(--primary-color)';
+    }
+};
 
-    document.addEventListener('dragover', (e) => {
-        const header = e.target.closest('.sortable-header');
-        if (header && draggedColumnKey && header.dataset.sort !== draggedColumnKey) {
-            e.preventDefault(); // Erlaubt das Drop-Event
-            // Visuelles Feedback
-            document.querySelectorAll('.sortable-header').forEach(h => h.style.borderLeft = '');
-            header.style.borderLeft = '2px solid var(--primary-color)';
-        }
-    });
-    
-    document.addEventListener('dragleave', (e) => {
-        const header = e.target.closest('.sortable-header');
-        if (header) {
-            header.style.borderLeft = '';
-        }
-    });
-    document.addEventListener('drop', (e) => {
-        const header = e.target.closest('.sortable-header');
-        if (header && draggedColumnKey && header.dataset.sort !== draggedColumnKey) {
-            e.preventDefault();
-            const targetKey = header.dataset.sort;
-            
-            const list = visibleFields.list;
-            const fromIndex = list.indexOf(draggedColumnKey);
-            const toIndex = list.indexOf(targetKey);
-            
-            if (fromIndex > -1 && toIndex > -1) {
-                list.splice(fromIndex, 1);
-                list.splice(toIndex, 0, draggedColumnKey);
-                
-                localStorage.setItem('comicvault_visible_fields', JSON.stringify(visibleFields));
-                updateGrid();
-            }
-        }
-    });
+const handleDragLeave = (e) => {
+    const header = e.target.closest('.sortable-header');
+    if (header) {
+        header.style.borderLeft = '';
+    }
+};
 
-    // Spaltenbreiten anpassen (Resize)
-    let isResizing = false;
-    let currentResizerKey = null;
-    let startX, startWidth, headerEl;
-
-    document.addEventListener('mousedown', e => {
-        const resizer = e.target.closest('.col-resizer');
-        if (resizer) {
-            e.preventDefault();
-            e.stopPropagation();
-            isResizing = true;
-            currentResizerKey = resizer.dataset.key;
-            startX = e.pageX;
-            headerEl = resizer.parentElement;
-            startWidth = headerEl.offsetWidth;
-            
-            document.body.style.cursor = 'col-resize';
-            headerEl.style.borderRight = '2px solid var(--primary-color)';
-        }
-    });
-
-    let resizeTick = false;
-    document.addEventListener('mousemove', e => {
-        if (!isResizing || resizeTick) return;
+const handleDrop = (e) => {
+    const header = e.target.closest('.sortable-header');
+    if (header && draggedColumnKey && header.dataset.sort !== draggedColumnKey) {
+        e.preventDefault();
+        const targetKey = header.dataset.sort;
         
-        resizeTick = true;
-        requestAnimationFrame(() => {
-            const diff = e.pageX - startX;
-            const newWidth = Math.max(40, startWidth + diff);
+        const list = visibleFields.list;
+        const fromIndex = list.indexOf(draggedColumnKey);
+        const toIndex = list.indexOf(targetKey);
+        
+        if (fromIndex > -1 && toIndex > -1) {
+            list.splice(fromIndex, 1);
+            list.splice(toIndex, 0, draggedColumnKey);
             
-            visibleFields.columnWidths[currentResizerKey] = `${newWidth}px`;
-            
-            // Performance-Optimierung: Nur die CSS-Variable am Container ändern
-            const grid = document.getElementById('collection-grid');
-            if (grid) {
-                grid.style.setProperty(`--col-width-${currentResizerKey}`, `${newWidth}px`);
-            }
-            resizeTick = false;
-        });
-    });
+            localStorage.setItem('comicvault_visible_fields', JSON.stringify(visibleFields));
+            updateGrid();
+        }
+    }
+};
 
-    document.addEventListener('mouseup', () => {
-        if (!isResizing) return;
-        isResizing = false;
-        document.body.style.cursor = '';
-        if (headerEl) headerEl.style.borderRight = '';
-        localStorage.setItem('comicvault_visible_fields', JSON.stringify(visibleFields));
+// Column Resizing Handlers (Dynamically bound)
+let isResizing = false;
+let currentResizerKey = null;
+let startX, startWidth, headerEl;
+let resizeTick = false;
+
+const handleMouseMove = (e) => {
+    if (!isResizing || resizeTick) return;
+    
+    resizeTick = true;
+    requestAnimationFrame(() => {
+        const diff = e.pageX - startX;
+        const newWidth = Math.max(40, startWidth + diff);
+        
+        visibleFields.columnWidths[currentResizerKey] = `${newWidth}px`;
+        
+        const grid = document.getElementById('collection-grid');
+        if (grid) {
+            grid.style.setProperty(`--col-width-${currentResizerKey}`, `${newWidth}px`);
+        }
+        resizeTick = false;
     });
+};
+
+const handleMouseUp = () => {
+    if (!isResizing) return;
+    isResizing = false;
+    document.body.style.cursor = '';
+    if (headerEl) headerEl.style.borderRight = '';
+    localStorage.setItem('comicvault_visible_fields', JSON.stringify(visibleFields));
+
+    // Dynamic listeners unbinden
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+};
+
+const handleMouseDown = (e) => {
+    const resizer = e.target.closest('.col-resizer');
+    if (resizer) {
+        e.preventDefault();
+        e.stopPropagation();
+        isResizing = true;
+        currentResizerKey = resizer.dataset.key;
+        startX = e.pageX;
+        headerEl = resizer.parentElement;
+        startWidth = headerEl.offsetWidth;
+        
+        document.body.style.cursor = 'col-resize';
+        headerEl.style.borderRight = '2px solid var(--primary-color)';
+
+        // Dynamic listeners binden
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }
+};
+
+export function attachCollectionEvents() {
+    if (eventsAttached) return;
+    eventsAttached = true;
+
+    document.addEventListener('click', handleCollectionClick);
+    document.addEventListener('change', handleCheckboxChange);
+    document.addEventListener('global-search', handleGlobalSearch);
+    
+    document.addEventListener('dragstart', handleDragStart);
+    document.addEventListener('dragend', handleDragEnd);
+    document.addEventListener('dragover', handleDragOver);
+    document.addEventListener('dragleave', handleDragLeave);
+    document.addEventListener('drop', handleDrop);
+    
+    document.addEventListener('mousedown', handleMouseDown);
+}
+
+export function cleanupCollection() {
+    document.removeEventListener('click', handleCollectionClick);
+    document.removeEventListener('change', handleCheckboxChange);
+    document.removeEventListener('global-search', handleGlobalSearch);
+    
+    document.removeEventListener('dragstart', handleDragStart);
+    document.removeEventListener('dragend', handleDragEnd);
+    document.removeEventListener('dragover', handleDragOver);
+    document.removeEventListener('dragleave', handleDragLeave);
+    document.removeEventListener('drop', handleDrop);
+    
+    document.removeEventListener('mousedown', handleMouseDown);
+    
+    // Sicherheitshalber unbinden, falls ein Drag lief
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+    
+    eventsAttached = false;
 }
 
 async function updateGrid() {
@@ -490,59 +530,7 @@ async function updateGrid() {
     });
 }
 
-function getPlaceholderImage() {
-    return `https://placehold.co/400x600/1e293b/06b6d4?text=POW!&font=impact`;
-}
 
-function renderStars(rating) {
-    if (!rating) return '-';
-    let starsHtml = '<div class="stars-display">';
-    for (let i = 1; i <= 5; i++) {
-        const val = i * 2;
-        if (rating >= val) {
-            starsHtml += '<i class="fa-solid fa-star"></i>';
-        } else if (rating === val - 1) {
-            starsHtml += '<i class="fa-solid fa-star-half-stroke"></i>';
-        } else {
-            starsHtml += '<i class="fa-regular fa-star" style="opacity: 0.3;"></i>';
-        }
-    }
-    starsHtml += '</div>';
-    return starsHtml;
-}
-
-function displayDate(dateStr, shorten = false) {
-    if (!dateStr) return '-';
-    
-    // YYYY-MM-DD (Fallback für alte Einträge)
-    const matchIso = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (matchIso) {
-        const y = shorten ? matchIso[1].slice(-2) : matchIso[1];
-        return `${matchIso[3]}.${matchIso[2]}.${y}`;
-    }
-    
-    // DD.MM.YYYY (Aktuelles Standard-Format)
-    const matchGer = String(dateStr).match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-    if (matchGer) {
-        const y = shorten ? matchGer[3].slice(-2) : matchGer[3];
-        return `${matchGer[1]}.${matchGer[2]}.${y}`;
-    }
-    
-    // Langes Format (z.B. Zeitstempel)
-    if (String(dateStr).length > 15) {
-        const d = new Date(dateStr);
-        if (!isNaN(d)) {
-            const s = d.toLocaleDateString('de-DE');
-            if (shorten) {
-                const parts = s.split('.');
-                if (parts.length === 3) return `${parts[0]}.${parts[1]}.${parts[2].slice(-2)}`;
-            }
-            return s;
-        }
-    }
-    
-    return dateStr;
-}
 
 function renderTile(comic) {
     const bestandClass = `badge-${String(comic.bestand || '').toLowerCase().replace(/\s+/g, '-')}`;
