@@ -1,5 +1,5 @@
 import { db } from '../db.js';
-import { initAutocomplete } from './form.js';
+import { initAutocomplete } from '../components/autocomplete.js';
 
 export function renderSettings(container) {
     const settings = db.getSettings();

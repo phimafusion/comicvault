@@ -1,4 +1,4 @@
-import { initAutocomplete } from '../views/form.js';
+import { initAutocomplete } from '../components/autocomplete.js';
 import { renderSettings } from '../views/settings.js';
 import { db } from '../db.js';
 
@@ -338,15 +338,15 @@ describe('Configurable Suggestions Settings Tests', () => {
     });
 
     it('sollte bei vorhandenen Einstellungen "verliehen" migrieren, falls es fehlt', () => {
-        // Original getSettings wiederherstellen für diesen Test
+        // Original getSettings und saveSettings wiederherstellen für diesen Test
         db.getSettings = originalGetSettings;
         db.saveSettings = originalSaveSettings;
         
-        const originalGetItem = localStorage.getItem;
-        const originalSetItem = localStorage.setItem;
+        // Backup real localStorage settings
+        const originalSettingsStr = localStorage.getItem('comicvault_settings');
         
-        let savedValue = null;
-        localStorage.getItem = () => JSON.stringify({
+        // Set up test data in real localStorage
+        localStorage.setItem('comicvault_settings', JSON.stringify({
             theme: 'dark',
             customSuggestions: {
                 typ: ['Comic'],
@@ -355,21 +355,27 @@ describe('Configurable Suggestions Settings Tests', () => {
                 zustand: ['neu'],
                 bestand: ['vorhanden', 'vorbestellt', 'verkauft', 'abgegeben']
             }
-        });
-        localStorage.setItem = (key, val) => {
-            savedValue = JSON.parse(val);
-        };
+        }));
         
         try {
             const settings = db.getSettings();
+            
+            // Check returned settings
             expect(settings.customSuggestions.bestand).to.include('verliehen');
             expect(settings.customSuggestions.verlag).to.be.undefined;
-            expect(savedValue).to.not.be.null;
-            expect(savedValue.customSuggestions.bestand).to.include('verliehen');
-            expect(savedValue.customSuggestions.verlag).to.be.undefined;
+            
+            // Check that the migrated settings were actually saved back to localStorage
+            const savedSettings = JSON.parse(localStorage.getItem('comicvault_settings'));
+            expect(savedSettings).to.not.be.null;
+            expect(savedSettings.customSuggestions.bestand).to.include('verliehen');
+            expect(savedSettings.customSuggestions.verlag).to.be.undefined;
         } finally {
-            localStorage.getItem = originalGetItem;
-            localStorage.setItem = originalSetItem;
+            // Restore original localStorage settings
+            if (originalSettingsStr !== null) {
+                localStorage.setItem('comicvault_settings', originalSettingsStr);
+            } else {
+                localStorage.removeItem('comicvault_settings');
+            }
         }
     });
 });
