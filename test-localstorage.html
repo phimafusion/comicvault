@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<body>
+<script>
+    let saved = null;
+    localStorage.setItem = (key, val) => {
+        saved = val;
+    };
+    localStorage.setItem('foo', 'bar');
+    console.log(saved); // Should be 'bar'
+</script>
+</body>
+</html>
