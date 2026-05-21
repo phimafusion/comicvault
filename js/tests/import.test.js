@@ -33,6 +33,16 @@ describe('JSON Import Feature Tests', () => {
                 format: 'Hardcover',
                 sprache: 'Deutsch',
                 preis: 19.99
+            },
+            {
+                id: 'existing-2',
+                titel: 'Superman: Red Son',
+                serie: 'Superman',
+                nummer: 1,
+                verlag: 'DC',
+                format: 'Softcover',
+                sprache: 'Deutsch',
+                preis: 14.99
             }
         ];
 
@@ -106,14 +116,14 @@ describe('JSON Import Feature Tests', () => {
             },
             // Skip (keine Änderungen)
             {
-                id: 'existing-1',
-                titel: 'Batman: The Dark Knight Returns',
-                serie: 'Batman',
+                id: 'existing-2',
+                titel: 'Superman: Red Son',
+                serie: 'Superman',
                 nummer: 1,
                 verlag: 'DC',
-                format: 'Hardcover',
+                format: 'Softcover',
                 sprache: 'Deutsch',
-                preis: 19.99
+                preis: 14.99
             }
         ];
 
