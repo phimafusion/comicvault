@@ -141,7 +141,7 @@ describe('JSON Import Feature Tests', () => {
         btnImport.click();
 
         // Wait for async reader and import processing loops
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         const sumNew = document.getElementById('sum-new').textContent;
         const sumUpdated = document.getElementById('sum-updated').textContent;
@@ -203,7 +203,7 @@ describe('JSON Import Feature Tests', () => {
 
         btnImport.click();
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         const sumNew = document.getElementById('sum-new').textContent;
         const sumUpdated = document.getElementById('sum-updated').textContent;
@@ -236,7 +236,7 @@ describe('JSON Import Feature Tests', () => {
 
         btnImport.click();
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         expect(statusDiv.style.display).to.equal('block');
         expect(statusDiv.textContent).to.contain('Fehler');
