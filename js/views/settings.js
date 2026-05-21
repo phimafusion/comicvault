@@ -297,26 +297,8 @@ export function renderSettings(container) {
     });
 
     // Clear Database
-    document.getElementById('btn-clear-database').addEventListener('click', async () => {
-        const confirm1 = confirm('Möchtest du wirklich ALLE Daten (Sammlung & Wunschliste) löschen? Dies kann nicht rückgängig gemacht werden!');
-        if (confirm1) {
-            const confirm2 = confirm('Bist du dir ABSOLUT sicher? Alle Einträge werden entfernt.');
-            if (confirm2) {
-                const btn = document.getElementById('btn-clear-database');
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Lösche Datenbank...';
-
-                try {
-                    await db.clearAllData();
-                    alert('Datenbank wurde erfolgreich geleert.');
-                    window.location.reload();
-                } catch (e) {
-                    alert('Fehler beim Löschen der Daten: ' + e.message);
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Datenbank vollständig leeren';
-                }
-            }
-        }
+    document.getElementById('btn-clear-database').addEventListener('click', () => {
+        showClearDatabaseModal();
     });
 
     // Autocomplete für Standardwerte aktivieren
@@ -328,4 +310,115 @@ export function renderSettings(container) {
         initAutocomplete(document.getElementById('settings-default-publisher'), allPublishers);
     });
 }
+
+function showClearDatabaseModal() {
+    // Falls das Modal bereits existiert (Sicherheitsmaßnahme), entfernen
+    const existing = document.getElementById('db-clear-confirm-modal');
+    if (existing) existing.remove();
+
+    const modalHtml = `
+        <div id="db-clear-confirm-modal" class="modal-overlay" style="z-index: 1100; opacity: 0; transition: opacity 0.2s ease; display: flex;">
+            <div class="modal-content" style="max-width: 450px;">
+                <div class="modal-header">
+                    <h2>Datenbank löschen</h2>
+                    <button class="close-btn" id="db-clear-modal-close"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="modal-body" style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+                    <p style="margin: 0; font-size: 1rem; color: var(--text-main); line-height: 1.5;">
+                        Möchtest du wirklich <strong>ALLE Daten</strong> (Sammlung & Wunschliste) unwiderruflich löschen? Dies kann nicht rückgängig gemacht werden!
+                    </p>
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--danger); font-weight: 500;">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Diese Aktion ist endgültig!
+                    </p>
+                    <div class="form-group" style="margin-top: 8px;">
+                        <label class="form-label" style="margin-bottom: 8px;">Bitte gib <strong>DELETE</strong> zur Bestätigung ein:</label>
+                        <input type="text" id="db-clear-confirm-input" class="form-control" placeholder="DELETE" style="width: 100%;" autocomplete="off">
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding: 16px 24px;">
+                    <button class="btn btn-secondary" id="db-clear-modal-cancel">Abbrechen</button>
+                    <button class="btn btn-danger" id="db-clear-modal-confirm" disabled style="background-color: var(--danger); border-color: var(--danger); color: white; opacity: 0.5; cursor: not-allowed;">
+                        <i class="fa-solid fa-trash-can"></i> Datenbank leeren
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = document.getElementById('db-clear-confirm-modal');
+    // Sanfter Fade-In
+    setTimeout(() => {
+        modal.style.opacity = '1';
+    }, 10);
+
+    const closeBtn = document.getElementById('db-clear-modal-close');
+    const cancelBtn = document.getElementById('db-clear-modal-cancel');
+    const confirmBtn = document.getElementById('db-clear-modal-confirm');
+    const confirmInput = document.getElementById('db-clear-confirm-input');
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    };
+
+    const closeModal = () => {
+        modal.style.opacity = '0';
+        document.removeEventListener('keydown', handleKeyDown);
+        setTimeout(() => {
+            modal.remove();
+        }, 200);
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    document.addEventListener('keydown', handleKeyDown);
+
+    confirmInput.addEventListener('input', (e) => {
+        const val = e.target.value;
+        if (val === 'DELETE') {
+            confirmBtn.disabled = false;
+            confirmBtn.style.opacity = '1';
+            confirmBtn.style.cursor = 'pointer';
+        } else {
+            confirmBtn.disabled = true;
+            confirmBtn.style.opacity = '0.5';
+            confirmBtn.style.cursor = 'not-allowed';
+        }
+    });
+
+    confirmBtn.addEventListener('click', async () => {
+        if (confirmInput.value !== 'DELETE') return;
+
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Lösche Datenbank...';
+        confirmInput.disabled = true;
+        cancelBtn.disabled = true;
+        closeBtn.disabled = true;
+
+        try {
+            await db.clearAllData();
+            alert('Datenbank wurde erfolgreich geleert.');
+            closeModal();
+            if (!window.__TESTING__) {
+                window.location.reload();
+            }
+        } catch (e) {
+            alert('Fehler beim Löschen der Daten: ' + e.message);
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Datenbank leeren';
+            confirmInput.disabled = false;
+            cancelBtn.disabled = false;
+            closeBtn.disabled = false;
+        }
+    });
+
+    // Input direkt fokussieren
+    setTimeout(() => {
+        confirmInput.focus();
+    }, 50);
+}
+
 

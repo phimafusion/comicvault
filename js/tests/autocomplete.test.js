@@ -378,4 +378,58 @@ describe('Configurable Suggestions Settings Tests', () => {
             }
         }
     });
+
+    it('sollte das Lösch-Modal anzeigen und erst bei Eingabe von "DELETE" die Datenbank leeren', async () => {
+        window.__TESTING__ = true;
+        let clearDataCalled = false;
+        const originalClearAllData = db.clearAllData;
+        db.clearAllData = async () => {
+            clearDataCalled = true;
+        };
+
+        renderSettings(settingsContainer);
+
+        const clearBtn = settingsContainer.querySelector('#btn-clear-database');
+        expect(clearBtn).to.not.be.null;
+
+        clearBtn.click();
+
+        // Modal sollte im DOM existieren
+        const modal = document.getElementById('db-clear-confirm-modal');
+        expect(modal).to.not.be.null;
+
+        const confirmBtn = document.getElementById('db-clear-modal-confirm');
+        const confirmInput = document.getElementById('db-clear-confirm-input');
+        expect(confirmBtn).to.not.be.null;
+        expect(confirmInput).to.not.be.null;
+
+        // Button sollte disabled sein
+        expect(confirmBtn.disabled).to.be.true;
+
+        // Falsche Eingabe eingeben
+        confirmInput.value = 'DELET';
+        confirmInput.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(confirmBtn.disabled).to.be.true;
+
+        // Richtige Eingabe
+        confirmInput.value = 'DELETE';
+        confirmInput.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(confirmBtn.disabled).to.be.false;
+
+        // Löschen auslösen
+        confirmBtn.click();
+
+        // Da clearAllData asynchron ist, warten wir kurz
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        expect(clearDataCalled).to.be.true;
+
+        // Cleanup modal
+        const modalAfter = document.getElementById('db-clear-confirm-modal');
+        if (modalAfter) modalAfter.remove();
+
+        // Restore
+        db.clearAllData = originalClearAllData;
+        delete window.__TESTING__;
+    });
 });
