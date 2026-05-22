@@ -242,3 +242,126 @@ describe('JSON Import Feature Tests', () => {
         expect(statusDiv.textContent).to.contain('Fehler');
     });
 });
+
+describe('Excel (XLSX) Export Feature Tests', () => {
+    let container;
+    let originalGetAllComics;
+    let originalGetWishlist;
+
+    beforeEach(() => {
+        // Backup
+        originalGetAllComics = db.getAllComics;
+        originalGetWishlist = db.getWishlist;
+
+        // Mock DB Methods
+        db.getAllComics = async () => [
+            {
+                id: 'existing-1',
+                titel: 'Batman: The Dark Knight Returns',
+                serie: 'Batman',
+                nummer: 1,
+                verlag: 'DC',
+                format: 'Hardcover',
+                sprache: 'Deutsch',
+                preis: 19.99
+            },
+            {
+                id: 'existing-2',
+                titel: 'Superman: Red Son',
+                serie: 'Superman',
+                nummer: 1,
+                verlag: 'DC',
+                format: 'Softcover',
+                sprache: 'Deutsch',
+                preis: 14.99
+            }
+        ];
+        db.getWishlist = async () => [];
+
+        // DOM setup
+        container = document.createElement('div');
+        container.id = 'view-container';
+        document.body.appendChild(container);
+        renderImport(container);
+    });
+
+    afterEach(() => {
+        // Restore
+        db.getAllComics = originalGetAllComics;
+        db.getWishlist = originalGetWishlist;
+
+        // Cleanup DOM
+        if (container) {
+            container.remove();
+        }
+        
+        const overlay = document.getElementById('import-log-overlay');
+        if (overlay) overlay.remove();
+    });
+
+    it('sollte die Comics-Sammlung erfolgreich als XLSX exportieren', async () => {
+        let createdBlob = null;
+        let downloadedFilename = null;
+        
+        const originalCreateObjectURL = URL.createObjectURL;
+        const originalRevokeObjectURL = URL.revokeObjectURL;
+        
+        URL.createObjectURL = (blob) => {
+            createdBlob = blob;
+            return 'blob:mock-url';
+        };
+        URL.revokeObjectURL = () => {};
+
+        const originalCreateElement = document.createElement;
+        document.createElement = function(tagName) {
+            const el = originalCreateElement.call(document, tagName);
+            if (tagName === 'a') {
+                el.click = function() {
+                    downloadedFilename = el.download;
+                };
+            }
+            return el;
+        };
+
+        try {
+            const btnExportXlsx = container.querySelector('#btn-export-xlsx');
+            expect(btnExportXlsx).to.not.be.null;
+            
+            btnExportXlsx.click();
+            
+            // Warten auf asynchrone DB/Export-Operationen
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            expect(createdBlob).to.not.be.null;
+            expect(downloadedFilename).to.equal('ComicVault_Backup.xlsx');
+            
+            // Blob einlesen und mit XLSX (SheetJS) analysieren
+            const reader = new FileReader();
+            const readPromise = new Promise((resolve) => {
+                reader.onload = (e) => {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    resolve(workbook);
+                };
+            });
+            reader.readAsArrayBuffer(createdBlob);
+            const workbook = await readPromise;
+            
+            expect(workbook.SheetNames).to.include('Sammlung');
+            const worksheet = workbook.Sheets['Sammlung'];
+            const rows = XLSX.utils.sheet_to_json(worksheet);
+            
+            expect(rows.length).to.equal(2);
+            expect(rows[0].titel).to.equal('Batman: The Dark Knight Returns');
+            expect(rows[0].verlag).to.equal('DC');
+            expect(rows[0].preis).to.equal(19.99);
+            expect(rows[1].titel).to.equal('Superman: Red Son');
+            expect(rows[1].verlag).to.equal('DC');
+            expect(rows[1].preis).to.equal(14.99);
+        } finally {
+            URL.createObjectURL = originalCreateObjectURL;
+            URL.revokeObjectURL = originalRevokeObjectURL;
+            document.createElement = originalCreateElement;
+        }
+    });
+});

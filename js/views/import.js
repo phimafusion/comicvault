@@ -53,11 +53,14 @@ export function renderImport(container) {
                 <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 0.9rem;">
                     Sichere deine gesamte Sammlung als Datei.
                 </p>
-                <div style="display: flex; gap: 12px; margin-top: auto;">
-                    <button class="btn btn-secondary" id="btn-export-csv" style="flex: 1;">
+                <div style="display: flex; gap: 12px; margin-top: auto; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" id="btn-export-xlsx" style="flex: 1; min-width: 80px;">
+                        <i class="fa-solid fa-file-excel"></i> Excel
+                    </button>
+                    <button class="btn btn-secondary" id="btn-export-csv" style="flex: 1; min-width: 80px;">
                         <i class="fa-solid fa-file-csv"></i> CSV
                     </button>
-                    <button class="btn btn-secondary" id="btn-export-json" style="flex: 1;">
+                    <button class="btn btn-secondary" id="btn-export-json" style="flex: 1; min-width: 80px;">
                         <i class="fa-solid fa-file-code"></i> JSON
                     </button>
                 </div>
@@ -152,6 +155,7 @@ export function renderImport(container) {
 
     document.getElementById('btn-import-csv').addEventListener('click', handleCSVImport);
     document.getElementById('btn-import-json').addEventListener('click', handleJSONImport);
+    document.getElementById('btn-export-xlsx').addEventListener('click', () => handleExport('xlsx'));
     document.getElementById('btn-export-csv').addEventListener('click', () => handleExport('csv'));
     document.getElementById('btn-export-json').addEventListener('click', () => handleExport('json'));
     document.getElementById('btn-start-url-import').addEventListener('click', handleUrlImport);
@@ -563,10 +567,39 @@ async function handleExport(format) {
             const csvStr = generateCSV(comics);
             const dataStr = "data:text/csv;charset=utf-8," + encodeURIComponent(csvStr);
             downloadFile(dataStr, "ComicVault_Backup.csv");
+        } else if (format === 'xlsx') {
+            const xlsxBuffer = generateXLSX(comics);
+            const blob = new Blob([xlsxBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            downloadFile(url, "ComicVault_Backup.xlsx");
         }
     } catch (e) {
+        console.error("Export Error:", e);
         alert('Export-Fehler.');
     }
+}
+
+function generateXLSX(comics) {
+    const fields = [
+        'id', 'titel', 'typ', 'serie', 'nummer', 'verlag', 'format', 'jahr', 
+        'zustand', 'bezugsquelle', 'preis', 'sprache', 'limitierung', 
+        'limitiert_auf', 'variant', 'variantname', 'kaufdatum', 'bestand', 
+        'gelesen_am', 'bewertung', 'bemerkung'
+    ];
+    
+    const data = comics.map(c => {
+        const row = {};
+        fields.forEach(f => {
+            row[f] = c[f] ?? '';
+        });
+        return row;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(data, { header: fields });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sammlung");
+    
+    return XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
 }
 
 function generateCSV(comics) {
