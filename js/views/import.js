@@ -27,6 +27,24 @@ export function renderImport(container) {
                 </div>
             </div>
 
+            <!-- JSON Backup Import Section -->
+            <div class="details-card" style="flex-direction: column;">
+                <h3 style="margin-top: 0; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                    <i class="fa-solid fa-file-code"></i> JSON Backup Import
+                </h3>
+                <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 0.9rem;">
+                    Lade hier eine zuvor exportierte JSON-Backup-Datei (.json) hoch, um Comics und Wunschliste wiederherzustellen.
+                </p>
+                <div class="form-group">
+                    <input type="file" id="import-json-file" accept=".json" class="form-control" style="padding: 10px;">
+                </div>
+                <button class="btn btn-primary" id="btn-import-json" style="margin-top: 16px; align-self: flex-start;">
+                    <i class="fa-solid fa-upload"></i> Backup einspielen
+                </button>
+                <div id="json-import-status" style="margin-top: 16px; font-size: 0.9rem; padding: 12px; border-radius: 8px; background: var(--bg-main); display: none; border: 1px solid var(--border-color); color: var(--danger);">
+                </div>
+            </div>
+
             <!-- Export Section -->
             <div class="details-card" style="flex-direction: column;">
                 <h3 style="margin-top: 0; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
@@ -46,7 +64,7 @@ export function renderImport(container) {
             </div>
 
             <!-- URL Import Section -->
-            <div class="details-card" style="flex-direction: column; grid-column: 1 / -1;">
+            <div class="details-card" style="flex-direction: column;">
                 <h3 style="margin-top: 0; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
                     <i class="fa-solid fa-link"></i> Von URL Importieren
                 </h3>
@@ -133,6 +151,7 @@ export function renderImport(container) {
     });
 
     document.getElementById('btn-import-csv').addEventListener('click', handleCSVImport);
+    document.getElementById('btn-import-json').addEventListener('click', handleJSONImport);
     document.getElementById('btn-export-csv').addEventListener('click', () => handleExport('csv'));
     document.getElementById('btn-export-json').addEventListener('click', () => handleExport('json'));
     document.getElementById('btn-start-url-import').addEventListener('click', handleUrlImport);
@@ -568,4 +587,355 @@ function downloadFile(dataStr, filename) {
     document.body.appendChild(a);
     a.click();
     a.remove();
+}
+
+function getWishlistChangedFields(oldData, newData) {
+    const fields = [
+        'titel', 'typ', 'format', 'preis', 'jahr', 'bemerkung',
+        'isbn', 'vorbestellt', 'besonderheit'
+    ];
+    const diffs = [];
+    fields.forEach(f => {
+        let v1 = oldData[f];
+        let v2 = newData[f];
+
+        // Normalize
+        if (v1 === null || v1 === undefined) v1 = '';
+        if (v2 === null || v2 === undefined) v2 = '';
+        
+        // Special case for numbers
+        if (typeof v1 === 'number' || typeof v2 === 'number') {
+            if (Number(v1) !== Number(v2)) diffs.push(f);
+            return;
+        }
+
+        // Special case for booleans
+        if (typeof v1 === 'boolean' || typeof v2 === 'boolean') {
+            if (Boolean(v1) !== Boolean(v2)) diffs.push(f);
+            return;
+        }
+
+        if (String(v1).trim() !== String(v2).trim()) {
+            diffs.push(f);
+        }
+    });
+    return diffs;
+}
+
+async function handleJSONImport() {
+    const fileInput = document.getElementById('import-json-file');
+    const statusDiv = document.getElementById('json-import-status');
+    const progressText = document.getElementById('import-progress-text');
+    const progressBar = document.getElementById('import-progress-bar');
+    
+    const logOverlay = document.getElementById('import-log-overlay');
+    const logNew = document.getElementById('log-new');
+    const logUpdated = document.getElementById('log-updated');
+    const logSkipped = document.getElementById('log-skipped');
+    const btnCancel = document.getElementById('btn-cancel-import');
+    const btnConfirm = document.getElementById('btn-confirm-log-overlay');
+
+    if (!fileInput.files || fileInput.files.length === 0) return alert('Bitte wähle zuerst eine Datei aus.');
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    importAborted = false;
+
+    reader.onload = async (e) => {
+        try {
+            const text = e.target.result;
+            const data = JSON.parse(text);
+            
+            let comicsToImport = [];
+            let wishlistToImport = [];
+            
+            if (Array.isArray(data)) {
+                comicsToImport = data;
+            } else if (data && typeof data === 'object') {
+                if (Array.isArray(data.comics)) {
+                    comicsToImport = data.comics;
+                }
+                if (Array.isArray(data.wishlist)) {
+                    wishlistToImport = data.wishlist;
+                }
+                
+                if (comicsToImport.length === 0 && wishlistToImport.length === 0) {
+                    throw new Error("Das Backup enthält keine Comics oder Wunschlisten-Einträge.");
+                }
+            } else {
+                throw new Error("Ungültiges JSON-Format. Die Datei muss ein Array von Comics oder ein Backup-Objekt enthalten.");
+            }
+
+            statusDiv.style.display = 'none';
+            logNew.innerHTML = '';
+            logUpdated.innerHTML = '';
+            logSkipped.innerHTML = '';
+            
+            // Show Log Overlay immediately
+            logOverlay.style.display = 'flex';
+            progressText.innerHTML = 'Initialisiere Import...';
+            progressBar.style.width = '0%';
+            
+            // Reset Summary Counters
+            document.getElementById('sum-new').textContent = '0 neu';
+            document.getElementById('sum-updated').textContent = '0 updates';
+            document.getElementById('sum-skipped').textContent = '0 übersprungen';
+            
+            btnCancel.style.display = 'inline-block';
+            btnCancel.disabled = false;
+            btnCancel.innerHTML = '<i class="fa-solid fa-stop"></i> Import abbrechen';
+            btnConfirm.style.display = 'none';
+
+            // Bestehende Daten laden
+            const [existingComics, existingWishlist] = await Promise.all([
+                db.getAllComics(),
+                db.getWishlist()
+            ]);
+
+            const idMap = new Map();
+            const contentMap = new Map();
+            const coreMap = new Map();
+
+            // Helfer für einen extrem genauen "Fingerabdruck" eines Comics (als Fallback falls keine ID da ist)
+            const getExactSignature = (c) => {
+                return [
+                    c.serie, c.nummer, c.titel, c.verlag, c.format, c.sprache, 
+                    c.zustand, c.limitierung, c.variantname, c.preis, c.kaufdatum, c.bemerkung, c.bestand
+                ].map(v => String(v || '').toLowerCase().trim()).join('|');
+            };
+
+            // Helfer für einen Basis-Fingerabdruck (nur die absoluten Kern-Identifikationsmerkmale)
+            const getCoreSignature = (c) => {
+                return [
+                    c.serie, c.nummer, c.titel, c.verlag, c.format, c.sprache
+                ].map(v => String(v || '').toLowerCase().trim()).join('|');
+            };
+
+            existingComics.forEach(ex => {
+                if (ex.id) idMap.set(ex.id, ex);
+                contentMap.set(getExactSignature(ex), ex);
+                
+                const coreKey = getCoreSignature(ex);
+                if (!coreMap.has(coreKey)) coreMap.set(coreKey, []);
+                coreMap.get(coreKey).push(ex);
+            });
+
+            // Wishlist maps
+            const wishIdMap = new Map();
+            const wishContentMap = new Map();
+            const wishCoreMap = new Map();
+
+            const getWishlistExactSignature = (w) => {
+                return [
+                    w.titel, w.typ, w.format, w.preis, w.jahr, w.isbn, w.besonderheit, w.bemerkung
+                ].map(v => String(v || '').toLowerCase().trim()).join('|');
+            };
+
+            const getWishlistCoreSignature = (w) => {
+                return [
+                    w.titel, w.isbn
+                ].map(v => String(v || '').toLowerCase().trim()).join('|');
+            };
+
+            existingWishlist.forEach(ex => {
+                if (ex.id) wishIdMap.set(ex.id, ex);
+                wishContentMap.set(getWishlistExactSignature(ex), ex);
+                
+                const coreKey = getWishlistCoreSignature(ex);
+                if (!wishCoreMap.has(coreKey)) wishCoreMap.set(coreKey, []);
+                wishCoreMap.get(coreKey).push(ex);
+            });
+
+            const total = comicsToImport.length + wishlistToImport.length;
+            let current = 0;
+            let updatedCount = 0;
+            let newCount = 0;
+            let skipCount = 0;
+
+            const batchSize = 50;
+
+            // 1. Comics importieren
+            for (let i = 0; i < comicsToImport.length; i += batchSize) {
+                if (importAborted) {
+                    const abortMsg = `<div style="color: var(--danger); font-weight: bold; margin-top: 10px;">[ABGEBROCHEN] Import durch Benutzer gestoppt.</div>`;
+                    logNew.insertAdjacentHTML('beforeend', abortMsg);
+                    logUpdated.insertAdjacentHTML('beforeend', abortMsg);
+                    logSkipped.insertAdjacentHTML('beforeend', abortMsg);
+                    break;
+                }
+
+                const chunk = comicsToImport.slice(i, i + batchSize);
+
+                for (const comic of chunk) {
+                    if (importAborted) break;
+
+                    // Dubletten-Prüfung für Comics
+                    let duplicate = null;
+                    let contentKey = getExactSignature(comic);
+
+                    if (comic.id) {
+                        duplicate = idMap.get(comic.id);
+                    } else {
+                        // 1. Suche nach exakter Übereinstimmung ALLER Felder
+                        duplicate = contentMap.get(contentKey);
+                        
+                        // 2. Suche nach Basis-Übereinstimmung (nur Kern-Daten) falls 1 fehlschlägt
+                        if (!duplicate) {
+                            const coreKey = getCoreSignature(comic);
+                            const coreMatches = coreMap.get(coreKey);
+                            
+                            if (coreMatches && coreMatches.length > 0) {
+                                duplicate = coreMatches.find(c => !c._importUsed);
+                            }
+                        }
+                    }
+
+                    if (duplicate) {
+                        duplicate._importUsed = true;
+                        const changedFields = getChangedFields(duplicate, comic);
+                        
+                        if (changedFields.length === 0) {
+                            skipCount++;
+                            const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comic.serie || ''} ${comic.nummer ? '#' + comic.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${comic.titel || ''}</span></div>`;
+                            logSkipped.insertAdjacentHTML('beforeend', logLine);
+                            logSkipped.scrollTop = logSkipped.scrollHeight;
+                        } else {
+                            const comicData = { ...duplicate, ...comic };
+                            comicData.id = duplicate.id; // ID beibehalten
+                            if (duplicate.bild && !comic.bild) comicData.bild = duplicate.bild;
+                            if (duplicate.created_at && !comic.created_at) comicData.created_at = duplicate.created_at;
+                            
+                            await db.saveComic(comicData);
+                            if (comicData.id) idMap.set(comicData.id, comicData);
+                            contentMap.set(contentKey, comicData);
+                            updatedCount++;
+
+                            const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comic.serie || ''} ${comic.nummer ? '#' + comic.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">Updates: <span style="color: var(--warning)">${changedFields.join(', ')}</span></span></div>`;
+                            logUpdated.insertAdjacentHTML('beforeend', logLine);
+                            logUpdated.scrollTop = logUpdated.scrollHeight;
+                        }
+                    } else {
+                        // Neuer Comic
+                        const newId = await db.saveComic(comic);
+                        const comicWithId = { ...comic, id: newId };
+                        idMap.set(newId, comicWithId);
+                        contentMap.set(contentKey, comicWithId);
+                        newCount++;
+
+                        const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comic.serie || ''} ${comic.nummer ? '#' + comic.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${comic.titel || ''}</span></div>`;
+                        logNew.insertAdjacentHTML('beforeend', logLine);
+                        logNew.scrollTop = logNew.scrollHeight;
+                    }
+
+                    current++;
+                    const percent = Math.round((current / total) * 100);
+                    progressBar.style.width = percent + '%';
+                    progressText.innerHTML = `Verarbeite: <strong>${current} von ${total}</strong> (${percent}%)`;
+
+                    document.getElementById('sum-new').textContent = `${newCount} neu`;
+                    document.getElementById('sum-updated').textContent = `${updatedCount} updates`;
+                    document.getElementById('sum-skipped').textContent = `${skipCount} übersprungen`;
+                }
+
+                // UI-Thread atmen lassen
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            // 2. Wunschliste importieren
+            for (let i = 0; i < wishlistToImport.length; i += batchSize) {
+                if (importAborted) {
+                    break;
+                }
+
+                const chunk = wishlistToImport.slice(i, i + batchSize);
+
+                for (const wish of chunk) {
+                    if (importAborted) break;
+
+                    // Dubletten-Prüfung für Wunschliste
+                    let duplicate = null;
+                    let contentKey = getWishlistExactSignature(wish);
+
+                    if (wish.id) {
+                        duplicate = wishIdMap.get(wish.id);
+                    } else {
+                        // 1. Suche nach exakter Übereinstimmung ALLER Felder
+                        duplicate = wishContentMap.get(contentKey);
+                        
+                        // 2. Suche nach Basis-Übereinstimmung (nur Kern-Daten) falls 1 fehlschlägt
+                        if (!duplicate) {
+                            const coreKey = getWishlistCoreSignature(wish);
+                            const coreMatches = wishCoreMap.get(coreKey);
+                            
+                            if (coreMatches && coreMatches.length > 0) {
+                                duplicate = coreMatches.find(w => !w._importUsed);
+                            }
+                        }
+                    }
+
+                    if (duplicate) {
+                        duplicate._importUsed = true;
+                        const changedFields = getWishlistChangedFields(duplicate, wish);
+                        
+                        if (changedFields.length === 0) {
+                            skipCount++;
+                            const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>[Wunsch] ${wish.titel || ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">Keine Änderungen</span></div>`;
+                            logSkipped.insertAdjacentHTML('beforeend', logLine);
+                            logSkipped.scrollTop = logSkipped.scrollHeight;
+                        } else {
+                            const wishData = { ...duplicate, ...wish };
+                            wishData.id = duplicate.id; // ID beibehalten
+                            if (duplicate.created_at && !wish.created_at) wishData.created_at = duplicate.created_at;
+                            
+                            await db.saveWish(wishData);
+                            if (wishData.id) wishIdMap.set(wishData.id, wishData);
+                            wishContentMap.set(contentKey, wishData);
+                            updatedCount++;
+
+                            const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>[Wunsch] ${wish.titel || ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">Updates: <span style="color: var(--warning)">${changedFields.join(', ')}</span></span></div>`;
+                            logUpdated.insertAdjacentHTML('beforeend', logLine);
+                            logUpdated.scrollTop = logUpdated.scrollHeight;
+                        }
+                    } else {
+                        // Neuer Wunsch
+                        await db.saveWish(wish);
+                        newCount++;
+
+                        const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>[Wunsch] ${wish.titel || ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">Hinzugefügt</span></div>`;
+                        logNew.insertAdjacentHTML('beforeend', logLine);
+                        logNew.scrollTop = logNew.scrollHeight;
+                    }
+
+                    current++;
+                    const percent = Math.round((current / total) * 100);
+                    progressBar.style.width = percent + '%';
+                    progressText.innerHTML = `Verarbeite: <strong>${current} von ${total}</strong> (${percent}%)`;
+
+                    document.getElementById('sum-new').textContent = `${newCount} neu`;
+                    document.getElementById('sum-updated').textContent = `${updatedCount} updates`;
+                    document.getElementById('sum-skipped').textContent = `${skipCount} übersprungen`;
+                }
+
+                // UI-Thread atmen lassen
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            progressText.innerHTML = `<i class="fa-solid fa-check" style="color: var(--success)"></i> JSON-Import abgeschlossen.`;
+            if (importAborted) progressText.innerHTML = `<i class="fa-solid fa-stop" style="color: var(--danger)"></i> Import abgebrochen.`;
+            
+            btnCancel.style.display = 'none';
+            btnConfirm.style.display = 'inline-block';
+            
+            fileInput.value = '';
+
+        } catch (error) {
+            console.error("JSON Import Error:", error);
+            statusDiv.style.display = 'block';
+            statusDiv.innerHTML = `<i class="fa-solid fa-xmark" style="color: var(--danger)"></i> Fehler: ${error.message}`;
+            if (logOverlay) logOverlay.style.display = 'none';
+        }
+    };
+
+    reader.readAsText(file);
 }

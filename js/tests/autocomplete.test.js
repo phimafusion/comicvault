@@ -1,4 +1,4 @@
-import { initAutocomplete } from '../views/form.js';
+import { initAutocomplete } from '../components/autocomplete.js';
 import { renderSettings } from '../views/settings.js';
 import { db } from '../db.js';
 
@@ -338,40 +338,98 @@ describe('Configurable Suggestions Settings Tests', () => {
     });
 
     it('sollte bei vorhandenen Einstellungen "verliehen" migrieren, falls es fehlt', () => {
-        // Original getSettings wiederherstellen für diesen Test
+        // Original getSettings und saveSettings wiederherstellen für diesen Test
         db.getSettings = originalGetSettings;
         db.saveSettings = originalSaveSettings;
         
-        const originalGetItem = Storage.prototype.getItem;
-        const originalSetItem = Storage.prototype.setItem;
+        // Backup real localStorage settings
+        const originalSettingsStr = localStorage.getItem('comicvault_settings');
         
-        let savedValue = null;
-        Storage.prototype.getItem = function(key) {
-            return JSON.stringify({
-                theme: 'dark',
-                customSuggestions: {
-                    typ: ['Comic'],
-                    format: ['Softcover'],
-                    verlag: ['Panini'],
-                    zustand: ['neu'],
-                    bestand: ['vorhanden', 'vorbestellt', 'verkauft', 'abgegeben']
-                }
-            });
-        };
-        Storage.prototype.setItem = function(key, val) {
-            savedValue = JSON.parse(val);
-        };
+        // Set up test data in real localStorage
+        localStorage.setItem('comicvault_settings', JSON.stringify({
+            theme: 'dark',
+            customSuggestions: {
+                typ: ['Comic'],
+                format: ['Softcover'],
+                verlag: ['Panini'],
+                zustand: ['neu'],
+                bestand: ['vorhanden', 'vorbestellt', 'verkauft', 'abgegeben']
+            }
+        }));
         
         try {
             const settings = db.getSettings();
+            
+            // Check returned settings
             expect(settings.customSuggestions.bestand).to.include('verliehen');
             expect(settings.customSuggestions.verlag).to.be.undefined;
-            expect(savedValue).to.not.be.null;
-            expect(savedValue.customSuggestions.bestand).to.include('verliehen');
-            expect(savedValue.customSuggestions.verlag).to.be.undefined;
+            
+            // Check that the migrated settings were actually saved back to localStorage
+            const savedSettings = JSON.parse(localStorage.getItem('comicvault_settings'));
+            expect(savedSettings).to.not.be.null;
+            expect(savedSettings.customSuggestions.bestand).to.include('verliehen');
+            expect(savedSettings.customSuggestions.verlag).to.be.undefined;
         } finally {
-            Storage.prototype.getItem = originalGetItem;
-            Storage.prototype.setItem = originalSetItem;
+            // Restore original localStorage settings
+            if (originalSettingsStr !== null) {
+                localStorage.setItem('comicvault_settings', originalSettingsStr);
+            } else {
+                localStorage.removeItem('comicvault_settings');
+            }
         }
+    });
+
+    it('sollte das Lösch-Modal anzeigen und erst bei Eingabe von "DELETE" die Datenbank leeren', async () => {
+        window.__TESTING__ = true;
+        let clearDataCalled = false;
+        const originalClearAllData = db.clearAllData;
+        db.clearAllData = async () => {
+            clearDataCalled = true;
+        };
+
+        renderSettings(settingsContainer);
+
+        const clearBtn = settingsContainer.querySelector('#btn-clear-database');
+        expect(clearBtn).to.not.be.null;
+
+        clearBtn.click();
+
+        // Modal sollte im DOM existieren
+        const modal = document.getElementById('db-clear-confirm-modal');
+        expect(modal).to.not.be.null;
+
+        const confirmBtn = document.getElementById('db-clear-modal-confirm');
+        const confirmInput = document.getElementById('db-clear-confirm-input');
+        expect(confirmBtn).to.not.be.null;
+        expect(confirmInput).to.not.be.null;
+
+        // Button sollte disabled sein
+        expect(confirmBtn.disabled).to.be.true;
+
+        // Falsche Eingabe eingeben
+        confirmInput.value = 'DELET';
+        confirmInput.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(confirmBtn.disabled).to.be.true;
+
+        // Richtige Eingabe
+        confirmInput.value = 'DELETE';
+        confirmInput.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(confirmBtn.disabled).to.be.false;
+
+        // Löschen auslösen
+        confirmBtn.click();
+
+        // Da clearAllData asynchron ist, warten wir kurz
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        expect(clearDataCalled).to.be.true;
+
+        // Cleanup modal
+        const modalAfter = document.getElementById('db-clear-confirm-modal');
+        if (modalAfter) modalAfter.remove();
+
+        // Restore
+        db.clearAllData = originalClearAllData;
+        delete window.__TESTING__;
     });
 });
