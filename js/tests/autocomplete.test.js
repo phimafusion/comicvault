@@ -342,21 +342,23 @@ describe('Configurable Suggestions Settings Tests', () => {
         db.getSettings = originalGetSettings;
         db.saveSettings = originalSaveSettings;
         
-        const originalGetItem = localStorage.getItem;
-        const originalSetItem = localStorage.setItem;
+        const originalGetItem = Storage.prototype.getItem;
+        const originalSetItem = Storage.prototype.setItem;
         
         let savedValue = null;
-        localStorage.getItem = () => JSON.stringify({
-            theme: 'dark',
-            customSuggestions: {
-                typ: ['Comic'],
-                format: ['Softcover'],
-                verlag: ['Panini'],
-                zustand: ['neu'],
-                bestand: ['vorhanden', 'vorbestellt', 'verkauft', 'abgegeben']
-            }
-        });
-        localStorage.setItem = (key, val) => {
+        Storage.prototype.getItem = function(key) {
+            return JSON.stringify({
+                theme: 'dark',
+                customSuggestions: {
+                    typ: ['Comic'],
+                    format: ['Softcover'],
+                    verlag: ['Panini'],
+                    zustand: ['neu'],
+                    bestand: ['vorhanden', 'vorbestellt', 'verkauft', 'abgegeben']
+                }
+            });
+        };
+        Storage.prototype.setItem = function(key, val) {
             savedValue = JSON.parse(val);
         };
         
@@ -368,8 +370,8 @@ describe('Configurable Suggestions Settings Tests', () => {
             expect(savedValue.customSuggestions.bestand).to.include('verliehen');
             expect(savedValue.customSuggestions.verlag).to.be.undefined;
         } finally {
-            localStorage.getItem = originalGetItem;
-            localStorage.setItem = originalSetItem;
+            Storage.prototype.getItem = originalGetItem;
+            Storage.prototype.setItem = originalSetItem;
         }
     });
 });
