@@ -365,3 +365,136 @@ describe('Excel (XLSX) Export Feature Tests', () => {
         }
     });
 });
+
+describe('Excel (XLSX) Import Feature Tests', () => {
+    let container;
+    let originalGetAllComics;
+    let originalGetWishlist;
+    let originalSaveComic;
+    let originalSaveWish;
+    let savedComics = [];
+    let savedWishlist = [];
+
+    beforeEach(() => {
+        originalGetAllComics = db.getAllComics;
+        originalGetWishlist = db.getWishlist;
+        originalSaveComic = db.saveComic;
+        originalSaveWish = db.saveWish;
+
+        savedComics = [];
+        savedWishlist = [];
+
+        db.getAllComics = async () => [];
+        db.getWishlist = async () => [];
+        db.saveComic = async (comic) => {
+            savedComics.push(comic);
+            return comic.id || 'new-id-' + Math.random();
+        };
+        db.saveWish = async (wish) => {
+            savedWishlist.push(wish);
+            return wish.id || 'new-wish-id-' + Math.random();
+        };
+
+        container = document.createElement('div');
+        container.id = 'view-container';
+        document.body.appendChild(container);
+        renderImport(container);
+    });
+
+    afterEach(() => {
+        db.getAllComics = originalGetAllComics;
+        db.getWishlist = originalGetWishlist;
+        db.saveComic = originalSaveComic;
+        db.saveWish = originalSaveWish;
+
+        if (container) {
+            container.remove();
+        }
+        const overlay = document.getElementById('import-log-overlay');
+        if (overlay) overlay.remove();
+    });
+
+    it('sollte eine XLSX-Exportdatei wieder über die CSV/Excel-Importfunktion einlesen können', async () => {
+        // 1. Erstelle Beispieldaten
+        const testComics = [
+            {
+                id: 'excel-import-1',
+                titel: 'Watchmen',
+                serie: 'Watchmen',
+                nummer: 1,
+                verlag: 'DC Comics',
+                format: 'Hardcover',
+                jahr: 1987,
+                preis: 39.99,
+                limitierung: true,
+                limitiert_auf: 999,
+                variant: true,
+                variantname: 'Comic-Con Edition',
+                kaufdatum: '12.10.2023',
+                bestand: 'vorhanden',
+                gelesen_am: '15.10.2023',
+                bewertung: 10,
+                bemerkung: 'Klassiker!'
+            }
+        ];
+
+        // 2. Erzeuge Excel Workbook (Buffer) über die SheetJS API wie im Export-Code
+        const fields = [
+            'id', 'titel', 'typ', 'serie', 'nummer', 'verlag', 'format', 'jahr', 
+            'zustand', 'bezugsquelle', 'preis', 'sprache', 'limitierung', 
+            'limitiert_auf', 'variant', 'variantname', 'kaufdatum', 'bestand', 
+            'gelesen_am', 'bewertung', 'bemerkung'
+        ];
+        const data = testComics.map(c => {
+            const row = {};
+            fields.forEach(f => {
+                row[f] = c[f] ?? '';
+            });
+            return row;
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(data, { header: fields });
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Sammlung");
+        const xlsxBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+
+        // 3. Simuliere Dateiupload in #import-csv-file
+        const fileInput = container.querySelector('#import-csv-file');
+        const btnImport = container.querySelector('#btn-import-csv');
+
+        const mockFile = new File([xlsxBuffer], 'ComicVault_Backup.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        
+        Object.defineProperty(fileInput, 'files', {
+            value: [mockFile],
+            writable: true
+        });
+
+        btnImport.click();
+
+        // Warte auf asynchrone Verarbeitung
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const sumNew = document.getElementById('sum-new').textContent;
+        expect(sumNew).to.equal('1 neu');
+
+        expect(savedComics.length).to.equal(1);
+        const imported = savedComics[0];
+        expect(imported.id).to.equal('excel-import-1');
+        expect(imported.titel).to.equal('Watchmen');
+        expect(imported.serie).to.equal('Watchmen');
+        expect(imported.nummer).to.equal(1);
+        expect(imported.verlag).to.equal('DC Comics');
+        expect(imported.format).to.equal('Hardcover');
+        expect(imported.jahr).to.equal(1987);
+        expect(imported.preis).to.equal(39.99);
+        expect(imported.limitierung).to.be.true;
+        expect(imported.limitiert_auf).to.equal(999);
+        expect(imported.variant).to.be.true;
+        expect(imported.variantname).to.equal('Comic-Con Edition');
+        expect(imported.kaufdatum).to.equal('12.10.2023');
+        expect(imported.bestand).to.equal('vorhanden');
+        expect(imported.gelesen_am).to.equal('15.10.2023');
+        expect(imported.bewertung).to.equal(10);
+        expect(imported.bemerkung).to.equal('Klassiker!');
+    });
+});
