@@ -6,6 +6,7 @@ import { renderBudget } from './views/budget.js';
 import { renderWishlist } from './views/wishlist.js';
 import { renderImport } from './views/import.js';
 import { renderSettings } from './views/settings.js';
+import { renderHistory } from './views/history.js';
 import { openModal } from './views/form.js';
 
 class App {
@@ -128,6 +129,9 @@ class App {
                 break;
             case 'import':
                 renderImport(this.viewContainer);
+                break;
+            case 'history':
+                renderHistory(this.viewContainer);
                 break;
             case 'settings':
                 renderSettings(this.viewContainer);

@@ -159,3 +159,65 @@ export function renderStars(rating) {
 export function getPlaceholderImage() {
     return `https://placehold.co/400x600/1e293b/06b6d4?text=POW!&font=impact`;
 }
+
+export function getChangedFields(oldData, newData) {
+    const fields = [
+        'titel', 'typ', 'serie', 'nummer', 'verlag', 'format', 'jahr', 
+        'zustand', 'bezugsquelle', 'preis', 'sprache', 'limitierung', 
+        'limitiert_auf', 'variant', 'variantname', 'bemerkung', 
+        'kaufdatum', 'bestand', 'gelesen_am', 'bewertung'
+    ];
+    const diffs = [];
+    fields.forEach(f => {
+        let v1 = oldData[f];
+        let v2 = newData[f];
+
+        // Normalize
+        if (v1 === null || v1 === undefined) v1 = '';
+        if (v2 === null || v2 === undefined) v2 = '';
+        
+        // Special case for numbers
+        if (typeof v1 === 'number' || typeof v2 === 'number') {
+            if (Number(v1) !== Number(v2)) diffs.push(f);
+            return;
+        }
+
+        if (String(v1).trim() !== String(v2).trim()) {
+            diffs.push(f);
+        }
+    });
+    return diffs;
+}
+
+export function getWishlistChangedFields(oldData, newData) {
+    const fields = [
+        'titel', 'typ', 'format', 'preis', 'jahr', 'bemerkung',
+        'isbn', 'vorbestellt', 'besonderheit'
+    ];
+    const diffs = [];
+    fields.forEach(f => {
+        let v1 = oldData[f];
+        let v2 = newData[f];
+
+        // Normalize
+        if (v1 === null || v1 === undefined) v1 = '';
+        if (v2 === null || v2 === undefined) v2 = '';
+        
+        // Special case for numbers
+        if (typeof v1 === 'number' || typeof v2 === 'number') {
+            if (Number(v1) !== Number(v2)) diffs.push(f);
+            return;
+        }
+
+        // Special case for booleans
+        if (typeof v1 === 'boolean' || typeof v2 === 'boolean') {
+            if (Boolean(v1) !== Boolean(v2)) diffs.push(f);
+            return;
+        }
+
+        if (String(v1).trim() !== String(v2).trim()) {
+            diffs.push(f);
+        }
+    });
+    return diffs;
+}
