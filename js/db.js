@@ -23,7 +23,7 @@ class Database {
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     }
 
-    async saveComic(comic) {
+    async saveComic(comic, options = {}) {
         const col = this.getCollection();
         if (!col) return;
 
@@ -36,59 +36,67 @@ class Database {
 
         if (id) {
             let oldData = null;
-            try {
-                const oldDoc = await col.doc(id).get();
-                if (oldDoc.exists) {
-                    oldData = oldDoc.data();
+            if (!options.skipChangelog) {
+                try {
+                    const oldDoc = await col.doc(id).get();
+                    if (oldDoc.exists) {
+                        oldData = oldDoc.data();
+                    }
+                } catch (err) {
+                    console.error("Fehler beim Abrufen des alten Comics für Changelog:", err);
                 }
-            } catch (err) {
-                console.error("Fehler beim Abrufen des alten Comics für Changelog:", err);
             }
 
             await col.doc(id).set(data, { merge: true });
 
-            if (oldData) {
+            if (!options.skipChangelog && oldData) {
                 await this.addChangelogEntry('update', id, oldData, data);
             }
             return id;
         } else {
             data.created_at = now;
             const ref = await col.add(data);
-            await this.addChangelogEntry('create', ref.id, null, data);
+            if (!options.skipChangelog) {
+                await this.addChangelogEntry('create', ref.id, null, data);
+            }
             return ref.id;
         }
     }
 
-    async deleteComic(id) {
+    async deleteComic(id, options = {}) {
         const col = this.getCollection();
         if (col) {
             let oldData = null;
-            try {
-                const oldDoc = await col.doc(id).get();
-                if (oldDoc.exists) {
-                    oldData = oldDoc.data();
+            if (!options.skipChangelog) {
+                try {
+                    const oldDoc = await col.doc(id).get();
+                    if (oldDoc.exists) {
+                        oldData = oldDoc.data();
+                    }
+                } catch (err) {
+                    console.error("Fehler beim Abrufen des gelöschten Comics für Changelog:", err);
                 }
-            } catch (err) {
-                console.error("Fehler beim Abrufen des gelöschten Comics für Changelog:", err);
             }
 
             await col.doc(id).delete();
 
-            if (oldData) {
+            if (!options.skipChangelog && oldData) {
                 await this.addChangelogEntry('delete', id, oldData, null);
             }
         }
     }
 
-    async deleteComics(ids) {
+    async deleteComics(ids, options = {}) {
         const col = this.getCollection();
         if (!col || !ids || ids.length === 0) return;
 
-        const oldDocs = await Promise.all(ids.map(id => col.doc(id).get()));
-        const oldDataMap = new Map();
-        oldDocs.forEach(doc => {
-            if (doc.exists) oldDataMap.set(doc.id, doc.data());
-        });
+        let oldDataMap = new Map();
+        if (!options.skipChangelog) {
+            const oldDocs = await Promise.all(ids.map(id => col.doc(id).get()));
+            oldDocs.forEach(doc => {
+                if (doc.exists) oldDataMap.set(doc.id, doc.data());
+            });
+        }
 
         const batch = dbFirestore.batch();
         ids.forEach(id => {
@@ -96,24 +104,28 @@ class Database {
         });
         await batch.commit();
 
-        await Promise.all(ids.map(id => {
-            const oldData = oldDataMap.get(id);
-            if (oldData) {
-                return this.addChangelogEntry('delete', id, oldData, null);
-            }
-            return Promise.resolve();
-        }));
+        if (!options.skipChangelog) {
+            await Promise.all(ids.map(id => {
+                const oldData = oldDataMap.get(id);
+                if (oldData) {
+                    return this.addChangelogEntry('delete', id, oldData, null);
+                }
+                return Promise.resolve();
+            }));
+        }
     }
 
-    async updateComics(ids, updates) {
+    async updateComics(ids, updates, options = {}) {
         const col = this.getCollection();
         if (!col || !ids || ids.length === 0 || Object.keys(updates).length === 0) return;
 
-        const oldDocs = await Promise.all(ids.map(id => col.doc(id).get()));
-        const oldDataMap = new Map();
-        oldDocs.forEach(doc => {
-            if (doc.exists) oldDataMap.set(doc.id, doc.data());
-        });
+        let oldDataMap = new Map();
+        if (!options.skipChangelog) {
+            const oldDocs = await Promise.all(ids.map(id => col.doc(id).get()));
+            oldDocs.forEach(doc => {
+                if (doc.exists) oldDataMap.set(doc.id, doc.data());
+            });
+        }
 
         const batch = dbFirestore.batch();
         const now = new Date().toISOString();
@@ -124,14 +136,16 @@ class Database {
         });
         await batch.commit();
 
-        await Promise.all(ids.map(id => {
-            const oldData = oldDataMap.get(id);
-            if (oldData) {
-                const newData = { ...oldData, ...data };
-                return this.addChangelogEntry('update', id, oldData, newData);
-            }
-            return Promise.resolve();
-        }));
+        if (!options.skipChangelog) {
+            await Promise.all(ids.map(id => {
+                const oldData = oldDataMap.get(id);
+                if (oldData) {
+                    const newData = { ...oldData, ...data };
+                    return this.addChangelogEntry('update', id, oldData, newData);
+                }
+                return Promise.resolve();
+            }));
+        }
     }
 
     // Wunschliste
@@ -242,8 +256,43 @@ class Database {
     async getChangelog(limit = 50) {
         const col = this.getChangelogCollection();
         if (!col) return [];
+        
+        // Lazy cleanup for rolling cap of 5,000 entries
+        await this.cleanOldChangelogEntries();
+
         const snapshot = await col.orderBy('timestamp', 'desc').limit(limit).get();
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    async cleanOldChangelogEntries() {
+        const col = this.getChangelogCollection();
+        if (!col) return;
+        try {
+            let total = 0;
+            if (typeof col.count === 'function') {
+                const countSnapshot = await col.count().get();
+                total = countSnapshot.data().count;
+            } else {
+                // Fallback in case of mock/unsupported environment
+                const snapshot = await col.get();
+                total = snapshot.size;
+            }
+
+            if (total > 5000) {
+                const toDeleteCount = total - 5000;
+                const snapshot = await col.orderBy('timestamp', 'asc').limit(toDeleteCount).get();
+                if (snapshot.docs.length > 0) {
+                    const batch = dbFirestore.batch();
+                    snapshot.docs.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+                    console.log(`Changelog bereinigt: ${snapshot.docs.length} alte Einträge gelöscht.`);
+                }
+            }
+        } catch (err) {
+            console.error("Fehler bei der Changelog-Bereinigung:", err);
+        }
     }
 
     async clearChangelog() {
@@ -280,6 +329,7 @@ class Database {
             entry.titel = oldData.titel || '';
             entry.verlag = oldData.verlag || '';
             entry.changes = [];
+            entry.deletedSnapshot = oldData; // Save full original data for reverts
         } else if (action === 'update') {
             const diffs = getChangedFields(oldData, newData);
             if (diffs.length === 0) return; // Nichts zu protokollieren
@@ -296,6 +346,56 @@ class Database {
         }
 
         await col.add(entry);
+    }
+
+    async revertChangelogEntry(entryId) {
+        const col = this.getChangelogCollection();
+        if (!col) throw new Error("Nicht angemeldet.");
+
+        const logDoc = await col.doc(entryId).get();
+        if (!logDoc.exists) {
+            throw new Error("Protokolleintrag existiert nicht.");
+        }
+
+        const entry = logDoc.data();
+        const action = entry.action;
+        const comicId = entry.comicId;
+
+        const comicsCol = this.getCollection();
+        if (!comicsCol) throw new Error("Nicht angemeldet.");
+
+        if (action === 'create') {
+            // Revert create => delete the comic without adding to log
+            await this.deleteComic(comicId, { skipChangelog: true });
+        } else if (action === 'delete') {
+            // Revert delete => recreate comic from snapshot without adding to log
+            if (!entry.deletedSnapshot) {
+                throw new Error("Dieser gelöschte Comic kann nicht wiederhergestellt werden, da kein Snapshot vorhanden ist.");
+            }
+            const restoredComic = { id: comicId, ...entry.deletedSnapshot };
+            await this.saveComic(restoredComic, { skipChangelog: true });
+        } else if (action === 'update') {
+            // Revert update => restore old values for modified fields without adding to log
+            const doc = await comicsCol.doc(comicId).get();
+            if (!doc.exists) {
+                throw new Error("Der Comic existiert nicht mehr und kann nicht aktualisiert werden.");
+            }
+            const currentData = doc.data();
+            const revertedData = { ...currentData };
+            
+            if (Array.isArray(entry.changes)) {
+                entry.changes.forEach(change => {
+                    revertedData[change.field] = change.old;
+                });
+            }
+            revertedData.id = comicId;
+            await this.saveComic(revertedData, { skipChangelog: true });
+        } else {
+            throw new Error(`Unbekannte Aktion: ${action}`);
+        }
+
+        // Remove the reverted entry from history to avoid confusion / pollution
+        await col.doc(entryId).delete();
     }
 }
 

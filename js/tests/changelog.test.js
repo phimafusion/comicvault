@@ -91,6 +91,23 @@ describe('Changelog Feature Tests', () => {
                     mockChangelog.push({ id, ...data });
                     return { id };
                 },
+                doc: (id) => ({
+                    get: async () => {
+                        const found = mockChangelog.find(l => l.id === id);
+                        return {
+                            exists: !!found,
+                            data: () => {
+                                if (!found) return null;
+                                const copy = { ...found };
+                                delete copy.id;
+                                return copy;
+                            }
+                        };
+                    },
+                    delete: async () => {
+                        mockChangelog = mockChangelog.filter(l => l.id !== id);
+                    }
+                }),
                 get: async () => ({
                     docs: mockChangelog.map(log => ({
                         ref: {
@@ -102,18 +119,56 @@ describe('Changelog Feature Tests', () => {
                 }),
                 orderBy: (field, direction) => ({
                     limit: (n) => ({
-                        get: async () => ({
-                            docs: [...mockChangelog]
-                                .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
-                                .slice(0, n)
-                                .map(item => ({
+                        get: async () => {
+                            const sorted = [...mockChangelog].sort((a, b) => {
+                                return direction === 'asc' 
+                                    ? a.timestamp.localeCompare(b.timestamp) 
+                                    : b.timestamp.localeCompare(a.timestamp);
+                            });
+                            return {
+                                docs: sorted.slice(0, n).map(item => ({
                                     id: item.id,
+                                    ref: {
+                                        delete: async () => {
+                                            mockChangelog = mockChangelog.filter(l => l.id !== item.id);
+                                        }
+                                    },
                                     data: () => {
                                         const copy = { ...item };
                                         delete copy.id;
                                         return copy;
                                     }
                                 }))
+                            };
+                        }
+                    }),
+                    get: async () => {
+                        const sorted = [...mockChangelog].sort((a, b) => {
+                            return direction === 'asc' 
+                                ? a.timestamp.localeCompare(b.timestamp) 
+                                : b.timestamp.localeCompare(a.timestamp);
+                        });
+                        return {
+                            docs: sorted.map(item => ({
+                                id: item.id,
+                                ref: {
+                                    delete: async () => {
+                                        mockChangelog = mockChangelog.filter(l => l.id !== item.id);
+                                    }
+                                },
+                                data: () => {
+                                    const copy = { ...item };
+                                    delete copy.id;
+                                    return copy;
+                                }
+                            }))
+                        };
+                    }
+                }),
+                count: () => ({
+                    get: async () => ({
+                        data: () => ({
+                            count: mockChangelog.length
                         })
                     })
                 })
@@ -257,5 +312,141 @@ describe('Changelog Feature Tests', () => {
         
         // Modal sollte geschlossen sein
         expect(document.getElementById('changelog-clear-confirm-modal')).to.be.null;
+    });
+
+    it('sollte das Rückgängigmachen (Revert) einer Erstellung (create) unterstützen', async () => {
+        // Comic erstellen
+        const comic = {
+            id: 'comic-to-revert-create',
+            titel: 'Black Panther',
+            serie: 'Black Panther',
+            nummer: 1
+        };
+        mockComics.push(comic);
+
+        // Entsprechender Changelog-Eintrag
+        const logId = 'log-create-revert';
+        mockChangelog.push({
+            id: logId,
+            timestamp: new Date().toISOString(),
+            action: 'create',
+            comicId: 'comic-to-revert-create',
+            titel: 'Black Panther',
+            serie: 'Black Panther',
+            nummer: 1,
+            changes: []
+        });
+
+        // Revert ausführen
+        await db.revertChangelogEntry(logId);
+
+        // Der Comic sollte gelöscht sein
+        expect(mockComics.find(c => c.id === 'comic-to-revert-create')).to.be.undefined;
+        // Der Changelog-Eintrag selbst sollte gelöscht sein
+        expect(mockChangelog.find(l => l.id === logId)).to.be.undefined;
+    });
+
+    it('sollte das Rückgängigmachen (Revert) einer Löschung (delete) unterstützen', async () => {
+        // Gelöschter Comic Snapshot
+        const deletedSnapshot = {
+            titel: 'Iron Man #1',
+            serie: 'Iron Man',
+            nummer: 1,
+            verlag: 'Marvel',
+            preis: 3.99,
+            format: 'Heft'
+        };
+
+        const logId = 'log-delete-revert';
+        mockChangelog.push({
+            id: logId,
+            timestamp: new Date().toISOString(),
+            action: 'delete',
+            comicId: 'ironman-deleted-id',
+            titel: 'Iron Man #1',
+            serie: 'Iron Man',
+            nummer: 1,
+            deletedSnapshot: deletedSnapshot,
+            changes: []
+        });
+
+        // Revert ausführen
+        await db.revertChangelogEntry(logId);
+
+        // Der Comic sollte wieder da sein
+        const restored = mockComics.find(c => c.id === 'ironman-deleted-id');
+        expect(restored).to.not.be.undefined;
+        expect(restored.titel).to.equal('Iron Man #1');
+        expect(restored.preis).to.equal(3.99);
+        expect(restored.format).to.equal('Heft');
+        // Der Changelog-Eintrag selbst sollte gelöscht sein
+        expect(mockChangelog.find(l => l.id === logId)).to.be.undefined;
+    });
+
+    it('sollte das Rückgängigmachen (Revert) eines Updates unterstützen', async () => {
+        // Aktueller Zustand des Comics in der DB (nach dem Update)
+        const currentComic = {
+            id: 'comic-to-revert-update',
+            titel: 'Thor #1 (Neu)',
+            serie: 'Thor',
+            nummer: 1,
+            preis: 5.99, // Geändert
+            format: 'Hardcover' // Geändert
+        };
+        mockComics.push(currentComic);
+
+        // Update Log Eintrag
+        const logId = 'log-update-revert';
+        mockChangelog.push({
+            id: logId,
+            timestamp: new Date().toISOString(),
+            action: 'update',
+            comicId: 'comic-to-revert-update',
+            titel: 'Thor #1 (Neu)',
+            serie: 'Thor',
+            nummer: 1,
+            changes: [
+                { field: 'titel', old: 'Thor #1', new: 'Thor #1 (Neu)' },
+                { field: 'preis', old: 3.99, new: 5.99 },
+                { field: 'format', old: 'Heft', new: 'Hardcover' }
+            ]
+        });
+
+        // Revert ausführen
+        await db.revertChangelogEntry(logId);
+
+        // Der Comic sollte wieder auf den alten Werten stehen
+        const reverted = mockComics.find(c => c.id === 'comic-to-revert-update');
+        expect(reverted).to.not.be.undefined;
+        expect(reverted.titel).to.equal('Thor #1');
+        expect(reverted.preis).to.equal(3.99);
+        expect(reverted.format).to.equal('Heft');
+        // Der Changelog-Eintrag selbst sollte gelöscht sein
+        expect(mockChangelog.find(l => l.id === logId)).to.be.undefined;
+    });
+
+    it('sollte das rollierende Limit von 5000 Einträgen bei getChangelog einhalten (lazy cleanup)', async () => {
+        // Wir füllen mockChangelog mit 5005 Einträgen mit aufsteigenden Timestamps
+        mockChangelog = [];
+        const baseTime = new Date('2026-05-01T00:00:00Z').getTime();
+        for (let i = 0; i < 5005; i++) {
+            mockChangelog.push({
+                id: `log-${i}`,
+                timestamp: new Date(baseTime + i * 1000).toISOString(),
+                action: 'create',
+                comicId: `comic-${i}`,
+                changes: []
+            });
+        }
+
+        // Wir rufen getChangelog auf, was die Bereinigung auslösen sollte
+        await db.getChangelog(50);
+
+        // Die ältesten 5 Einträge (log-0 bis log-4) sollten gelöscht worden sein.
+        expect(mockChangelog.length).to.equal(5000);
+        expect(mockChangelog.find(l => l.id === 'log-0')).to.be.undefined;
+        expect(mockChangelog.find(l => l.id === 'log-4')).to.be.undefined;
+        // Der 6. Eintrag (log-5) sollte noch da sein
+        expect(mockChangelog.find(l => l.id === 'log-5')).to.not.be.undefined;
     });
 });
