@@ -156,6 +156,12 @@ describe('JSON Import Feature Tests', () => {
         expect(savedComics[0].titel).to.equal('Spider-Man Blue');
         expect(savedComics[1].id).to.equal('existing-1');
         expect(savedComics[1].preis).to.equal(24.99);
+
+        // Check detailed diff logs
+        const logUpdated = document.getElementById('log-updated');
+        expect(logUpdated.innerHTML).to.contain('Preis');
+        expect(logUpdated.innerHTML).to.contain('19.99 €');
+        expect(logUpdated.innerHTML).to.contain('24.99 €');
     });
 
     it('sollte ein JSON-Backup-Objekt mit Comics und Wunschliste importieren', async () => {
