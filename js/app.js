@@ -9,7 +9,7 @@ import { renderSettings } from './views/settings.js';
 import { renderChangelog } from './views/changelog.js';
 import { openModal } from './views/form.js';
 
-class App {
+export class App {
     constructor() {
         this.currentView = 'collection';
         this.init();
@@ -43,6 +43,9 @@ class App {
         this.btnAdd = document.getElementById('btn-add-new');
         this.btnLogout = document.getElementById('btn-logout');
         this.searchField = document.getElementById('global-search');
+        this.btnMenuToggle = document.getElementById('btn-menu-toggle');
+        this.sidebarOverlay = document.getElementById('sidebar-overlay');
+        this.sidebar = document.querySelector('.sidebar');
     }
 
     bindEvents() {
@@ -64,8 +67,26 @@ class App {
             item.addEventListener('click', (e) => {
                 const view = e.currentTarget.dataset.view;
                 if (view) this.navigate(view);
+                
+                // Close sidebar on mobile navigation
+                if (this.sidebar) this.sidebar.classList.remove('open');
+                if (this.sidebarOverlay) this.sidebarOverlay.classList.remove('open');
             });
         });
+
+        if (this.btnMenuToggle) {
+            this.btnMenuToggle.addEventListener('click', () => {
+                if (this.sidebar) this.sidebar.classList.toggle('open');
+                if (this.sidebarOverlay) this.sidebarOverlay.classList.toggle('open');
+            });
+        }
+
+        if (this.sidebarOverlay) {
+            this.sidebarOverlay.addEventListener('click', () => {
+                if (this.sidebar) this.sidebar.classList.remove('open');
+                if (this.sidebarOverlay) this.sidebarOverlay.classList.remove('open');
+            });
+        }
 
         this.themeToggle.addEventListener('click', () => this.toggleTheme());
         
@@ -173,6 +194,8 @@ class App {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    window.app = new App();
-});
+if (typeof window !== 'undefined' && !window.mocha) {
+    document.addEventListener('DOMContentLoaded', () => {
+        window.app = new App();
+    });
+}
