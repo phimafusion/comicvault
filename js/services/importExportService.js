@@ -320,7 +320,7 @@ export async function importCSVData({
                         await db.saveComic(comicData);
                         if (comicData.id) idMap.set(comicData.id, comicData);
                         contentMap.set(contentKey, comicData);
-                        if (onLogUpdated) onLogUpdated(comicData, changedFields);
+                        if (onLogUpdated) onLogUpdated(comicData, duplicate, changedFields);
                     }
                 } else {
                     newCount++;
@@ -438,7 +438,7 @@ export async function importJSONData({
                     if (comicData.id) idMap.set(comicData.id, comicData);
                     contentMap.set(contentKey, comicData);
                     updatedCount++;
-                    if (onLogUpdated) onLogUpdated(comic, changedFields, false);
+                    if (onLogUpdated) onLogUpdated(comic, duplicate, changedFields, false);
                 }
             } else {
                 const newId = await db.saveComic(comic);
@@ -502,7 +502,7 @@ export async function importJSONData({
                     if (wishData.id) wishIdMap.set(wishData.id, wishData);
                     wishContentMap.set(contentKey, wishData);
                     updatedCount++;
-                    if (onLogUpdated) onLogUpdated(wish, changedFields, true);
+                    if (onLogUpdated) onLogUpdated(wish, duplicate, changedFields, true);
                 }
             } else {
                 await db.saveWish(wish);

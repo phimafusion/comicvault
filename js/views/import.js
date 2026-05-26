@@ -271,9 +271,16 @@ async function handleCSVImport() {
                 logNew.scrollTop = logNew.scrollHeight;
             };
 
-            const onLogUpdated = (comicData, changedFields) => {
-                const logDetail = `<span style="color: var(--warning)">${changedFields.join(', ')}</span>`;
-                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">Fields: ${logDetail}</span></div>`;
+            const onLogUpdated = (comicData, oldData, changedFields) => {
+                const details = formatDiff(comicData, oldData, changedFields);
+                const logLine = `
+                    <div style="margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <strong style="color: var(--primary-color);">${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
+                            ${details}
+                        </div>
+                    </div>
+                `;
                 logUpdated.insertAdjacentHTML('beforeend', logLine);
                 logUpdated.scrollTop = logUpdated.scrollHeight;
             };
@@ -440,11 +447,19 @@ async function handleJSONImport() {
                 logNew.scrollTop = logNew.scrollHeight;
             };
 
-            const onLogUpdated = (data, changedFields, isWishlist) => {
+            const onLogUpdated = (data, oldData, changedFields, isWishlist) => {
                 const prefix = isWishlist ? '[Wunsch] ' : '';
                 const name = isWishlist ? (data.titel || '') : `${data.serie || ''} ${data.nummer ? '#' + data.nummer : ''}`;
+                const details = formatDiff(data, oldData, changedFields);
                 
-                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${prefix}${name}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">Updates: <span style="color: var(--warning)">${changedFields.join(', ')}</span></span></div>`;
+                const logLine = `
+                    <div style="margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <strong style="color: var(--primary-color);">${prefix}${name}</strong>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
+                            ${details}
+                        </div>
+                    </div>
+                `;
                 logUpdated.insertAdjacentHTML('beforeend', logLine);
                 logUpdated.scrollTop = logUpdated.scrollHeight;
             };
@@ -492,4 +507,49 @@ async function handleJSONImport() {
     };
 
     reader.readAsText(file);
+}
+
+const FIELD_LABELS = {
+    titel: 'Titel',
+    typ: 'Typ',
+    serie: 'Serie',
+    nummer: 'Nummer',
+    verlag: 'Verlag',
+    format: 'Format',
+    jahr: 'Jahr',
+    zustand: 'Zustand',
+    bezugsquelle: 'Quelle',
+    preis: 'Preis',
+    sprache: 'Sprache',
+    limitierung: 'Limitierung',
+    limitiert_auf: 'Limitiert auf',
+    variant: 'Variant',
+    variantname: 'Variantname',
+    bemerkung: 'Bemerkung',
+    kaufdatum: 'Kaufdatum',
+    bestand: 'Bestand',
+    gelesen_am: 'Gelesen am',
+    bewertung: 'Bewertung',
+    isbn: 'ISBN',
+    vorbestellt: 'Vorbestellt',
+    besonderheit: 'Besonderheit'
+};
+
+function formatDiff(newData, oldData, changedFields) {
+    return changedFields.map(f => {
+        const label = FIELD_LABELS[f] || f;
+        let oldVal = oldData[f];
+        let newVal = newData[f];
+
+        if (f === 'preis' && oldVal !== null && oldVal !== undefined) oldVal = Number(oldVal).toFixed(2) + ' €';
+        if (f === 'preis' && newVal !== null && newVal !== undefined) newVal = Number(newVal).toFixed(2) + ' €';
+        if (f === 'limitierung' || f === 'variant' || f === 'vorbestellt') {
+            oldVal = oldVal ? 'Ja' : 'Nein';
+            newVal = newVal ? 'Ja' : 'Nein';
+        }
+
+        const oldDisplay = oldVal !== undefined && oldVal !== null && oldVal !== '' ? oldVal : 'leer';
+        const newDisplay = newVal !== undefined && newVal !== null && newVal !== '' ? newVal : 'leer';
+        return `<div style="padding-left: 10px; margin-top: 2px;">• ${label}: <span style="text-decoration: line-through; opacity: 0.6;">${oldDisplay}</span> ➔ <span style="color: var(--success); font-weight: bold;">${newDisplay}</span></div>`;
+    }).join('');
 }
