@@ -1,6 +1,12 @@
 import { db } from '../db.js';
 import { openModal } from './form.js';
-import { parseCurrency, parseStars, parseDate } from '../utils.js';
+import {
+    parseCSV,
+    generateXLSX,
+    generateCSV,
+    importCSVData,
+    importJSONData
+} from '../services/importExportService.js';
 
 export function renderImport(container) {
     const html = `
@@ -188,39 +194,7 @@ async function handleUrlImport() {
     }, 1500);
 }
 
-// Comparison Helpers
-function getChangedFields(oldData, newData) {
-    const fields = [
-        'titel', 'typ', 'serie', 'nummer', 'verlag', 'format', 'jahr', 
-        'zustand', 'bezugsquelle', 'preis', 'sprache', 'limitierung', 
-        'limitiert_auf', 'variant', 'variantname', 'bemerkung', 
-        'kaufdatum', 'bestand', 'gelesen_am', 'bewertung'
-    ];
-    const diffs = [];
-    fields.forEach(f => {
-        let v1 = oldData[f];
-        let v2 = newData[f];
-
-        // Normalize
-        if (v1 === null || v1 === undefined) v1 = '';
-        if (v2 === null || v2 === undefined) v2 = '';
-        
-        // Special case for numbers
-        if (typeof v1 === 'number' || typeof v2 === 'number') {
-            if (Number(v1) !== Number(v2)) diffs.push(f);
-            return;
-        }
-
-        if (String(v1).trim() !== String(v2).trim()) {
-            diffs.push(f);
-        }
-    });
-    return diffs;
-}
-
 let importAborted = false;
-
-
 
 // CSV Import Logic
 async function handleCSVImport() {
@@ -281,144 +255,52 @@ async function handleCSVImport() {
             btnCancel.innerHTML = '<i class="fa-solid fa-stop"></i> Import abbrechen';
             btnConfirm.style.display = 'none';
 
-            // Bestehende Comics für Dubletten-Prüfung laden
-            const existingComics = await db.getAllComics();
-            const idMap = new Map();
-            const contentMap = new Map();
-            const coreMap = new Map();
+            const onProgress = (current, total, newCount, updatedCount, skipCount) => {
+                const percent = Math.round((current / total) * 100);
+                progressBar.style.width = percent + '%';
+                progressText.innerHTML = `Verarbeite: <strong>${current} von ${total}</strong> (${percent}%)`;
 
-            // Helfer für einen extrem genauen "Fingerabdruck" eines Comics (als Fallback falls keine ID da ist)
-            const getExactSignature = (c) => {
-                return [
-                    c.serie, c.nummer, c.titel, c.verlag, c.format, c.sprache, 
-                    c.zustand, c.limitierung, c.variantname, c.preis, c.kaufdatum, c.bemerkung, c.bestand
-                ].map(v => String(v || '').toLowerCase().trim()).join('|');
+                document.getElementById('sum-new').textContent = `${newCount} neu`;
+                document.getElementById('sum-updated').textContent = `${updatedCount} updates`;
+                document.getElementById('sum-skipped').textContent = `${skipCount} übersprungen`;
             };
 
-            // Helfer für einen Basis-Fingerabdruck (nur die absoluten Kern-Identifikationsmerkmale)
-            const getCoreSignature = (c) => {
-                return [
-                    c.serie, c.nummer, c.titel, c.verlag, c.format, c.sprache
-                ].map(v => String(v || '').toLowerCase().trim()).join('|');
+            const onLogNew = (comicData) => {
+                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${comicData.titel}</span></div>`;
+                logNew.insertAdjacentHTML('beforeend', logLine);
+                logNew.scrollTop = logNew.scrollHeight;
             };
 
-            existingComics.forEach(ex => {
-                if (ex.id) idMap.set(ex.id, ex);
-                contentMap.set(getExactSignature(ex), ex);
-                
-                const coreKey = getCoreSignature(ex);
-                if (!coreMap.has(coreKey)) coreMap.set(coreKey, []);
-                coreMap.get(coreKey).push(ex);
+            const onLogUpdated = (comicData, changedFields) => {
+                const logDetail = `<span style="color: var(--warning)">${changedFields.join(', ')}</span>`;
+                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">Fields: ${logDetail}</span></div>`;
+                logUpdated.insertAdjacentHTML('beforeend', logLine);
+                logUpdated.scrollTop = logUpdated.scrollHeight;
+            };
+
+            const onLogSkipped = (comicData) => {
+                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${comicData.titel}</span></div>`;
+                logSkipped.insertAdjacentHTML('beforeend', logLine);
+                logSkipped.scrollTop = logSkipped.scrollHeight;
+            };
+
+            const result = await importCSVData({
+                rows,
+                onProgress,
+                onLogNew,
+                onLogUpdated,
+                onLogSkipped,
+                isAborted: () => importAborted
             });
 
-            const total = rows.length;
-            let current = 0;
-            let updatedCount = 0;
-            let newCount = 0;
-            let skipCount = 0;
-
-            const batchSize = 50; // Erhöht für besseren Durchsatz
-
-            for (let i = 0; i < rows.length; i += batchSize) {
-                if (importAborted) {
-                    const abortMsg = `<div style="color: var(--danger); font-weight: bold; margin-top: 10px;">[ABGEBROCHEN] Import durch Benutzer gestoppt.</div>`;
-                    logNew.insertAdjacentHTML('beforeend', abortMsg);
-                    logUpdated.insertAdjacentHTML('beforeend', abortMsg);
-                    logSkipped.insertAdjacentHTML('beforeend', abortMsg);
-                    break;
-                }
-
-                const chunk = rows.slice(i, i + batchSize);
-
-                for (const row of chunk) {
-                    if (importAborted) break;
-
-                    const hasTitleOrSerie = row['Titel'] || row['titel'] || row['Serie'] || row['serie'] || row['Comic Titel'] || row['Name'] || row['Reihe'];
-                    if (hasTitleOrSerie) {
-                        const comicData = mapRowToComic(row);
-
-                        // Dubletten-Prüfung
-                        let duplicate = null;
-                        let contentKey = getExactSignature(comicData);
-
-                        if (comicData.id) {
-                            duplicate = idMap.get(comicData.id);
-                        } else {
-                            // 1. Suche nach exakter Übereinstimmung ALLER Felder
-                            duplicate = contentMap.get(contentKey);
-                            
-                            // 2. Suche nach Basis-Übereinstimmung (nur Kern-Daten) falls 1 fehlschlägt
-                            if (!duplicate) {
-                                const coreKey = getCoreSignature(comicData);
-                                const coreMatches = coreMap.get(coreKey);
-                                
-                                if (coreMatches && coreMatches.length > 0) {
-                                    // Finde den ersten, der in DIESEM Importlauf noch nicht upgedated wurde
-                                    duplicate = coreMatches.find(c => !c._importUsed);
-                                }
-                            }
-                        }
-
-                        let statusText = "";
-                        let logDetail = "";
-
-                        if (duplicate) {
-                            duplicate._importUsed = true;
-                            const changedFields = getChangedFields(duplicate, comicData);
-                            
-                            if (changedFields.length === 0) {
-                                statusText = `<span style="color: var(--text-secondary); font-weight:bold;">[SKIP]</span>`;
-                                logDetail = `Keine Änderungen.`;
-                                skipCount++;
-                                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${comicData.titel}</span></div>`;
-                                logSkipped.insertAdjacentHTML('beforeend', logLine);
-                                logSkipped.scrollTop = logSkipped.scrollHeight;
-                            } else {
-                                comicData.id = duplicate.id; // Bestehende ID setzen für Update
-                                statusText = `<span style="color: var(--secondary-color); font-weight:bold;">[UPDATE]</span>`;
-                                logDetail = `<span style="color: var(--warning)">${changedFields.join(', ')}</span>`;
-                                updatedCount++;
-                                await db.saveComic(comicData);
-                                if (comicData.id) idMap.set(comicData.id, comicData);
-                                contentMap.set(contentKey, comicData);
-
-                                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">Fields: ${logDetail}</span></div>`;
-                                logUpdated.insertAdjacentHTML('beforeend', logLine);
-                                logUpdated.scrollTop = logUpdated.scrollHeight;
-                            }
-                        } else {
-                            statusText = `<span style="color: var(--success); font-weight:bold;">[NEU]</span>`;
-                            logDetail = `Angelegt`;
-                            newCount++;
-                            const newId = await db.saveComic(comicData);
-                            comicData.id = newId;
-                            idMap.set(newId, comicData);
-                            contentMap.set(contentKey, comicData);
-
-                            const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${comicData.titel}</span></div>`;
-                            logNew.insertAdjacentHTML('beforeend', logLine);
-                            logNew.scrollTop = logNew.scrollHeight;
-                        }
-
-                        current++;
-                        
-                        // Fortschritt sofort aktualisieren
-                        const percent = Math.round((current / total) * 100);
-                        progressBar.style.width = percent + '%';
-                        progressText.innerHTML = `Verarbeite: <strong>${current} von ${total}</strong> (${percent}%)`;
-
-                        // Live-Zusammenfassung im Footer aktualisieren
-                        document.getElementById('sum-new').textContent = `${newCount} neu`;
-                        document.getElementById('sum-updated').textContent = `${updatedCount} updates`;
-                        document.getElementById('sum-skipped').textContent = `${skipCount} übersprungen`;
-                    } else {
-                        current++;
-                    }
-                }
-            }
-
             progressText.innerHTML = `<i class="fa-solid fa-check" style="color: var(--success)"></i> Import abgeschlossen.`;
-            if (importAborted) progressText.innerHTML = `<i class="fa-solid fa-stop" style="color: var(--danger)"></i> Import abgebrochen.`;
+            if (result.aborted) {
+                progressText.innerHTML = `<i class="fa-solid fa-stop" style="color: var(--danger)"></i> Import abgebrochen.`;
+                const abortMsg = `<div style="color: var(--danger); font-weight: bold; margin-top: 10px;">[ABGEBROCHEN] Import durch Benutzer gestoppt.</div>`;
+                logNew.insertAdjacentHTML('beforeend', abortMsg);
+                logUpdated.insertAdjacentHTML('beforeend', abortMsg);
+                logSkipped.insertAdjacentHTML('beforeend', abortMsg);
+            }
             
             btnCancel.style.display = 'none';
             btnConfirm.style.display = 'inline-block';
@@ -438,128 +320,6 @@ async function handleCSVImport() {
     } else {
         reader.readAsText(file);
     }
-}
-
-function parseCSV(text) {
-    const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
-    if (lines.length === 0) return [];
-    const delimiter = lines[0].includes(';') ? ';' : ',';
-    const headers = lines[0].split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
-
-    return lines.slice(1).map(line => {
-        let values = [];
-        let insideQuote = false;
-        let current = '';
-        for (let char of line) {
-            if (char === '"') insideQuote = !insideQuote;
-            else if (char === delimiter && !insideQuote) {
-                values.push(current);
-                current = '';
-            } else current += char;
-        }
-        values.push(current);
-        const row = {};
-        headers.forEach((h, i) => row[h] = (values[i] || '').trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
-        return row;
-    });
-}
-
-function mapRowToComic(row) {
-    // Liste aller tatsächlichen Keys in der Zeile (für flexiblen Abgleich)
-    const rowKeys = Object.keys(row);
-
-    // Hilfsfunktion für extrem flexibles Spalten-Mapping
-    const getVal = (targetKeys) => {
-        // 1. Erst nach exakten Treffern suchen
-        for (const tk of targetKeys) {
-            if (row[tk] !== undefined && row[tk] !== null && row[tk] !== "") return row[tk];
-        }
-
-        // 2. Dann nach "ähnlichen" Treffern suchen (Ignoriere Case, Leerzeichen, Zeilenumbrüche)
-        const normalize = (s) => String(s).toLowerCase().replace(/\s+/g, '').replace(/[()]/g, '');
-        const normalizedTargets = targetKeys.map(normalize);
-
-        for (const rk of rowKeys) {
-            const normRk = normalize(rk);
-            if (normalizedTargets.includes(normRk)) {
-                if (row[rk] !== undefined && row[rk] !== null && row[rk] !== "") return row[rk];
-            }
-        }
-        return null;
-    };
-
-    let limitierung = false;
-    let limitiert_auf = null;
-    const limRaw = String(getVal(['Limitierung', 'Limitiert', 'limitierung']) || '').toLowerCase();
-    if (limRaw && !['nein', 'keine', 'false', '0'].includes(limRaw)) {
-        limitierung = true;
-        const numMatch = limRaw.match(/\d+/);
-        if (numMatch) limitiert_auf = parseInt(numMatch[0]);
-    }
-    if (limitiert_auf === null) {
-        const limAufRaw = getVal(['limitiert_auf', 'limitiert auf', 'Limitiert auf']);
-        if (limAufRaw !== null && limAufRaw !== undefined && limAufRaw !== "") {
-            limitiert_auf = parseInt(String(limAufRaw).replace(/[^\d]/g, ''));
-        }
-    }
-
-    let variant = false;
-    const varRaw = String(getVal(['Variant', 'Variante', 'Variant-Cover', 'variant']) || '').toLowerCase();
-    if (['ja', 'true', 'yes', 'j', '1'].includes(varRaw)) variant = true;
-
-    const bemerkungRaw = String(getVal(['Bemerkung', 'Notiz', 'Info']) || '');
-    let bemerkung = bemerkungRaw;
-
-    let gelesenAm = parseDate(getVal(['Gelesen', 'Gelesen am', 'gelesen_am']));
-    const gelesenRaw = String(getVal(['Gelesen', 'Gelesen am', 'gelesen_am']) || '').toLowerCase().trim();
-
-    if (gelesenRaw === 'x') {
-        gelesenAm = '2023-01-01';
-        bemerkung = (bemerkung ? bemerkung + ' ' : '') + '*** Gelesen am Platzhalter, da nicht genau terminierbar [autogenerated] ***';
-    }
-
-    let variantname = String(getVal(['Variantename', 'Variantname', 'variantname']) || '');
-    if (variant && !variantname && bemerkungRaw.toLowerCase().includes('variant')) {
-        variantname = bemerkungRaw;
-    }
-
-    let preis = parseCurrency(getVal(['Preis (inkl. Vsk)', 'Preis', 'Kaufpreis', 'preis']));
-
-    let titel = String(getVal(['Titel', 'Comic Titel', 'Name']) || 'Unbekannt');
-    const nummer = getVal(['Numm', 'Nummer', 'Nr', 'No']) !== null ? parseInt(String(getVal(['Numm', 'Nummer', 'Nr', 'No'])).replace(/[^\d]/g, '')) : null;
-
-    // Titel bereinigen: Nummer am Ende entfernen, wenn sie mit dem Nummer-Feld übereinstimmt
-    if (nummer !== null && titel) {
-        const regex = new RegExp(`\\s+0*${nummer}$`);
-        if (regex.test(titel)) {
-            titel = titel.replace(regex, '').trim();
-        }
-    }
-
-    return {
-        id: getVal(['id', 'ID']) ? String(getVal(['id', 'ID'])) : null,
-        titel: titel,
-        typ: String(getVal(['Typ', 'Genre']) || ''),
-        serie: String(getVal(['Serie', 'Reihe']) || ''),
-        nummer: nummer,
-        verlag: String(getVal(['Verlag', 'Publisher']) || ''),
-        format: String(getVal(['Format', 'Einband']) || ''),
-        jahr: getVal(['Jahr (Serie/Release)', 'Jahr (Serie/I)', 'Jahr', 'Erscheinungsjahr']) !== null ? parseInt(String(getVal(['Jahr (Serie/Release)', 'Jahr (Serie/I)', 'Jahr', 'Erscheinungsjahr'])).replace(/[^\d]/g, '')) : null,
-        zustand: String(getVal(['Zustand bei Kauf', 'Zustand']) || ''),
-        bezugsquelle: String(getVal(['Bezugsquelle', 'Quelle']) || ''),
-        preis: preis,
-        sprache: String(getVal(['Sprache', 'Language']) || 'Deutsch'),
-        limitierung: limitierung,
-        limitiert_auf: limitiert_auf,
-        variant: variant,
-        variantname: variantname,
-        bemerkung: bemerkung,
-        kaufdatum: parseDate(getVal(['Kaufdatum', 'Gekauft am', 'kaufdatum'])),
-        bestand: String(getVal(['Bestand', 'Lager']) || 'vorhanden'),
-        gelesen_am: gelesenAm,
-        bewertung: parseStars(getVal(['Bewertung', 'Rating', 'bewertung'])),
-        bild: ''
-    };
 }
 
 // Export Logic
@@ -586,40 +346,6 @@ async function handleExport(format) {
     }
 }
 
-function generateXLSX(comics) {
-    const fields = [
-        'id', 'titel', 'typ', 'serie', 'nummer', 'verlag', 'format', 'jahr', 
-        'zustand', 'bezugsquelle', 'preis', 'sprache', 'limitierung', 
-        'limitiert_auf', 'variant', 'variantname', 'kaufdatum', 'bestand', 
-        'gelesen_am', 'bewertung', 'bemerkung'
-    ];
-    
-    const data = comics.map(c => {
-        const row = {};
-        fields.forEach(f => {
-            row[f] = c[f] ?? '';
-        });
-        return row;
-    });
-
-    const worksheet = XLSX.utils.json_to_sheet(data, { header: fields });
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Sammlung");
-    
-    return XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-}
-
-function generateCSV(comics) {
-    const fields = ['id', 'titel', 'typ', 'serie', 'nummer', 'verlag', 'format', 'jahr', 'zustand', 'bezugsquelle', 'preis', 'sprache', 'limitierung', 'limitiert_auf', 'variant', 'variantname', 'kaufdatum', 'bestand', 'gelesen_am', 'bewertung', 'bemerkung'];
-    const header = fields.join(';');
-    const rows = comics.map(c => fields.map(f => {
-        let v = c[f] ?? '';
-        v = String(v).replace(/"/g, '""');
-        return (v.includes(';') || v.includes('\n') || v.includes('"')) ? `"${v}"` : v;
-    }).join(';'));
-    return [header, ...rows].join('\n');
-}
-
 function downloadFile(dataStr, filename) {
     const a = document.createElement('a');
     a.href = dataStr;
@@ -627,39 +353,6 @@ function downloadFile(dataStr, filename) {
     document.body.appendChild(a);
     a.click();
     a.remove();
-}
-
-function getWishlistChangedFields(oldData, newData) {
-    const fields = [
-        'titel', 'typ', 'format', 'preis', 'jahr', 'bemerkung',
-        'isbn', 'vorbestellt', 'besonderheit'
-    ];
-    const diffs = [];
-    fields.forEach(f => {
-        let v1 = oldData[f];
-        let v2 = newData[f];
-
-        // Normalize
-        if (v1 === null || v1 === undefined) v1 = '';
-        if (v2 === null || v2 === undefined) v2 = '';
-        
-        // Special case for numbers
-        if (typeof v1 === 'number' || typeof v2 === 'number') {
-            if (Number(v1) !== Number(v2)) diffs.push(f);
-            return;
-        }
-
-        // Special case for booleans
-        if (typeof v1 === 'boolean' || typeof v2 === 'boolean') {
-            if (Boolean(v1) !== Boolean(v2)) diffs.push(f);
-            return;
-        }
-
-        if (String(v1).trim() !== String(v2).trim()) {
-            diffs.push(f);
-        }
-    });
-    return diffs;
 }
 
 async function handleJSONImport() {
@@ -727,242 +420,63 @@ async function handleJSONImport() {
             btnCancel.innerHTML = '<i class="fa-solid fa-stop"></i> Import abbrechen';
             btnConfirm.style.display = 'none';
 
-            // Bestehende Daten laden
-            const [existingComics, existingWishlist] = await Promise.all([
-                db.getAllComics(),
-                db.getWishlist()
-            ]);
+            const onProgress = (current, total, newCount, updatedCount, skipCount) => {
+                const percent = Math.round((current / total) * 100);
+                progressBar.style.width = percent + '%';
+                progressText.innerHTML = `Verarbeite: <strong>${current} von ${total}</strong> (${percent}%)`;
 
-            const idMap = new Map();
-            const contentMap = new Map();
-            const coreMap = new Map();
-
-            // Helfer für einen extrem genauen "Fingerabdruck" eines Comics (als Fallback falls keine ID da ist)
-            const getExactSignature = (c) => {
-                return [
-                    c.serie, c.nummer, c.titel, c.verlag, c.format, c.sprache, 
-                    c.zustand, c.limitierung, c.variantname, c.preis, c.kaufdatum, c.bemerkung, c.bestand
-                ].map(v => String(v || '').toLowerCase().trim()).join('|');
+                document.getElementById('sum-new').textContent = `${newCount} neu`;
+                document.getElementById('sum-updated').textContent = `${updatedCount} updates`;
+                document.getElementById('sum-skipped').textContent = `${skipCount} übersprungen`;
             };
 
-            // Helfer für einen Basis-Fingerabdruck (nur die absoluten Kern-Identifikationsmerkmale)
-            const getCoreSignature = (c) => {
-                return [
-                    c.serie, c.nummer, c.titel, c.verlag, c.format, c.sprache
-                ].map(v => String(v || '').toLowerCase().trim()).join('|');
-            };
-
-            existingComics.forEach(ex => {
-                if (ex.id) idMap.set(ex.id, ex);
-                contentMap.set(getExactSignature(ex), ex);
+            const onLogNew = (data, isWishlist) => {
+                const prefix = isWishlist ? '[Wunsch] ' : '';
+                const suffix = isWishlist ? 'Hinzugefügt' : (data.titel || '');
+                const name = isWishlist ? (data.titel || '') : `${data.serie || ''} ${data.nummer ? '#' + data.nummer : ''}`;
                 
-                const coreKey = getCoreSignature(ex);
-                if (!coreMap.has(coreKey)) coreMap.set(coreKey, []);
-                coreMap.get(coreKey).push(ex);
-            });
-
-            // Wishlist maps
-            const wishIdMap = new Map();
-            const wishContentMap = new Map();
-            const wishCoreMap = new Map();
-
-            const getWishlistExactSignature = (w) => {
-                return [
-                    w.titel, w.typ, w.format, w.preis, w.jahr, w.isbn, w.besonderheit, w.bemerkung
-                ].map(v => String(v || '').toLowerCase().trim()).join('|');
+                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${prefix}${name}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${suffix}</span></div>`;
+                logNew.insertAdjacentHTML('beforeend', logLine);
+                logNew.scrollTop = logNew.scrollHeight;
             };
 
-            const getWishlistCoreSignature = (w) => {
-                return [
-                    w.titel, w.isbn
-                ].map(v => String(v || '').toLowerCase().trim()).join('|');
-            };
-
-            existingWishlist.forEach(ex => {
-                if (ex.id) wishIdMap.set(ex.id, ex);
-                wishContentMap.set(getWishlistExactSignature(ex), ex);
+            const onLogUpdated = (data, changedFields, isWishlist) => {
+                const prefix = isWishlist ? '[Wunsch] ' : '';
+                const name = isWishlist ? (data.titel || '') : `${data.serie || ''} ${data.nummer ? '#' + data.nummer : ''}`;
                 
-                const coreKey = getWishlistCoreSignature(ex);
-                if (!wishCoreMap.has(coreKey)) wishCoreMap.set(coreKey, []);
-                wishCoreMap.get(coreKey).push(ex);
+                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${prefix}${name}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">Updates: <span style="color: var(--warning)">${changedFields.join(', ')}</span></span></div>`;
+                logUpdated.insertAdjacentHTML('beforeend', logLine);
+                logUpdated.scrollTop = logUpdated.scrollHeight;
+            };
+
+            const onLogSkipped = (data, isWishlist) => {
+                const prefix = isWishlist ? '[Wunsch] ' : '';
+                const suffix = isWishlist ? 'Keine Änderungen' : (data.titel || '');
+                const name = isWishlist ? (data.titel || '') : `${data.serie || ''} ${data.nummer ? '#' + data.nummer : ''}`;
+                
+                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${prefix}${name}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${suffix}</span></div>`;
+                logSkipped.insertAdjacentHTML('beforeend', logLine);
+                logSkipped.scrollTop = logSkipped.scrollHeight;
+            };
+
+            const result = await importJSONData({
+                comicsToImport,
+                wishlistToImport,
+                onProgress,
+                onLogNew,
+                onLogUpdated,
+                onLogSkipped,
+                isAborted: () => importAborted
             });
-
-            const total = comicsToImport.length + wishlistToImport.length;
-            let current = 0;
-            let updatedCount = 0;
-            let newCount = 0;
-            let skipCount = 0;
-
-            const batchSize = 50;
-
-            // 1. Comics importieren
-            for (let i = 0; i < comicsToImport.length; i += batchSize) {
-                if (importAborted) {
-                    const abortMsg = `<div style="color: var(--danger); font-weight: bold; margin-top: 10px;">[ABGEBROCHEN] Import durch Benutzer gestoppt.</div>`;
-                    logNew.insertAdjacentHTML('beforeend', abortMsg);
-                    logUpdated.insertAdjacentHTML('beforeend', abortMsg);
-                    logSkipped.insertAdjacentHTML('beforeend', abortMsg);
-                    break;
-                }
-
-                const chunk = comicsToImport.slice(i, i + batchSize);
-
-                for (const comic of chunk) {
-                    if (importAborted) break;
-
-                    // Dubletten-Prüfung für Comics
-                    let duplicate = null;
-                    let contentKey = getExactSignature(comic);
-
-                    if (comic.id) {
-                        duplicate = idMap.get(comic.id);
-                    } else {
-                        // 1. Suche nach exakter Übereinstimmung ALLER Felder
-                        duplicate = contentMap.get(contentKey);
-                        
-                        // 2. Suche nach Basis-Übereinstimmung (nur Kern-Daten) falls 1 fehlschlägt
-                        if (!duplicate) {
-                            const coreKey = getCoreSignature(comic);
-                            const coreMatches = coreMap.get(coreKey);
-                            
-                            if (coreMatches && coreMatches.length > 0) {
-                                duplicate = coreMatches.find(c => !c._importUsed);
-                            }
-                        }
-                    }
-
-                    if (duplicate) {
-                        duplicate._importUsed = true;
-                        const changedFields = getChangedFields(duplicate, comic);
-                        
-                        if (changedFields.length === 0) {
-                            skipCount++;
-                            const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comic.serie || ''} ${comic.nummer ? '#' + comic.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${comic.titel || ''}</span></div>`;
-                            logSkipped.insertAdjacentHTML('beforeend', logLine);
-                            logSkipped.scrollTop = logSkipped.scrollHeight;
-                        } else {
-                            const comicData = { ...duplicate, ...comic };
-                            comicData.id = duplicate.id; // ID beibehalten
-                            if (duplicate.bild && !comic.bild) comicData.bild = duplicate.bild;
-                            if (duplicate.created_at && !comic.created_at) comicData.created_at = duplicate.created_at;
-                            
-                            await db.saveComic(comicData);
-                            if (comicData.id) idMap.set(comicData.id, comicData);
-                            contentMap.set(contentKey, comicData);
-                            updatedCount++;
-
-                            const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comic.serie || ''} ${comic.nummer ? '#' + comic.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">Updates: <span style="color: var(--warning)">${changedFields.join(', ')}</span></span></div>`;
-                            logUpdated.insertAdjacentHTML('beforeend', logLine);
-                            logUpdated.scrollTop = logUpdated.scrollHeight;
-                        }
-                    } else {
-                        // Neuer Comic
-                        const newId = await db.saveComic(comic);
-                        const comicWithId = { ...comic, id: newId };
-                        idMap.set(newId, comicWithId);
-                        contentMap.set(contentKey, comicWithId);
-                        newCount++;
-
-                        const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comic.serie || ''} ${comic.nummer ? '#' + comic.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${comic.titel || ''}</span></div>`;
-                        logNew.insertAdjacentHTML('beforeend', logLine);
-                        logNew.scrollTop = logNew.scrollHeight;
-                    }
-
-                    current++;
-                    const percent = Math.round((current / total) * 100);
-                    progressBar.style.width = percent + '%';
-                    progressText.innerHTML = `Verarbeite: <strong>${current} von ${total}</strong> (${percent}%)`;
-
-                    document.getElementById('sum-new').textContent = `${newCount} neu`;
-                    document.getElementById('sum-updated').textContent = `${updatedCount} updates`;
-                    document.getElementById('sum-skipped').textContent = `${skipCount} übersprungen`;
-                }
-
-                // UI-Thread atmen lassen
-                await new Promise(resolve => setTimeout(resolve, 10));
-            }
-
-            // 2. Wunschliste importieren
-            for (let i = 0; i < wishlistToImport.length; i += batchSize) {
-                if (importAborted) {
-                    break;
-                }
-
-                const chunk = wishlistToImport.slice(i, i + batchSize);
-
-                for (const wish of chunk) {
-                    if (importAborted) break;
-
-                    // Dubletten-Prüfung für Wunschliste
-                    let duplicate = null;
-                    let contentKey = getWishlistExactSignature(wish);
-
-                    if (wish.id) {
-                        duplicate = wishIdMap.get(wish.id);
-                    } else {
-                        // 1. Suche nach exakter Übereinstimmung ALLER Felder
-                        duplicate = wishContentMap.get(contentKey);
-                        
-                        // 2. Suche nach Basis-Übereinstimmung (nur Kern-Daten) falls 1 fehlschlägt
-                        if (!duplicate) {
-                            const coreKey = getWishlistCoreSignature(wish);
-                            const coreMatches = wishCoreMap.get(coreKey);
-                            
-                            if (coreMatches && coreMatches.length > 0) {
-                                duplicate = coreMatches.find(w => !w._importUsed);
-                            }
-                        }
-                    }
-
-                    if (duplicate) {
-                        duplicate._importUsed = true;
-                        const changedFields = getWishlistChangedFields(duplicate, wish);
-                        
-                        if (changedFields.length === 0) {
-                            skipCount++;
-                            const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>[Wunsch] ${wish.titel || ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">Keine Änderungen</span></div>`;
-                            logSkipped.insertAdjacentHTML('beforeend', logLine);
-                            logSkipped.scrollTop = logSkipped.scrollHeight;
-                        } else {
-                            const wishData = { ...duplicate, ...wish };
-                            wishData.id = duplicate.id; // ID beibehalten
-                            if (duplicate.created_at && !wish.created_at) wishData.created_at = duplicate.created_at;
-                            
-                            await db.saveWish(wishData);
-                            if (wishData.id) wishIdMap.set(wishData.id, wishData);
-                            wishContentMap.set(contentKey, wishData);
-                            updatedCount++;
-
-                            const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>[Wunsch] ${wish.titel || ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">Updates: <span style="color: var(--warning)">${changedFields.join(', ')}</span></span></div>`;
-                            logUpdated.insertAdjacentHTML('beforeend', logLine);
-                            logUpdated.scrollTop = logUpdated.scrollHeight;
-                        }
-                    } else {
-                        // Neuer Wunsch
-                        await db.saveWish(wish);
-                        newCount++;
-
-                        const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>[Wunsch] ${wish.titel || ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">Hinzugefügt</span></div>`;
-                        logNew.insertAdjacentHTML('beforeend', logLine);
-                        logNew.scrollTop = logNew.scrollHeight;
-                    }
-
-                    current++;
-                    const percent = Math.round((current / total) * 100);
-                    progressBar.style.width = percent + '%';
-                    progressText.innerHTML = `Verarbeite: <strong>${current} von ${total}</strong> (${percent}%)`;
-
-                    document.getElementById('sum-new').textContent = `${newCount} neu`;
-                    document.getElementById('sum-updated').textContent = `${updatedCount} updates`;
-                    document.getElementById('sum-skipped').textContent = `${skipCount} übersprungen`;
-                }
-
-                // UI-Thread atmen lassen
-                await new Promise(resolve => setTimeout(resolve, 10));
-            }
 
             progressText.innerHTML = `<i class="fa-solid fa-check" style="color: var(--success)"></i> JSON-Import abgeschlossen.`;
-            if (importAborted) progressText.innerHTML = `<i class="fa-solid fa-stop" style="color: var(--danger)"></i> Import abgebrochen.`;
+            if (result.aborted) {
+                progressText.innerHTML = `<i class="fa-solid fa-stop" style="color: var(--danger)"></i> Import abgebrochen.`;
+                const abortMsg = `<div style="color: var(--danger); font-weight: bold; margin-top: 10px;">[ABGEBROCHEN] Import durch Benutzer gestoppt.</div>`;
+                logNew.insertAdjacentHTML('beforeend', abortMsg);
+                logUpdated.insertAdjacentHTML('beforeend', abortMsg);
+                logSkipped.insertAdjacentHTML('beforeend', abortMsg);
+            }
             
             btnCancel.style.display = 'none';
             btnConfirm.style.display = 'inline-block';
