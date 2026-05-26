@@ -1,5 +1,5 @@
 import { getCurrentUser } from './auth.js';
-import { getChangedFields, getWishlistChangedFields } from './utils.js';
+import { getChangedFields } from './utils.js';
 
 // Firebase Firestore initialisieren
 const dbFirestore = firebase.firestore();
@@ -29,7 +29,7 @@ class Database {
 
         const data = { ...comic };
         const id = data.id;
-        delete data.id; // ID wird separat behandelt
+        delete data.id;
 
         const now = new Date().toISOString();
         data.updated_at = now;
@@ -37,46 +37,24 @@ class Database {
         if (id) {
             let oldData = null;
             try {
-                const oldSnap = await col.doc(id).get();
-                if (oldSnap.exists) {
-                    oldData = oldSnap.data();
+                const oldDoc = await col.doc(id).get();
+                if (oldDoc.exists) {
+                    oldData = oldDoc.data();
                 }
             } catch (err) {
-                console.error("Fehler beim Abrufen des alten Comic-Zustands für History:", err);
+                console.error("Fehler beim Abrufen des alten Comics für Changelog:", err);
             }
 
             await col.doc(id).set(data, { merge: true });
 
             if (oldData) {
-                const changedFields = getChangedFields(oldData, data);
-                if (changedFields.length > 0) {
-                    const changes = {};
-                    changedFields.forEach(f => {
-                        changes[f] = { old: oldData[f] ?? '', new: data[f] ?? '' };
-                    });
-                    await this.addHistoryEntry({
-                        timestamp: now,
-                        action: 'update',
-                        target: 'collection',
-                        itemId: id,
-                        itemTitle: `${data.serie || ''} ${data.nummer ? '#' + data.nummer : ''}`.trim() || data.titel || 'Unbekannt',
-                        changes
-                    });
-                }
+                await this.addChangelogEntry('update', id, oldData, data);
             }
             return id;
         } else {
             data.created_at = now;
             const ref = await col.add(data);
-
-            await this.addHistoryEntry({
-                timestamp: now,
-                action: 'create',
-                target: 'collection',
-                itemId: ref.id,
-                itemTitle: `${data.serie || ''} ${data.nummer ? '#' + data.nummer : ''}`.trim() || data.titel || 'Unbekannt',
-                changes: {}
-            });
+            await this.addChangelogEntry('create', ref.id, null, data);
             return ref.id;
         }
     }
@@ -86,26 +64,18 @@ class Database {
         if (col) {
             let oldData = null;
             try {
-                const oldSnap = await col.doc(id).get();
-                if (oldSnap.exists) {
-                    oldData = oldSnap.data();
+                const oldDoc = await col.doc(id).get();
+                if (oldDoc.exists) {
+                    oldData = oldDoc.data();
                 }
             } catch (err) {
-                console.error(err);
+                console.error("Fehler beim Abrufen des gelöschten Comics für Changelog:", err);
             }
 
             await col.doc(id).delete();
 
             if (oldData) {
-                await this.addHistoryEntry({
-                    timestamp: new Date().toISOString(),
-                    action: 'delete',
-                    target: 'collection',
-                    itemId: id,
-                    itemTitle: `${oldData.serie || ''} ${oldData.nummer ? '#' + oldData.nummer : ''}`.trim() || oldData.titel || 'Unbekannt',
-                    changes: {},
-                    itemSnapshot: oldData
-                });
+                await this.addChangelogEntry('delete', id, oldData, null);
             }
         }
     }
@@ -114,8 +84,11 @@ class Database {
         const col = this.getCollection();
         if (!col || !ids || ids.length === 0) return;
 
-        const oldSnapshots = await Promise.all(ids.map(id => col.doc(id).get()));
-        const oldComics = oldSnapshots.filter(snap => snap.exists).map(snap => ({ id: snap.id, ...snap.data() }));
+        const oldDocs = await Promise.all(ids.map(id => col.doc(id).get()));
+        const oldDataMap = new Map();
+        oldDocs.forEach(doc => {
+            if (doc.exists) oldDataMap.set(doc.id, doc.data());
+        });
 
         const batch = dbFirestore.batch();
         ids.forEach(id => {
@@ -123,26 +96,24 @@ class Database {
         });
         await batch.commit();
 
-        const now = new Date().toISOString();
-        for (const oldData of oldComics) {
-            await this.addHistoryEntry({
-                timestamp: now,
-                action: 'delete',
-                target: 'collection',
-                itemId: oldData.id,
-                itemTitle: `${oldData.serie || ''} ${oldData.nummer ? '#' + oldData.nummer : ''}`.trim() || oldData.titel || 'Unbekannt',
-                changes: {},
-                itemSnapshot: oldData
-            });
-        }
+        await Promise.all(ids.map(id => {
+            const oldData = oldDataMap.get(id);
+            if (oldData) {
+                return this.addChangelogEntry('delete', id, oldData, null);
+            }
+            return Promise.resolve();
+        }));
     }
 
     async updateComics(ids, updates) {
         const col = this.getCollection();
         if (!col || !ids || ids.length === 0 || Object.keys(updates).length === 0) return;
 
-        const oldSnapshots = await Promise.all(ids.map(id => col.doc(id).get()));
-        const oldComics = oldSnapshots.filter(snap => snap.exists).map(snap => ({ id: snap.id, ...snap.data() }));
+        const oldDocs = await Promise.all(ids.map(id => col.doc(id).get()));
+        const oldDataMap = new Map();
+        oldDocs.forEach(doc => {
+            if (doc.exists) oldDataMap.set(doc.id, doc.data());
+        });
 
         const batch = dbFirestore.batch();
         const now = new Date().toISOString();
@@ -153,23 +124,14 @@ class Database {
         });
         await batch.commit();
 
-        for (const oldData of oldComics) {
-            const changedFields = getChangedFields(oldData, { ...oldData, ...updates });
-            if (changedFields.length > 0) {
-                const changes = {};
-                changedFields.forEach(f => {
-                    changes[f] = { old: oldData[f] ?? '', new: updates[f] ?? '' };
-                });
-                await this.addHistoryEntry({
-                    timestamp: now,
-                    action: 'update',
-                    target: 'collection',
-                    itemId: oldData.id,
-                    itemTitle: `${oldData.serie || ''} ${oldData.nummer ? '#' + oldData.nummer : ''}`.trim() || oldData.titel || 'Unbekannt',
-                    changes
-                });
+        await Promise.all(ids.map(id => {
+            const oldData = oldDataMap.get(id);
+            if (oldData) {
+                const newData = { ...oldData, ...data };
+                return this.addChangelogEntry('update', id, oldData, newData);
             }
-        }
+            return Promise.resolve();
+        }));
     }
 
     // Wunschliste
@@ -196,110 +158,16 @@ class Database {
         data.updated_at = now;
 
         if (id) {
-            let oldData = null;
-            try {
-                const oldSnap = await col.doc(id).get();
-                if (oldSnap.exists) {
-                    oldData = oldSnap.data();
-                }
-            } catch (err) {
-                console.error(err);
-            }
-
             await col.doc(id).set(data, { merge: true });
-
-            if (oldData) {
-                const changedFields = getWishlistChangedFields(oldData, data);
-                if (changedFields.length > 0) {
-                    const changes = {};
-                    changedFields.forEach(f => {
-                        changes[f] = { old: oldData[f] ?? '', new: data[f] ?? '' };
-                    });
-                    await this.addHistoryEntry({
-                        timestamp: now,
-                        action: 'update',
-                        target: 'wishlist',
-                        itemId: id,
-                        itemTitle: data.titel || 'Unbekannter Wunsch',
-                        changes
-                    });
-                }
-            }
-            return id;
         } else {
             data.created_at = now;
-            const ref = await col.add(data);
-
-            await this.addHistoryEntry({
-                timestamp: now,
-                action: 'create',
-                target: 'wishlist',
-                itemId: ref.id,
-                itemTitle: data.titel || 'Unbekannter Wunsch',
-                changes: {}
-            });
-            return ref.id;
+            await col.add(data);
         }
     }
 
     async deleteWish(id) {
         const col = this.getWishlistCollection();
-        if (col) {
-            let oldData = null;
-            try {
-                const oldSnap = await col.doc(id).get();
-                if (oldSnap.exists) {
-                    oldData = oldSnap.data();
-                }
-            } catch (err) {
-                console.error(err);
-            }
-
-            await col.doc(id).delete();
-
-            if (oldData) {
-                await this.addHistoryEntry({
-                    timestamp: new Date().toISOString(),
-                    action: 'delete',
-                    target: 'wishlist',
-                    itemId: id,
-                    itemTitle: oldData.titel || 'Unbekannter Wunsch',
-                    changes: {},
-                    itemSnapshot: oldData
-                });
-            }
-        }
-    }
-
-    getHistoryCollection() {
-        const user = getCurrentUser();
-        if (!user) return null;
-        return dbFirestore.collection('users').doc(user.uid).collection('history');
-    }
-
-    async getHistory() {
-        const col = this.getHistoryCollection();
-        if (!col) return [];
-        const snapshot = await col.orderBy('timestamp', 'desc').get();
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    }
-
-    async addHistoryEntry(entry) {
-        const col = this.getHistoryCollection();
-        if (col) {
-            await col.add(entry);
-        }
-    }
-
-    async clearHistory() {
-        const col = this.getHistoryCollection();
-        if (!col) return;
-        const snapshot = await col.get();
-        const batch = dbFirestore.batch();
-        snapshot.docs.forEach((doc) => {
-            batch.delete(doc.ref);
-        });
-        await batch.commit();
+        if (col) await col.doc(id).delete();
     }
 
     async uploadImage(file) {
@@ -320,7 +188,7 @@ class Database {
         const user = getCurrentUser();
         if (!user) return;
 
-        const collections = [this.getCollection(), this.getWishlistCollection(), this.getHistoryCollection()];
+        const collections = [this.getCollection(), this.getWishlistCollection()];
         for (const col of collections) {
             if (!col) continue;
             const snapshot = await col.get();
@@ -362,6 +230,72 @@ class Database {
 
     saveSettings(settings) {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    }
+
+    // Changelog helper methods
+    getChangelogCollection() {
+        const user = getCurrentUser();
+        if (!user) return null;
+        return dbFirestore.collection('users').doc(user.uid).collection('changelog');
+    }
+
+    async getChangelog(limit = 50) {
+        const col = this.getChangelogCollection();
+        if (!col) return [];
+        const snapshot = await col.orderBy('timestamp', 'desc').limit(limit).get();
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    async clearChangelog() {
+        const col = this.getChangelogCollection();
+        if (!col) return;
+        const snapshot = await col.get();
+        const batch = dbFirestore.batch();
+        snapshot.docs.forEach((doc) => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+    }
+
+    async addChangelogEntry(action, comicId, oldData, newData) {
+        const col = this.getChangelogCollection();
+        if (!col) return;
+
+        const now = new Date().toISOString();
+        const entry = {
+            timestamp: now,
+            action,
+            comicId
+        };
+
+        if (action === 'create') {
+            entry.serie = newData.serie || '';
+            entry.nummer = newData.nummer ?? null;
+            entry.titel = newData.titel || '';
+            entry.verlag = newData.verlag || '';
+            entry.changes = [];
+        } else if (action === 'delete') {
+            entry.serie = oldData.serie || '';
+            entry.nummer = oldData.nummer ?? null;
+            entry.titel = oldData.titel || '';
+            entry.verlag = oldData.verlag || '';
+            entry.changes = [];
+        } else if (action === 'update') {
+            const diffs = getChangedFields(oldData, newData);
+            if (diffs.length === 0) return; // Nichts zu protokollieren
+            
+            entry.serie = newData.serie || oldData.serie || '';
+            entry.nummer = newData.nummer ?? oldData.nummer ?? null;
+            entry.titel = newData.titel || oldData.titel || '';
+            entry.verlag = newData.verlag || oldData.verlag || '';
+            entry.changes = diffs.map(f => ({
+                field: f,
+                old: oldData[f] ?? '',
+                new: newData[f] ?? ''
+            }));
+        }
+
+        await col.add(entry);
     }
 }
 

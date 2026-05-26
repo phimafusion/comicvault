@@ -160,6 +160,7 @@ export function getPlaceholderImage() {
     return `https://placehold.co/400x600/1e293b/06b6d4?text=POW!&font=impact`;
 }
 
+// Comparison Helpers
 export function getChangedFields(oldData, newData) {
     const fields = [
         'titel', 'typ', 'serie', 'nummer', 'verlag', 'format', 'jahr', 
