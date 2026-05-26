@@ -375,6 +375,13 @@ input[type="number"] {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    overflow-x: auto;
+    width: 100%;
+}
+
+.list-header {
+    min-width: fit-content;
+    width: 100%;
 }
 
 .list-item {
@@ -387,6 +394,8 @@ input[type="number"] {
     border: 1px solid var(--border-color);
     transition: var(--transition);
     cursor: pointer;
+    min-width: fit-content;
+    width: 100%;
 }
 
 .list-item:hover {
@@ -800,10 +809,16 @@ body.bulk-select-active .list-delete-btn {
     }
 
     /* List View responsive grid collapse */
+    .list-header {
+        display: none !important;
+    }
+
     .list-item {
-        grid-template-columns: 50px 1fr auto;
+        grid-template-columns: 50px 1fr auto !important;
         gap: 8px 12px;
-        padding: 10px 12px;
+        padding: 10px 12px !important;
+        min-width: auto !important;
+        width: 100% !important;
     }
     
     /* Hide publisher/format and price/source columns in list view on mobile */
