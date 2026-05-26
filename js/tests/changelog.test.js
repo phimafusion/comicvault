@@ -6,10 +6,21 @@ const { expect } = chai;
 describe('Changelog Feature Tests', () => {
     let originalGetCollection;
     let originalGetChangelogCollection;
+    let originalBatch;
     let container;
 
     let mockComics = [];
     let mockChangelog = [];
+
+    before(() => {
+        const firestoreInstance = firebase.firestore();
+        originalBatch = firestoreInstance.batch;
+    });
+
+    after(() => {
+        const firestoreInstance = firebase.firestore();
+        firestoreInstance.batch = originalBatch;
+    });
 
     beforeEach(() => {
         mockComics = [];
@@ -18,6 +29,26 @@ describe('Changelog Feature Tests', () => {
         // Backup
         originalGetCollection = db.getCollection;
         originalGetChangelogCollection = db.getChangelogCollection;
+
+        // Mock firestore batch
+        const firestoreInstance = firebase.firestore();
+        let deletedRefs = [];
+        firestoreInstance.batch = () => {
+            return {
+                delete: (ref) => {
+                    deletedRefs.push(ref);
+                },
+                update: (ref, data) => {},
+                commit: async () => {
+                    deletedRefs.forEach(ref => {
+                        if (ref && typeof ref.delete === 'function') {
+                            ref.delete();
+                        }
+                    });
+                    deletedRefs = [];
+                }
+            };
+        };
 
         // Mock DB Collections
         db.getCollection = () => {
