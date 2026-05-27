@@ -175,6 +175,45 @@ describe('ComicVault UI Integration Tests (Collection View)', () => {
         const grid = container.querySelector('#collection-grid');
         expect(grid.style.getPropertyValue('--col-width-verlag')).to.equal(visibleFields.columnWidths.verlag);
     });
+
+    it('sollte Spaltenbreiten zurücksetzen, wenn der Reset-Spaltenbreiten-Button geklickt wird', async () => {
+        await renderCollection(container);
+
+        // Listenansicht aktivieren
+        const listToggle = container.querySelector('.view-toggle-btn[data-type="list"]');
+        if (listToggle) {
+            listToggle.click();
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+
+        // Zuerst eine benutzerdefinierte Breite setzen
+        const visibleFieldsBefore = JSON.parse(localStorage.getItem('comicvault_visible_fields') || '{"columnWidths": {}}');
+        if (!visibleFieldsBefore.columnWidths) visibleFieldsBefore.columnWidths = {};
+        visibleFieldsBefore.columnWidths.verlag = '250px';
+        localStorage.setItem('comicvault_visible_fields', JSON.stringify(visibleFieldsBefore));
+
+        // View neu rendern, um die gesetzten Breiten anzuwenden
+        await renderCollection(container);
+
+        const gridBefore = container.querySelector('#collection-grid');
+        expect(gridBefore.style.getPropertyValue('--col-width-verlag')).to.equal('250px');
+
+        // Reset-Button klicken
+        const resetWidthsBtn = container.querySelector('#btn-reset-column-widths-direct');
+        expect(resetWidthsBtn).to.not.be.null;
+        resetWidthsBtn.click();
+
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // Im LocalStorage sollte columnWidths nun leer sein
+        const visibleFieldsAfter = JSON.parse(localStorage.getItem('comicvault_visible_fields') || '{}');
+        expect(visibleFieldsAfter.columnWidths).to.deep.equal({});
+
+        // Die Breite im DOM sollte nicht mehr '250px' sein, sondern wieder automatisch berechnet (z. B. endend mit 'px')
+        const gridAfter = container.querySelector('#collection-grid');
+        expect(gridAfter.style.getPropertyValue('--col-width-verlag')).to.not.equal('250px');
+        expect(gridAfter.style.getPropertyValue('--col-width-verlag')).to.contain('px');
+    });
 });
 
 describe('ComicVault Database Caching Tests', () => {

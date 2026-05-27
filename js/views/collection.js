@@ -59,6 +59,9 @@ export async function renderCollection(container) {
                     <button id="btn-reset-filters-direct" class="btn btn-secondary" style="height: 36px; width: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; border-color: transparent;" title="Alle Filter zurücksetzen">
                         <i class="fa-solid fa-rotate-left"></i>
                     </button>
+                    <button id="btn-reset-column-widths-direct" class="btn btn-secondary" style="height: 36px; width: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; border-color: transparent;" title="Spaltenbreiten zurücksetzen">
+                        <i class="fa-solid fa-arrows-left-right"></i>
+                    </button>
                 </div>
                 <div id="filter-count" style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border-color); white-space: nowrap; min-width: 80px; text-align: center;">
                     ...
@@ -160,6 +163,15 @@ const handleCollectionClick = (e) => {
         activeFilters = { verlag: [], format: [], bestand: ['vorhanden', 'vorbestellt'], gelesen: [], bezugsquelle: [], serie: [] };
         const container = document.getElementById('view-container');
         renderCollection(container);
+        return;
+    }
+
+    // Reset Column Widths Click
+    if (e.target.closest('#btn-reset-column-widths-direct')) {
+        visibleFields.columnWidths = {};
+        localStorage.setItem('comicvault_visible_fields', JSON.stringify(visibleFields));
+        needsAutoFit = true;
+        updateGrid();
         return;
     }
 
