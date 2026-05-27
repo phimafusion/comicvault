@@ -30,10 +30,6 @@ export function generateFormHtml(comic = {}, isWishlist = false, s = {}, default
                     <input type="number" name="jahr" class="form-control" value="${c.jahr || ''}">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">ISBN</label>
-                    <input type="text" name="isbn" class="form-control" value="${c.isbn || ''}">
-                </div>
-                <div class="form-group">
                     <label class="form-label">Vorbestellt?</label>
                     <select name="vorbestellt" class="form-control">
                         <option value="false" ${!c.vorbestellt ? 'selected' : ''}>Nein</option>
@@ -41,11 +37,7 @@ export function generateFormHtml(comic = {}, isWishlist = false, s = {}, default
                     </select>
                 </div>
                 <div class="form-group full-width">
-                    <label class="form-label">Besonderheit</label>
-                    <input type="text" name="besonderheit" class="form-control" value="${c.besonderheit || ''}" placeholder="z.B. Signiert, Erstauflage">
-                </div>
-                <div class="form-group full-width">
-                    <label class="form-label">Bemerkung</label>
+                    <label class="form-label">Bemerkung (Wunschliste)</label>
                     <textarea name="bemerkung" class="form-control" rows="3">${c.bemerkung || ''}</textarea>
                 </div>
             </div>

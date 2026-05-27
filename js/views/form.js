@@ -16,10 +16,17 @@ let currentEditingId = null;
 let isBulkEditing = false;
 let bulkEditIds = [];
 const dirtyFields = new Set();
+let transferFromWishId = null;
 
-export async function openModal(comic = null, isWishlist = false) {
-    currentEditingId = comic ? comic.id : null;
-    modalTitle.textContent = comic ? 'Comic bearbeiten' : 'Neuer Comic';
+export async function openModal(comic = null, isWishlist = false, options = {}) {
+    transferFromWishId = options.transferFromWishId || null;
+    currentEditingId = (comic && !transferFromWishId) ? comic.id : null;
+    
+    if (transferFromWishId) {
+        modalTitle.textContent = 'Aus Wunschliste in Sammlung verschieben';
+    } else {
+        modalTitle.textContent = comic ? (isWishlist ? 'Wunsch bearbeiten' : 'Comic bearbeiten') : (isWishlist ? 'Neuer Wunsch' : 'Neuer Comic');
+    }
     
     // Bestehende Werte für Autovervollständigung laden
     const suggestions = await getSuggestions();
@@ -32,8 +39,14 @@ export async function openModal(comic = null, isWishlist = false) {
         verlag: settings.defaultPublisher || ''
     } : {};
     
+    let comicDataPrefill = comic;
+    if (transferFromWishId && comic) {
+        comicDataPrefill = { ...comic };
+        delete comicDataPrefill.bemerkung;
+    }
+
     form.dataset.isWishlist = isWishlist;
-    form.innerHTML = generateFormHtml(comic, isWishlist, suggestions, defaults);
+    form.innerHTML = generateFormHtml(comicDataPrefill, isWishlist, suggestions, defaults);
     
     if (!isWishlist) {
         initStarRating(comic ? (comic.bewertung || 0) : 0);
@@ -178,9 +191,7 @@ btnSave.addEventListener('click', async (e) => {
     const isWishlist = form.dataset.isWishlist === 'true';
 
     if (isWishlist) {
-        comicData.isbn = formData.get('isbn');
         comicData.vorbestellt = formData.get('vorbestellt') === 'true';
-        comicData.besonderheit = formData.get('besonderheit');
         await db.saveWish(comicData);
     } else {
         // Bild-Verarbeitung vorerst deaktiviert, bestehendes Bild beibehalten falls vorhanden
@@ -212,6 +223,11 @@ btnSave.addEventListener('click', async (e) => {
             bild: finalImageUrl
         });
         await db.saveComic(comicData);
+
+        if (transferFromWishId) {
+            await db.deleteWish(transferFromWishId);
+            transferFromWishId = null;
+        }
     }
 
     closeModal();
