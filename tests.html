@@ -336,9 +336,21 @@
         // Run tests
         const runner = mocha.run();
 
+        // Move mocha-stats to body to bypass the backdrop-filter stacking context on #mocha,
+        // which makes fixed elements scroll relative to #mocha instead of the viewport.
+        const moveStatsBox = () => {
+            const stats = document.getElementById('mocha-stats');
+            if (stats && stats.parentElement !== document.body) {
+                document.body.appendChild(stats);
+            }
+        };
+
+        runner.on('start', moveStatsBox);
+
         // Autoscroll to the latest executed test
         let lastScrollTime = 0;
         runner.on('test end', () => {
+            moveStatsBox();
             const now = Date.now();
             if (now - lastScrollTime > 80) { // Throttle to prevent scroll jitter and improve performance
                 const tests = document.querySelectorAll('#mocha .test');
