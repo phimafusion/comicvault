@@ -21,4 +21,18 @@ Diese Liste dient als Notizzettel für zukünftige Aufgaben und Ideen.
 [10] Erweiterter Export & Import
     - Filtermöglichkeiten beim Export (z.B. nur bestimmte Verlage oder nur Wunschliste)
     - Fortschrittsanzeige für sehr große Importe weiter verfeinern
+[11] Android-App (APK) für den Eigenbedarf erstellen (via Capacitor & Android Studio)
+    - Ermöglicht das Verpacken des bestehenden Web-Codes in eine Android-APK, ohne den Web-Code zu verändern.
+    - Daten (Comics/Wunschliste) bleiben dank der Firebase-Anbindung in der App immer live und synchron.
+    - Schritte zur Umsetzung:
+      1. NodeJS und npm im Projekt initialisieren (package.json erstellen).
+      2. Capacitor-Bibliotheken installieren:
+         `npm install @capacitor/core @capacitor/cli @capacitor/android`
+      3. App-Metadaten konfigurieren (`npx cap init ComicVault com.comicvault.app --web-dir=.`).
+      4. Android-Plattformordner hinzufügen (`npx cap add android`).
+      5. Nach Web-Code-Änderungen die Dateien synchronisieren:
+         `npx cap sync android`
+      6. Das native Android-Projekt in Android Studio öffnen (`npx cap open android`).
+      7. APK generieren über: "Build" -> "Build Bundle(s) / APK(s)" -> "Build APK(s)".
+
 
