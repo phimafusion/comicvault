@@ -178,25 +178,123 @@ describe('ComicVault UI Integration Tests (Collection View)', () => {
 });
 
 describe('ComicVault Database Caching Tests', () => {
-    let originalGetCollection;
-    let originalGetWishlistCollection;
-    let originalGetChangelogCollection;
+    let originalCollection;
+    let originalCurrentUserDescriptor;
     let mockComicsData;
     let mockWishlistData;
     let getComicsCount;
     let getWishlistCount;
+    let mockUid = 'user1';
+
+    before(() => {
+        // Original-Getter für currentUser sichern
+        const auth = firebase.auth();
+        originalCurrentUserDescriptor = Object.getOwnPropertyDescriptor(auth, 'currentUser');
+        
+        // currentUser mocken
+        Object.defineProperty(auth, 'currentUser', {
+            get: () => {
+                if (mockUid === null) return null;
+                return { uid: mockUid };
+            },
+            configurable: true
+        });
+
+        // firestore.collection mocken
+        const firestore = firebase.firestore();
+        originalCollection = firestore.collection;
+
+        firestore.collection = function(path) {
+            if (path === 'users') {
+                return {
+                    doc: (uid) => ({
+                        collection: (subpath) => {
+                            if (subpath === 'comics') {
+                                return {
+                                    orderBy: () => ({
+                                        get: async () => {
+                                            getComicsCount++;
+                                            return {
+                                                docs: mockComicsData.map(c => ({
+                                                    id: c.id,
+                                                    data: () => {
+                                                        const copy = { ...c };
+                                                        delete copy.id;
+                                                        return copy;
+                                                    }
+                                                }))
+                                            };
+                                        }
+                                    }),
+                                    doc: (id) => ({
+                                        get: async () => ({
+                                            exists: true,
+                                            data: () => mockComicsData.find(c => c.id === id) || {}
+                                        }),
+                                        set: async () => {},
+                                        delete: async () => {}
+                                    }),
+                                    add: async () => ({ id: 'new-id' })
+                                };
+                            }
+                            if (subpath === 'wishlist') {
+                                return {
+                                    orderBy: () => ({
+                                        get: async () => {
+                                            getWishlistCount++;
+                                            return {
+                                                docs: mockWishlistData.map(w => ({
+                                                    id: w.id,
+                                                    data: () => {
+                                                        const copy = { ...w };
+                                                        delete copy.id;
+                                                        return copy;
+                                                    }
+                                                }))
+                                            };
+                                        }
+                                    }),
+                                    doc: () => ({
+                                        set: async () => {},
+                                        delete: async () => {}
+                                    }),
+                                    add: async () => ({ id: 'new-wish-id' })
+                                };
+                            }
+                            if (subpath === 'changelog') {
+                                return {
+                                    add: async () => {}
+                                };
+                            }
+                        }
+                    })
+                };
+            }
+            return originalCollection.call(firestore, path);
+        };
+    });
+
+    after(() => {
+        // Restore firestore collection
+        const firestore = firebase.firestore();
+        firestore.collection = originalCollection;
+
+        // Restore auth currentUser
+        const auth = firebase.auth();
+        if (originalCurrentUserDescriptor) {
+            Object.defineProperty(auth, 'currentUser', originalCurrentUserDescriptor);
+        } else {
+            delete auth.currentUser;
+        }
+    });
 
     beforeEach(() => {
-        // Originale Methoden sichern
-        originalGetCollection = db.getCollection;
-        originalGetWishlistCollection = db.getWishlistCollection;
-        originalGetChangelogCollection = db.getChangelogCollection;
-
         // Cache zurücksetzen
         db.comicsCache = null;
         db.wishlistCache = null;
         db.cachedUid = null;
 
+        mockUid = 'user1';
         mockComicsData = [
             { id: '1', titel: 'Comic 1', serie: 'A', verlag: 'Publisher' }
         ];
@@ -206,77 +304,9 @@ describe('ComicVault Database Caching Tests', () => {
 
         getComicsCount = 0;
         getWishlistCount = 0;
-
-        // getCollection mocken
-        db.getCollection = () => {
-            return {
-                orderBy: () => ({
-                    get: async () => {
-                        getComicsCount++;
-                        return {
-                            docs: mockComicsData.map(c => ({
-                                id: c.id,
-                                data: () => {
-                                    const copy = { ...c };
-                                    delete copy.id;
-                                    return copy;
-                                }
-                            }))
-                        };
-                    }
-                }),
-                doc: (id) => ({
-                    get: async () => ({
-                        exists: true,
-                        data: () => mockComicsData.find(c => c.id === id) || {}
-                    }),
-                    set: async () => {},
-                    delete: async () => {}
-                }),
-                add: async () => ({ id: 'new-id' })
-            };
-        };
-
-        // getWishlistCollection mocken
-        db.getWishlistCollection = () => {
-            return {
-                orderBy: () => ({
-                    get: async () => {
-                        getWishlistCount++;
-                        return {
-                            docs: mockWishlistData.map(w => ({
-                                id: w.id,
-                                data: () => {
-                                    const copy = { ...w };
-                                    delete copy.id;
-                                    return copy;
-                                }
-                            }))
-                        };
-                    }
-                }),
-                doc: () => ({
-                    set: async () => {},
-                    delete: async () => {}
-                }),
-                add: async () => ({ id: 'new-wish-id' })
-            };
-        };
-
-        // getChangelogCollection mocken um Fehler bei Mutationen zu vermeiden
-        db.getChangelogCollection = () => {
-            return {
-                add: async () => {}
-            };
-        };
     });
 
     afterEach(() => {
-        // Originale Methoden wiederherstellen
-        db.getCollection = originalGetCollection;
-        db.getWishlistCollection = originalGetWishlistCollection;
-        db.getChangelogCollection = originalGetChangelogCollection;
-
         // Cache zurücksetzen
         db.comicsCache = null;
         db.wishlistCache = null;
@@ -287,6 +317,7 @@ describe('ComicVault Database Caching Tests', () => {
         const first = await db.getAllComics();
         expect(first.length).to.equal(1);
         expect(getComicsCount).to.equal(1);
+        expect(db.cachedUid).to.equal('user1');
 
         const second = await db.getAllComics();
         expect(second.length).to.equal(1);
@@ -320,6 +351,7 @@ describe('ComicVault Database Caching Tests', () => {
         const first = await db.getWishlist();
         expect(first.length).to.equal(1);
         expect(getWishlistCount).to.equal(1);
+        expect(db.cachedUid).to.equal('user1');
 
         const second = await db.getWishlist();
         expect(second.length).to.equal(1);
@@ -349,16 +381,7 @@ describe('ComicVault Database Caching Tests', () => {
     });
 
     it('sollte den Cache leeren, wenn sich der angemeldete Benutzer ändert', async () => {
-        const auth = firebase.auth();
-        const originalCurrentUser = Object.getOwnPropertyDescriptor(auth, 'currentUser');
-        
-        let mockUid = 'user1';
-        Object.defineProperty(auth, 'currentUser', {
-            get: () => ({ uid: mockUid }),
-            configurable: true
-        });
-
-        // Caches befüllen
+        // Caches befüllen unter user1
         await db.getAllComics();
         await db.getWishlist();
         expect(db.cachedUid).to.equal('user1');
@@ -368,19 +391,12 @@ describe('ComicVault Database Caching Tests', () => {
         // User ID ändern
         mockUid = 'user2';
 
-        // getCollection/getWishlistCollection aufrufen, was die caches leert
+        // getCollection aufrufen, was die caches leert
         db.getCollection();
 
         expect(db.comicsCache).to.be.null;
         expect(db.wishlistCache).to.be.null;
         expect(db.cachedUid).to.equal('user2');
-
-        // Restore auth mock
-        if (originalCurrentUser) {
-            Object.defineProperty(auth, 'currentUser', originalCurrentUser);
-        } else {
-            delete auth.currentUser;
-        }
     });
 });
 
