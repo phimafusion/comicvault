@@ -13,3 +13,12 @@ Diese Liste dient als Notizzettel für zukünftige Aufgaben und Ideen.
 [5] Wunschzettel-Transfer („In Sammlung verschieben“) mit Vorausfüllen der Daten
 [6] Erweiterte Lese-Statistiken & Lese-Challenge (monatliche Trends, Jahresziel-Fortschrittsbalken)
 [7] Preisentwicklung & Wert-Tracker (Vergleich Kaufpreis vs. aktueller Schätzwert)
+[8] Automatisierte Test-Pipeline (CI/CD via GitHub Actions)
+    - Ausführung der Mocha-Tests headless (z.B. via Playwright/Puppeteer) bei jedem Pull Request
+[9] Offline-Modus & Progressive Web App (PWA)
+    - Lokaler Offline-Speicher (IndexedDB) zur Ansicht der Sammlung ohne Internet
+    - Service Worker für schnelles Laden und Offline-Nutzung
+[10] Erweiterter Export & Import
+    - Filtermöglichkeiten beim Export (z.B. nur bestimmte Verlage oder nur Wunschliste)
+    - Fortschrittsanzeige für sehr große Importe weiter verfeinern
+
