@@ -8,6 +8,9 @@ describe('Theme Fonts Settings & Application Tests', () => {
     let originalAuth;
     let originalGetSettings;
     let originalSaveSettings;
+    let originalGetAllComics;
+    let originalGetWishlist;
+    let originalNavigate;
     let container;
     let appInstance;
     let savedSettings = null;
@@ -25,6 +28,8 @@ describe('Theme Fonts Settings & Application Tests', () => {
         // Backup DB settings functions
         originalGetSettings = db.getSettings;
         originalSaveSettings = db.saveSettings;
+        originalGetAllComics = db.getAllComics;
+        originalGetWishlist = db.getWishlist;
 
         // Custom local mock settings store
         savedSettings = {
@@ -43,15 +48,23 @@ describe('Theme Fonts Settings & Application Tests', () => {
         db.saveSettings = (newSettings) => {
             savedSettings = newSettings;
         };
+        db.getAllComics = async () => [];
+        db.getWishlist = async () => [];
     });
 
     after(() => {
         firebase.auth = originalAuth;
         db.getSettings = originalGetSettings;
         db.saveSettings = originalSaveSettings;
+        db.getAllComics = originalGetAllComics;
+        db.getWishlist = originalGetWishlist;
     });
 
     beforeEach(() => {
+        // Mock navigate to prevent rendering collection/other views asynchronously during settings tests
+        originalNavigate = App.prototype.navigate;
+        App.prototype.navigate = () => {};
+
         container = document.createElement('div');
         container.innerHTML = `
             <div id="login-screen" style="display:none;">
@@ -92,6 +105,7 @@ describe('Theme Fonts Settings & Application Tests', () => {
             container.remove();
         }
         window.app = null;
+        App.prototype.navigate = originalNavigate;
         const fontVars = ['--font-primary', '--font-display', '--font-typewriter', '--font-code'];
         fontVars.forEach(v => document.documentElement.style.removeProperty(v));
     });
