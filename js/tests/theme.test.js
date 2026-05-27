@@ -1,5 +1,4 @@
-import { App } from '../app.js';
-import { db } from '../db.js';
+import { setupTestEnv, cleanup } from './testHelper.js';
 import { renderSettings } from '../views/settings.js';
 
 const { expect } = chai;
@@ -10,33 +9,12 @@ function normalizeFontFamily(font) {
 }
 
 describe('Theme Fonts Settings & Application Tests', () => {
-    let originalAuth;
-    let originalGetSettings;
-    let originalSaveSettings;
-    let originalGetAllComics;
-    let originalGetWishlist;
-    let originalNavigate;
+    let testEnv;
     let container;
     let appInstance;
     let savedSettings = null;
 
-    before(() => {
-        // Backup Firebase Auth
-        originalAuth = firebase.auth;
-        firebase.auth = () => ({
-            onAuthStateChanged: (callback) => {
-                callback({ uid: 'mock-user-id' });
-            },
-            currentUser: { uid: 'mock-user-id' }
-        });
-
-        // Backup DB settings functions
-        originalGetSettings = db.getSettings;
-        originalSaveSettings = db.saveSettings;
-        originalGetAllComics = db.getAllComics;
-        originalGetWishlist = db.getWishlist;
-
-        // Custom local mock settings store
+    beforeEach(() => {
         savedSettings = {
             theme: 'dark',
             colorScheme: 'default',
@@ -49,70 +27,15 @@ describe('Theme Fonts Settings & Application Tests', () => {
             }
         };
 
-        db.getSettings = () => JSON.parse(JSON.stringify(savedSettings));
-        db.saveSettings = (newSettings) => {
-            savedSettings = newSettings;
-        };
-        db.getAllComics = async () => [];
-        db.getWishlist = async () => [];
-    });
-
-    after(() => {
-        firebase.auth = originalAuth;
-        db.getSettings = originalGetSettings;
-        db.saveSettings = originalSaveSettings;
-        db.getAllComics = originalGetAllComics;
-        db.getWishlist = originalGetWishlist;
-    });
-
-    beforeEach(() => {
-        // Mock navigate to prevent rendering collection/other views asynchronously during settings tests
-        originalNavigate = App.prototype.navigate;
-        App.prototype.navigate = () => {};
-
-        container = document.createElement('div');
-        container.innerHTML = `
-            <div id="login-screen" style="display:none;">
-                <button id="btn-google-login"></button>
-                <div id="login-error"></div>
-            </div>
-            <div id="app-container" style="display:none;">
-                <aside class="sidebar">
-                    <button class="nav-item" data-view="collection">Collection</button>
-                    <button class="nav-item" data-view="settings">Settings</button>
-                    <button id="theme-toggle"></button>
-                    <button id="btn-logout"></button>
-                </aside>
-                <div id="sidebar-overlay"></div>
-                <main class="main-content">
-                    <header class="top-header">
-                        <button id="btn-menu-toggle"></button>
-                        <input type="text" id="global-search">
-                        <select id="theme-select"></select>
-                        <button id="btn-add-new"></button>
-                    </header>
-                    <div id="view-container"></div>
-                </main>
-            </div>
-        `;
-        document.body.appendChild(container);
-        
-        // Ensure inline font overrides on root are cleared
-        const fontVars = ['--font-primary', '--font-display', '--font-typewriter', '--font-code'];
-        fontVars.forEach(v => document.documentElement.style.removeProperty(v));
-
-        appInstance = new App();
-        window.app = appInstance;
+        testEnv = setupTestEnv({
+            settings: savedSettings
+        });
+        container = testEnv.container;
+        appInstance = testEnv.appInstance;
     });
 
     afterEach(() => {
-        if (container) {
-            container.remove();
-        }
-        window.app = null;
-        App.prototype.navigate = originalNavigate;
-        const fontVars = ['--font-primary', '--font-display', '--font-typewriter', '--font-code'];
-        fontVars.forEach(v => document.documentElement.style.removeProperty(v));
+        cleanup();
     });
 
     it('sollte standardmäßig keine Inline-Schriftart-Overrides auf documentElement haben', () => {

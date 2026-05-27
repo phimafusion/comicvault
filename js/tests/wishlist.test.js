@@ -1,60 +1,13 @@
 import { renderWishlist } from '../views/wishlist.js';
-import { openModal } from '../views/form.js';
-import { db } from '../db.js';
+import { setupTestEnv, cleanup } from './testHelper.js';
 
 const { expect } = chai;
 
-// Mock form.js openModal since we import it
-let openModalCalledWith = null;
-
 describe('ComicVault Wishlist Feature & Transfer Tests', () => {
+    let testEnv;
     let container;
-    let originalGetWishlist;
-    let originalSaveWish;
-    let originalDeleteWish;
-    let originalSaveComic;
-    let originalOpenModal;
-    let originalGetAllComics;
-    
     let mockWishes = [];
     let savedComics = [];
-
-    before(() => {
-        // Backup
-        originalGetWishlist = db.getWishlist;
-        originalSaveWish = db.saveWish;
-        originalDeleteWish = db.deleteWish;
-        originalSaveComic = db.saveComic;
-        originalGetAllComics = db.getAllComics;
-
-        // Stub openModal
-        originalOpenModal = openModal;
-        // In the browser, ES6 imports are read-only bindings on the module,
-        // but since we imported openModal from form.js, we can override the export if we stub form.js or if we stub it directly in a window property if form.js writes it.
-        // Wait, openModal is imported. Can we stub form's openModal or assign a wrapper?
-        // Let's check: in js/views/form.js, openModal is exported.
-        // If we want to spy on openModal, we can temporarily monkey-patch window or a custom helper,
-        // or we can stub the method on a wrapper. But wait, we can also import form and stub its export,
-        // or since ES6 exports are read-only, we can monkey-patch the import?
-        // Actually, in browser JS, ES6 module exports are read-only.
-        // But wait! How does form.js export it?
-        // "export async function openModal..."
-        // If it's imported as `import { openModal } from './form.js';` in wishlist.js,
-        // we can't easily reassign it directly from wishlist.js.
-        // But wait! Is there a way to verify transfer button opens modal?
-        // Yes! We can spy on the DOM: when openModal is called, the modal `#comic-modal` is displayed and `#modal-title` text is set!
-        // We can inspect the DOM: `#comic-modal` style.display is set to 'flex' and `#modal-title` contains the transfer title!
-        // This is a much better way to test because it verifies the actual DOM result without needing to reassign read-only ES6 imports!
-        // Let's inspect the DOM modal!
-    });
-
-    after(() => {
-        db.getWishlist = originalGetWishlist;
-        db.saveWish = originalSaveWish;
-        db.deleteWish = originalDeleteWish;
-        db.saveComic = originalSaveComic;
-        db.getAllComics = originalGetAllComics;
-    });
 
     beforeEach(async () => {
         mockWishes = [
@@ -64,45 +17,20 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
         ];
         savedComics = [];
 
-        db.getWishlist = async () => [...mockWishes];
-        db.getAllComics = async () => [];
-        db.saveWish = async (wish) => {
-            const index = mockWishes.findIndex(w => w.id === wish.id);
-            if (index !== -1) {
-                mockWishes[index] = { ...mockWishes[index], ...wish };
-            } else {
-                mockWishes.push({ id: 'mock-' + Math.random(), ...wish });
-            }
-        };
-        db.deleteWish = async (id) => {
-            mockWishes = mockWishes.filter(w => w.id !== id);
-        };
-        db.saveComic = async (comic) => {
-            savedComics.push(comic);
-            return 'comic-' + Math.random();
-        };
-
-        // DOM container setup
-        container = document.createElement('div');
-        container.id = 'view-container';
-        document.body.appendChild(container);
+        testEnv = setupTestEnv({
+            mockWishes: mockWishes,
+            mockComics: savedComics
+        });
         
+        container = testEnv.viewContainer;
+
         // Render wishlist
         await renderWishlist(container);
         await new Promise(resolve => setTimeout(resolve, 50));
     });
 
     afterEach(() => {
-        if (container) container.remove();
-        const bulkBar = document.getElementById('wishlist-bulk-bar');
-        if (bulkBar) bulkBar.remove();
-        
-        // Reset modal if opened
-        const modal = document.getElementById('comic-modal');
-        if (modal) {
-            modal.style.display = 'none';
-            modal.style.opacity = '0';
-        }
+        cleanup();
     });
 
     it('sollte die Wunschliste rendern und die Statistiken anzeigen', () => {
