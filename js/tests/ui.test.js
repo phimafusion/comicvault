@@ -133,4 +133,46 @@ describe('ComicVault UI Integration Tests (Collection View)', () => {
         // Nach Filter: 1 von 3 Comics sichtbar
         expect(countEl.textContent).to.equal('1 / 3');
     });
+
+    it('sollte data-col Attribute für Spalten in der Listenansicht rendern', async () => {
+        await renderCollection(container);
+        
+        // Listenansicht aktivieren (falls nicht aktiv)
+        const listToggle = container.querySelector('.view-toggle-btn[data-type="list"]');
+        if (listToggle) {
+            listToggle.click();
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+
+        const titleCells = Array.from(container.querySelectorAll('[data-col="titel"]'));
+        expect(titleCells.length).to.equal(3);
+        const titles = titleCells.map(c => c.textContent);
+        expect(titles.some(t => t.includes('Spider-Man Classic 1'))).to.be.true;
+    });
+
+    it('sollte Spaltenbreite automatisch anpassen, wenn Doppelklick auf Resizer ausgelöst wird', async () => {
+        await renderCollection(container);
+        
+        // Listenansicht aktivieren
+        const listToggle = container.querySelector('.view-toggle-btn[data-type="list"]');
+        if (listToggle) {
+            listToggle.click();
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+
+        const verlagResizer = container.querySelector('.col-resizer[data-key="verlag"]');
+        expect(verlagResizer).to.not.be.null;
+
+        // Doppelklick simulieren
+        verlagResizer.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
+
+        // Prüfen, ob die Breite im localStorage und im Style gesetzt wurde
+        const visibleFields = JSON.parse(localStorage.getItem('comicvault_visible_fields') || '{}');
+        expect(visibleFields.columnWidths).to.not.be.undefined;
+        expect(visibleFields.columnWidths.verlag).to.not.be.undefined;
+        expect(visibleFields.columnWidths.verlag).to.contain('px');
+
+        const grid = container.querySelector('#collection-grid');
+        expect(grid.style.getPropertyValue('--col-width-verlag')).to.equal(visibleFields.columnWidths.verlag);
+    });
 });

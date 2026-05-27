@@ -3,12 +3,13 @@
 Diese Liste dient als Notizzettel für zukünftige Aufgaben und Ideen.
 
 ---
-[1] Mobiles Design / Responsive / Handy
+[x] [1] Mobiles Design / Responsive / Handy
 [2] Cover Bilder / Scans
     - Bilder suchen und hinzufügen
     - Bilder anzeigen
     - Bilder bearbeiten
     - Bilder löschen
-
-[x] [3] wenn ein neuer COmic hinzugefügt wird, dann in jedem der textfelder beim reinklicken und tippen die sachen die es im comicvault schon gibt als vorschlag anbieten (inkl. Verwaltung der Enum-Listen in den Einstellungen)
-
+[4] Barcode-Scanner (ISBN/EAN) & Auto-Fill über Kamera und offene API (z.B. Google Books / Open Library)
+[5] Wunschzettel-Transfer („In Sammlung verschieben“) mit Vorausfüllen der Daten
+[6] Erweiterte Lese-Statistiken & Lese-Challenge (monatliche Trends, Jahresziel-Fortschrittsbalken)
+[7] Preisentwicklung & Wert-Tracker (Vergleich Kaufpreis vs. aktueller Schätzwert)

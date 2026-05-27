@@ -113,29 +113,29 @@ export function renderListItem(comic, visibleFields, isSelectModeActive, selecte
         switch (field.key) {
             case 'titel':
                 return `
-                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px;">
+                <div data-col="${field.key}" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px;">
                     <h3 class="comic-title" style="margin:0; font-size:0.88rem; display: inline;">${comic.titel || 'Ohne Titel'}</h3>
                     <div class="comic-series" style="font-size:0.68rem; color: var(--text-secondary);">${comic.serie || ''}</div>
                 </div>`;
             case 'nummer':
-                return `<div style="font-weight: bold;">${val !== null && val !== undefined ? '#' + val : '-'}</div>`;
+                return `<div data-col="${field.key}" style="font-weight: bold;">${val !== null && val !== undefined ? '#' + val : '-'}</div>`;
             case 'bestand':
-                return `<div><span class="badge ${bestandClass}" style="font-size: 0.62rem; padding: 2px 6px;">${comic.bestand || '-'}</span></div>`;
+                return `<div data-col="${field.key}"><span class="badge ${bestandClass}" style="font-size: 0.62rem; padding: 2px 6px;">${comic.bestand || '-'}</span></div>`;
             case 'preis':
-                return `<div style="font-weight: bold; ${align}">${(val !== null && val !== undefined) ? Number(val).toFixed(2) + ' ' + (db.getSettings().currency || '€') : '-'}</div>`;
+                return `<div data-col="${field.key}" style="font-weight: bold; ${align}">${(val !== null && val !== undefined) ? Number(val).toFixed(2) + ' ' + (db.getSettings().currency || '€') : '-'}</div>`;
             case 'kaufdatum':
-                return `<div style="font-size: 0.78rem;">${displayDate(val)}</div>`;
+                return `<div data-col="${field.key}" style="font-size: 0.78rem;">${displayDate(val)}</div>`;
             case 'gelesen_am':
             case 'updated_at':
             case 'created_at':
-                return `<div style="${align} font-size: 0.78rem;">${displayDate(val || (field.key === 'updated_at' ? comic.created_at : ''), true)}</div>`;
+                return `<div data-col="${field.key}" style="${align} font-size: 0.78rem;">${displayDate(val || (field.key === 'updated_at' ? comic.created_at : ''), true)}</div>`;
             case 'bewertung':
-                return `<div style="${align}">${renderStars(val)}</div>`;
+                return `<div data-col="${field.key}" style="${align}">${renderStars(val)}</div>`;
             case 'bild':
                 const imgUrl = comic.bild || getPlaceholderImage();
-                return `<div><img src="${imgUrl}" style="height: 30px; border-radius: 4px; object-fit: cover;"></div>`;
+                return `<div data-col="${field.key}"><img src="${imgUrl}" style="height: 30px; border-radius: 4px; object-fit: cover;"></div>`;
             default:
-                return `<div style="color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; ${align}">${val || '-'}</div>`;
+                return `<div data-col="${field.key}" style="color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; ${align}">${val || '-'}</div>`;
         }
     };
 

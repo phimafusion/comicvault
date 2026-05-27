@@ -1,7 +1,7 @@
 import { db } from '../db.js';
 import { openModal, openBulkEditModal } from './form.js';
 import { FIELD_CONFIG, defaultVisibleFields, renderTile, renderListItem, renderDetailsItem } from './collection/templates.js';
-import { initColumnManager, handleDragStart, handleDragEnd, handleDragOver, handleDragLeave, handleDrop, handleMouseDown } from './collection/columnManager.js';
+import { initColumnManager, handleDragStart, handleDragEnd, handleDragOver, handleDragLeave, handleDrop, handleMouseDown, handleDblClick, autoFitColumn } from './collection/columnManager.js';
 
 let currentViewType = 'list'; 
 let searchTerm = '';
@@ -243,6 +243,7 @@ export function attachCollectionEvents() {
     document.addEventListener('drop', handleDrop);
     
     document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('dblclick', handleDblClick);
 }
 
 export function cleanupCollection() {
@@ -257,6 +258,7 @@ export function cleanupCollection() {
     document.removeEventListener('drop', handleDrop);
     
     document.removeEventListener('mousedown', handleMouseDown);
+    document.removeEventListener('dblclick', handleDblClick);
     
     // Mehrfachauswahl zurücksetzen
     isSelectModeActive = false;
@@ -399,6 +401,13 @@ async function updateGrid() {
                 ${comics.map(comic => renderListItem(comic, visibleFields, isSelectModeActive, selectedComicIds)).join('')}
             </div>
         `;
+        
+        // Auto-fit columns dynamically if they do not have a custom saved width
+        visibleFields.list.forEach(key => {
+            if (!visibleFields.columnWidths[key]) {
+                autoFitColumn(key, false);
+            }
+        });
     } else if (currentViewType === 'details') {
         grid.classList.add('details-grid-view');
         grid.innerHTML = comics.map(comic => renderDetailsItem(comic, visibleFields, isSelectModeActive, selectedComicIds)).join('');

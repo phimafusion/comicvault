@@ -125,3 +125,79 @@ export const handleMouseDown = (e) => {
         document.addEventListener('mouseup', handleMouseUp);
     }
 };
+
+export function autoFitColumn(columnKey, save = true) {
+    const header = document.querySelector(`.sortable-header[data-sort="${columnKey}"]`);
+    const cells = document.querySelectorAll(`[data-col="${columnKey}"]`);
+    
+    let headerWidth = 0;
+    if (header) {
+        const clone = header.cloneNode(true);
+        const resizer = clone.querySelector('.col-resizer');
+        if (resizer) resizer.remove();
+        
+        clone.style.position = 'absolute';
+        clone.style.visibility = 'hidden';
+        clone.style.width = 'auto';
+        clone.style.whiteSpace = 'nowrap';
+        clone.style.fontFamily = 'var(--font-primary), sans-serif';
+        clone.style.fontSize = '0.7rem';
+        clone.style.fontWeight = 'bold';
+        clone.style.textTransform = 'uppercase';
+        clone.style.letterSpacing = '0.5px';
+        
+        document.body.appendChild(clone);
+        headerWidth = clone.offsetWidth;
+        clone.remove();
+    }
+    
+    let cellMaxWidth = 0;
+    if (cells.length > 0) {
+        const measureContainer = document.createElement('div');
+        measureContainer.className = 'list-item';
+        measureContainer.style.position = 'absolute';
+        measureContainer.style.visibility = 'hidden';
+        measureContainer.style.width = 'max-content';
+        measureContainer.style.top = '-9999px';
+        measureContainer.style.display = 'block';
+        document.body.appendChild(measureContainer);
+        
+        const clones = Array.from(cells).map(cell => {
+            const clone = cell.cloneNode(true);
+            clone.style.width = 'max-content';
+            clone.style.display = 'block';
+            measureContainer.appendChild(clone);
+            return clone;
+        });
+        
+        clones.forEach(clone => {
+            cellMaxWidth = Math.max(cellMaxWidth, clone.offsetWidth);
+        });
+        
+        measureContainer.remove();
+    }
+    
+    const calculatedWidth = Math.max(headerWidth, cellMaxWidth);
+    const finalWidth = Math.min(450, Math.max(60, calculatedWidth + 16));
+    
+    if (save) {
+        const visibleFields = getVisibleFields();
+        visibleFields.columnWidths[columnKey] = `${finalWidth}px`;
+        setVisibleFields(visibleFields);
+    }
+    
+    const grid = document.getElementById('collection-grid');
+    if (grid) {
+        grid.style.setProperty(`--col-width-${columnKey}`, `${finalWidth}px`);
+    }
+}
+
+export const handleDblClick = (e) => {
+    const resizer = e.target.closest('.col-resizer');
+    if (resizer) {
+        e.preventDefault();
+        e.stopPropagation();
+        const key = resizer.dataset.key;
+        autoFitColumn(key, true);
+    }
+};
