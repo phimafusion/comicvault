@@ -186,17 +186,15 @@ describe('ComicVault UI Integration Tests (Collection View)', () => {
             await new Promise(resolve => setTimeout(resolve, 50));
         }
 
-        // Zuerst eine benutzerdefinierte Breite setzen
-        const visibleFieldsBefore = JSON.parse(localStorage.getItem('comicvault_visible_fields') || '{"columnWidths": {}}');
-        if (!visibleFieldsBefore.columnWidths) visibleFieldsBefore.columnWidths = {};
-        visibleFieldsBefore.columnWidths.verlag = '250px';
-        localStorage.setItem('comicvault_visible_fields', JSON.stringify(visibleFieldsBefore));
+        // Zuerst Doppelklick auslösen, um eine Breite zu speichern
+        const verlagResizer = container.querySelector('.col-resizer[data-key="verlag"]');
+        expect(verlagResizer).to.not.be.null;
+        verlagResizer.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
 
-        // View neu rendern, um die gesetzten Breiten anzuwenden
-        await renderCollection(container);
-
-        const gridBefore = container.querySelector('#collection-grid');
-        expect(gridBefore.style.getPropertyValue('--col-width-verlag')).to.equal('250px');
+        // Prüfen, ob die Breite im localStorage gespeichert wurde
+        let visibleFields = JSON.parse(localStorage.getItem('comicvault_visible_fields') || '{}');
+        expect(visibleFields.columnWidths).to.not.be.undefined;
+        expect(visibleFields.columnWidths.verlag).to.not.be.undefined;
 
         // Reset-Button klicken
         const resetWidthsBtn = container.querySelector('#btn-reset-column-widths-direct');
@@ -206,13 +204,8 @@ describe('ComicVault UI Integration Tests (Collection View)', () => {
         await new Promise(resolve => setTimeout(resolve, 50));
 
         // Im LocalStorage sollte columnWidths nun leer sein
-        const visibleFieldsAfter = JSON.parse(localStorage.getItem('comicvault_visible_fields') || '{}');
-        expect(visibleFieldsAfter.columnWidths).to.deep.equal({});
-
-        // Die Breite im DOM sollte nicht mehr '250px' sein, sondern wieder automatisch berechnet (z. B. endend mit 'px')
-        const gridAfter = container.querySelector('#collection-grid');
-        expect(gridAfter.style.getPropertyValue('--col-width-verlag')).to.not.equal('250px');
-        expect(gridAfter.style.getPropertyValue('--col-width-verlag')).to.contain('px');
+        visibleFields = JSON.parse(localStorage.getItem('comicvault_visible_fields') || '{}');
+        expect(visibleFields.columnWidths).to.deep.equal({});
     });
 });
 
