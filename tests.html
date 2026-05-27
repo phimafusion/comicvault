@@ -276,9 +276,25 @@
             background: rgba(244, 63, 94, 0.15) !important;
             text-shadow: 0 0 10px rgba(244, 63, 94, 0.3) !important;
         }
-        #mocha-stats .duration em {
-            color: #38bdf8 !important;
-            background: rgba(56, 189, 248, 0.15) !important;
+        #mocha-stats .failures {
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+        }
+        #mocha-stats .failures:hover {
+            transform: scale(1.05) !important;
+            box-shadow: 0 0 12px rgba(244, 63, 94, 0.4) !important;
+        }
+        
+        body.filter-failures-only #mocha-stats .failures em {
+            background: rgba(244, 63, 94, 0.3) !important;
+            box-shadow: 0 0 8px rgba(244, 63, 94, 0.5) !important;
+        }
+        
+        body.filter-failures-only #mocha .test.pass {
+            display: none !important;
+        }
+        body.filter-failures-only #mocha-report > li.suite:not(:has(.test.fail)) {
+            display: none !important;
         }
     </style>
 </head>
@@ -360,6 +376,14 @@
                     lastTest.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
                 lastScrollTime = now;
+            }
+        });
+
+        // Toggle failures-only filter when clicking the failures element inside stats box
+        document.addEventListener('click', (e) => {
+            const failuresLi = e.target.closest('#mocha-stats .failures');
+            if (failuresLi) {
+                document.body.classList.toggle('filter-failures-only');
             }
         });
     </script>
