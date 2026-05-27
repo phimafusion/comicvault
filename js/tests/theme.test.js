@@ -1,5 +1,6 @@
 import { setupTestEnv, cleanup } from './testHelper.js';
 import { renderSettings } from '../views/settings.js';
+import { db } from '../db.js';
 
 const { expect } = chai;
 
@@ -144,7 +145,7 @@ describe('Theme Fonts Settings & Application Tests', () => {
         window.alert = originalAlert;
 
         // In DB prüfen
-        expect(savedSettings.themeFonts.default['--font-primary']).to.equal('MyCustomFont');
+        expect(db.getSettings().themeFonts.default['--font-primary']).to.equal('MyCustomFont');
 
         // Im documentElement prüfen (wurde sofort über window.app.applyTheme() angewendet)
         expect(document.documentElement.style.getPropertyValue('--font-primary')).to.equal('MyCustomFont');
@@ -174,7 +175,7 @@ describe('Theme Fonts Settings & Application Tests', () => {
         window.alert = originalAlert;
 
         // In DB prüfen
-        expect(savedSettings.themeFonts.default).to.be.undefined;
+        expect(db.getSettings().themeFonts.default).to.be.undefined;
         
         // Im documentElement prüfen
         expect(document.documentElement.style.getPropertyValue('--font-primary')).to.equal('');
