@@ -389,10 +389,12 @@ async function handleJSONImport() {
             
             let comicsToImport = [];
             let wishlistToImport = [];
+            let clearFirst = false;
             
             if (Array.isArray(data)) {
                 comicsToImport = data;
             } else if (data && typeof data === 'object') {
+                clearFirst = true;
                 if (Array.isArray(data.comics)) {
                     comicsToImport = data.comics;
                 }
@@ -416,6 +418,11 @@ async function handleJSONImport() {
             logOverlay.style.display = 'flex';
             progressText.innerHTML = 'Initialisiere Import...';
             progressBar.style.width = '0%';
+
+            if (clearFirst) {
+                progressText.innerHTML = 'Bereite Datenbank vor (alte Daten werden gelöscht)...';
+                await db.clearAllData();
+            }
             
             // Reset Summary Counters
             document.getElementById('sum-new').textContent = '0 neu';

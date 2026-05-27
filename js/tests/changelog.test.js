@@ -31,6 +31,17 @@ describe('Changelog Feature Tests', () => {
         testEnv = setupTestEnv();
         container = testEnv.viewContainer;
 
+        // Restore real mutator methods so they write to the mock collections
+        const proto = Object.getPrototypeOf(db);
+        db.saveComic = proto.saveComic;
+        db.deleteComic = proto.deleteComic;
+        db.saveWish = proto.saveWish;
+        db.deleteWish = proto.deleteWish;
+        db.updateComics = proto.updateComics;
+        db.deleteComics = proto.deleteComics;
+        db.revertChangelogEntry = proto.revertChangelogEntry;
+        db.clearAllData = proto.clearAllData;
+
         // Backup
         originalGetCollection = db.getCollection;
         originalGetChangelogCollection = db.getChangelogCollection;

@@ -202,8 +202,8 @@ describe('JSON Import Feature Tests', () => {
         const sumUpdated = document.getElementById('sum-updated').textContent;
         const sumSkipped = document.getElementById('sum-skipped').textContent;
 
-        expect(sumNew).to.equal('2 neu'); // 1 comic, 1 wish
-        expect(sumUpdated).to.equal('1 updates'); // 1 wish
+        expect(sumNew).to.equal('3 neu'); // 1 comic, 2 wishes
+        expect(sumUpdated).to.equal('0 updates');
         expect(sumSkipped).to.equal('0 übersprungen');
 
         expect(savedComics.length).to.equal(1);

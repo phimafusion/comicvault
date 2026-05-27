@@ -1,5 +1,6 @@
 import { renderCollection, attachCollectionEvents } from '../views/collection.js';
 import { setupTestEnv, cleanup } from './testHelper.js';
+import { db } from '../db.js';
 
 const { expect } = chai;
 

@@ -42,6 +42,7 @@ export function setupTestEnv(options = {}) {
     if (!backups.updateComics) backups.updateComics = db.updateComics;
     if (!backups.deleteComics) backups.deleteComics = db.deleteComics;
     if (!backups.clearDatabase) backups.clearDatabase = db.clearDatabase;
+    if (!backups.clearAllData) backups.clearAllData = db.clearAllData;
     if (!backups.navigate) backups.navigate = App.prototype.navigate;
 
     // 2. Setup standard settings mock
@@ -110,6 +111,9 @@ export function setupTestEnv(options = {}) {
         lastClearDatabaseCall = true;
         mockComics.splice(0, mockComics.length);
         mockWishes.splice(0, mockWishes.length);
+    };
+    db.clearAllData = async () => {
+        return db.clearDatabase();
     };
 
     // 5. Override App.prototype.navigate to prevent real loading unless specified
@@ -192,6 +196,7 @@ export function cleanup() {
     if (backups.updateComics) db.updateComics = backups.updateComics;
     if (backups.deleteComics) db.deleteComics = backups.deleteComics;
     if (backups.clearDatabase) db.clearDatabase = backups.clearDatabase;
+    if (backups.clearAllData) db.clearAllData = backups.clearAllData;
     if (backups.navigate) App.prototype.navigate = backups.navigate;
     backups = {};
 
