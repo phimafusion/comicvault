@@ -4,6 +4,11 @@ import { renderSettings } from '../views/settings.js';
 
 const { expect } = chai;
 
+function normalizeFontFamily(font) {
+    if (!font) return '';
+    return font.toLowerCase().replace(/['"]/g, '').trim();
+}
+
 describe('Theme Fonts Settings & Application Tests', () => {
     let originalAuth;
     let originalGetSettings;
