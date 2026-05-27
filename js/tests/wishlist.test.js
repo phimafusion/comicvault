@@ -14,6 +14,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
     let originalDeleteWish;
     let originalSaveComic;
     let originalOpenModal;
+    let originalGetAllComics;
     
     let mockWishes = [];
     let savedComics = [];
@@ -24,6 +25,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
         originalSaveWish = db.saveWish;
         originalDeleteWish = db.deleteWish;
         originalSaveComic = db.saveComic;
+        originalGetAllComics = db.getAllComics;
 
         // Stub openModal
         originalOpenModal = openModal;
@@ -51,6 +53,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
         db.saveWish = originalSaveWish;
         db.deleteWish = originalDeleteWish;
         db.saveComic = originalSaveComic;
+        db.getAllComics = originalGetAllComics;
     });
 
     beforeEach(async () => {
@@ -62,6 +65,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
         savedComics = [];
 
         db.getWishlist = async () => [...mockWishes];
+        db.getAllComics = async () => [];
         db.saveWish = async (wish) => {
             const index = mockWishes.findIndex(w => w.id === wish.id);
             if (index !== -1) {
