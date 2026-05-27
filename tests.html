@@ -75,7 +75,7 @@
             padding: 30px !important;
             box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5) !important;
             margin: 0 auto 40px auto !important;
-            max-width: 1000px !important;
+            max-width: 1400px !important;
             color: #e2e8f0 !important;
         }
         
@@ -96,6 +96,49 @@
             color: #a5b4fc !important;
         }
         
+        /* Custom two-column layout for mocha reports */
+        #mocha-report {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)) !important;
+            gap: 20px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            list-style: none !important;
+        }
+        
+        #mocha-report > li.suite {
+            background: rgba(255, 255, 255, 0.02) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+            border-radius: 16px !important;
+            padding: 20px !important;
+            margin: 0 !important;
+            list-style: none !important;
+            display: flex !important;
+            flex-direction: column !important;
+            transition: all 0.3s ease !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+        }
+        
+        #mocha-report > li.suite:hover {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border-color: rgba(99, 102, 241, 0.2) !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.08) !important;
+        }
+        
+        #mocha-report > li.suite > h1 {
+            border-bottom: none !important;
+            padding-bottom: 0 !important;
+            margin: 0 0 12px 0 !important;
+        }
+
+        #mocha-report > li.suite > ul {
+            padding-left: 0 !important;
+            margin: 0 !important;
+            list-style: none !important;
+            flex-grow: 1 !important;
+        }
+        
         #mocha .suite {
             margin-left: 0 !important;
             padding: 10px 0 !important;
@@ -113,10 +156,10 @@
         }
         
         #mocha .test {
-            margin-left: 20px !important;
+            margin-left: 0 !important;
             padding: 10px 16px !important;
             border-radius: 8px !important;
-            background: rgba(255, 255, 255, 0.02) !important;
+            background: rgba(15, 23, 42, 0.25) !important;
             margin-bottom: 6px !important;
             border: 1px solid rgba(255, 255, 255, 0.03) !important;
             transition: all 0.2s ease !important;
@@ -291,7 +334,21 @@
 
     <script type="module">
         // Run tests
-        mocha.run();
+        const runner = mocha.run();
+
+        // Autoscroll to the latest executed test
+        let lastScrollTime = 0;
+        runner.on('test end', () => {
+            const now = Date.now();
+            if (now - lastScrollTime > 80) { // Throttle to prevent scroll jitter and improve performance
+                const tests = document.querySelectorAll('#mocha .test');
+                if (tests.length > 0) {
+                    const lastTest = tests[tests.length - 1];
+                    lastTest.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+                lastScrollTime = now;
+            }
+        });
     </script>
 </body>
 </html>
