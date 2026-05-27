@@ -27,11 +27,13 @@ let activeFilters = {
     bezugsquelle: [],
     serie: []
 };
+let needsAutoFit = true;
 
 let visibleFields = JSON.parse(localStorage.getItem('comicvault_visible_fields')) || JSON.parse(JSON.stringify(defaultVisibleFields));
 if (!visibleFields.columnWidths) visibleFields.columnWidths = {};
 
 export async function renderCollection(container) {
+    needsAutoFit = true;
     const comics = await db.getAllComics();
     const verlage = [...new Set(comics.map(c => c.verlag).filter(Boolean))].sort();
     const formate = [...new Set(comics.map(c => c.format).filter(Boolean))].sort();
@@ -410,12 +412,15 @@ export async function updateGrid() {
             </div>
         `;
         
-        // Auto-fit columns dynamically if they do not have a custom saved width
-        visibleFields.list.forEach(key => {
-            if (!visibleFields.columnWidths[key]) {
-                autoFitColumn(key, false);
-            }
-        });
+        // Auto-fit columns dynamically if they do not have a custom saved width (only on initial load/view render)
+        if (needsAutoFit) {
+            visibleFields.list.forEach(key => {
+                if (!visibleFields.columnWidths[key]) {
+                    autoFitColumn(key, false);
+                }
+            });
+            needsAutoFit = false;
+        }
     } else if (currentViewType === 'details') {
         grid.classList.add('details-grid-view');
         grid.innerHTML = comics.map(comic => renderDetailsItem(comic, visibleFields, isSelectModeActive, selectedComicIds)).join('');
@@ -441,6 +446,7 @@ export async function updateGrid() {
             e.stopPropagation();
             if (confirm('Comic wirklich löschen?')) {
                 await db.deleteComic(btn.dataset.id);
+                needsAutoFit = true;
                 updateGrid();
             }
         });

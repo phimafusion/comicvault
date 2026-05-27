@@ -176,3 +176,211 @@ describe('ComicVault UI Integration Tests (Collection View)', () => {
         expect(grid.style.getPropertyValue('--col-width-verlag')).to.equal(visibleFields.columnWidths.verlag);
     });
 });
+
+describe('ComicVault Database Caching Tests', () => {
+    let originalGetCollection;
+    let originalGetWishlistCollection;
+    let originalGetChangelogCollection;
+    let mockComicsData;
+    let mockWishlistData;
+    let getComicsCount;
+    let getWishlistCount;
+
+    beforeEach(() => {
+        // Originale Methoden sichern
+        originalGetCollection = db.getCollection;
+        originalGetWishlistCollection = db.getWishlistCollection;
+        originalGetChangelogCollection = db.getChangelogCollection;
+
+        // Cache zurücksetzen
+        db.comicsCache = null;
+        db.wishlistCache = null;
+        db.cachedUid = null;
+
+        mockComicsData = [
+            { id: '1', titel: 'Comic 1', serie: 'A', verlag: 'Publisher' }
+        ];
+        mockWishlistData = [
+            { id: 'w1', titel: 'Wish 1', serie: 'B' }
+        ];
+
+        getComicsCount = 0;
+        getWishlistCount = 0;
+
+        // getCollection mocken
+        db.getCollection = () => {
+            return {
+                orderBy: () => ({
+                    get: async () => {
+                        getComicsCount++;
+                        return {
+                            docs: mockComicsData.map(c => ({
+                                id: c.id,
+                                data: () => {
+                                    const copy = { ...c };
+                                    delete copy.id;
+                                    return copy;
+                                }
+                            }))
+                        };
+                    }
+                }),
+                doc: (id) => ({
+                    get: async () => ({
+                        exists: true,
+                        data: () => mockComicsData.find(c => c.id === id) || {}
+                    }),
+                    set: async () => {},
+                    delete: async () => {}
+                }),
+                add: async () => ({ id: 'new-id' })
+            };
+        };
+
+        // getWishlistCollection mocken
+        db.getWishlistCollection = () => {
+            return {
+                orderBy: () => ({
+                    get: async () => {
+                        getWishlistCount++;
+                        return {
+                            docs: mockWishlistData.map(w => ({
+                                id: w.id,
+                                data: () => {
+                                    const copy = { ...w };
+                                    delete copy.id;
+                                    return copy;
+                                }
+                            }))
+                        };
+                    }
+                }),
+                doc: () => ({
+                    set: async () => {},
+                    delete: async () => {}
+                }),
+                add: async () => ({ id: 'new-wish-id' })
+            };
+        };
+
+        // getChangelogCollection mocken um Fehler bei Mutationen zu vermeiden
+        db.getChangelogCollection = () => {
+            return {
+                add: async () => {}
+            };
+        };
+    });
+
+    afterEach(() => {
+        // Originale Methoden wiederherstellen
+        db.getCollection = originalGetCollection;
+        db.getWishlistCollection = originalGetWishlistCollection;
+        db.getChangelogCollection = originalGetChangelogCollection;
+
+        // Cache zurücksetzen
+        db.comicsCache = null;
+        db.wishlistCache = null;
+        db.cachedUid = null;
+    });
+
+    it('sollte getAllComics beim ersten Aufruf aus der DB laden und danach cachen', async () => {
+        const first = await db.getAllComics();
+        expect(first.length).to.equal(1);
+        expect(getComicsCount).to.equal(1);
+
+        const second = await db.getAllComics();
+        expect(second.length).to.equal(1);
+        // Sollte aus dem Cache geladen werden, d.h. Count bleibt bei 1
+        expect(getComicsCount).to.equal(1);
+    });
+
+    it('sollte den Comics-Cache beim Speichern eines Comics invalidieren', async () => {
+        await db.getAllComics();
+        expect(getComicsCount).to.equal(1);
+
+        await db.saveComic({ titel: 'Comic 2' });
+        expect(db.comicsCache).to.be.null;
+
+        await db.getAllComics();
+        expect(getComicsCount).to.equal(2);
+    });
+
+    it('sollte den Comics-Cache beim Löschen eines Comics invalidieren', async () => {
+        await db.getAllComics();
+        expect(getComicsCount).to.equal(1);
+
+        await db.deleteComic('1');
+        expect(db.comicsCache).to.be.null;
+
+        await db.getAllComics();
+        expect(getComicsCount).to.equal(2);
+    });
+
+    it('sollte getWishlist beim ersten Aufruf laden und danach cachen', async () => {
+        const first = await db.getWishlist();
+        expect(first.length).to.equal(1);
+        expect(getWishlistCount).to.equal(1);
+
+        const second = await db.getWishlist();
+        expect(second.length).to.equal(1);
+        expect(getWishlistCount).to.equal(1);
+    });
+
+    it('sollte den Wunschlisten-Cache bei saveWish invalidieren', async () => {
+        await db.getWishlist();
+        expect(getWishlistCount).to.equal(1);
+
+        await db.saveWish({ titel: 'Wish 2' });
+        expect(db.wishlistCache).to.be.null;
+
+        await db.getWishlist();
+        expect(getWishlistCount).to.equal(2);
+    });
+
+    it('sollte den Wunschlisten-Cache bei deleteWish invalidieren', async () => {
+        await db.getWishlist();
+        expect(getWishlistCount).to.equal(1);
+
+        await db.deleteWish('w1');
+        expect(db.wishlistCache).to.be.null;
+
+        await db.getWishlist();
+        expect(getWishlistCount).to.equal(2);
+    });
+
+    it('sollte den Cache leeren, wenn sich der angemeldete Benutzer ändert', async () => {
+        const auth = firebase.auth();
+        const originalCurrentUser = Object.getOwnPropertyDescriptor(auth, 'currentUser');
+        
+        let mockUid = 'user1';
+        Object.defineProperty(auth, 'currentUser', {
+            get: () => ({ uid: mockUid }),
+            configurable: true
+        });
+
+        // Caches befüllen
+        await db.getAllComics();
+        await db.getWishlist();
+        expect(db.cachedUid).to.equal('user1');
+        expect(db.comicsCache).to.not.be.null;
+        expect(db.wishlistCache).to.not.be.null;
+
+        // User ID ändern
+        mockUid = 'user2';
+
+        // getCollection/getWishlistCollection aufrufen, was die caches leert
+        db.getCollection();
+
+        expect(db.comicsCache).to.be.null;
+        expect(db.wishlistCache).to.be.null;
+        expect(db.cachedUid).to.equal('user2');
+
+        // Restore auth mock
+        if (originalCurrentUser) {
+            Object.defineProperty(auth, 'currentUser', originalCurrentUser);
+        } else {
+            delete auth.currentUser;
+        }
+    });
+});
+

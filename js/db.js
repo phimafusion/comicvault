@@ -7,23 +7,42 @@ const storage = firebase.storage();
 const SETTINGS_KEY = 'comicvault_settings';
 
 class Database {
-    constructor() {}
+    constructor() {
+        this.comicsCache = null;
+        this.wishlistCache = null;
+        this.cachedUid = null;
+    }
 
     getCollection() {
         const user = getCurrentUser();
-        if (!user) return null;
+        if (!user) {
+            this.comicsCache = null;
+            this.wishlistCache = null;
+            this.cachedUid = null;
+            return null;
+        }
+        if (this.cachedUid !== user.uid) {
+            this.comicsCache = null;
+            this.wishlistCache = null;
+            this.cachedUid = user.uid;
+        }
         // Wir speichern Comics in einer Unter-Kollektion pro User
         return dbFirestore.collection('users').doc(user.uid).collection('comics');
     }
 
     async getAllComics() {
+        if (this.comicsCache) {
+            return [...this.comicsCache];
+        }
         const col = this.getCollection();
         if (!col) return [];
         const snapshot = await col.orderBy('serie', 'asc').get();
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        this.comicsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        return [...this.comicsCache];
     }
 
     async saveComic(comic, options = {}) {
+        this.comicsCache = null;
         const col = this.getCollection();
         if (!col) return;
 
@@ -64,6 +83,7 @@ class Database {
     }
 
     async deleteComic(id, options = {}) {
+        this.comicsCache = null;
         const col = this.getCollection();
         if (col) {
             let oldData = null;
@@ -87,6 +107,7 @@ class Database {
     }
 
     async deleteComics(ids, options = {}) {
+        this.comicsCache = null;
         const col = this.getCollection();
         if (!col || !ids || ids.length === 0) return;
 
@@ -116,6 +137,7 @@ class Database {
     }
 
     async updateComics(ids, updates, options = {}) {
+        this.comicsCache = null;
         const col = this.getCollection();
         if (!col || !ids || ids.length === 0 || Object.keys(updates).length === 0) return;
 
@@ -151,18 +173,33 @@ class Database {
     // Wunschliste
     getWishlistCollection() {
         const user = getCurrentUser();
-        if (!user) return null;
+        if (!user) {
+            this.comicsCache = null;
+            this.wishlistCache = null;
+            this.cachedUid = null;
+            return null;
+        }
+        if (this.cachedUid !== user.uid) {
+            this.comicsCache = null;
+            this.wishlistCache = null;
+            this.cachedUid = user.uid;
+        }
         return dbFirestore.collection('users').doc(user.uid).collection('wishlist');
     }
 
     async getWishlist() {
+        if (this.wishlistCache) {
+            return [...this.wishlistCache];
+        }
         const col = this.getWishlistCollection();
         if (!col) return [];
         const snapshot = await col.orderBy('titel', 'asc').get();
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        this.wishlistCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        return [...this.wishlistCache];
     }
 
     async saveWish(wish) {
+        this.wishlistCache = null;
         const col = this.getWishlistCollection();
         if (!col) return;
         const data = { ...wish };
@@ -180,6 +217,7 @@ class Database {
     }
 
     async deleteWish(id) {
+        this.wishlistCache = null;
         const col = this.getWishlistCollection();
         if (col) await col.doc(id).delete();
     }
@@ -199,6 +237,8 @@ class Database {
     }
 
     async clearAllData() {
+        this.comicsCache = null;
+        this.wishlistCache = null;
         const user = getCurrentUser();
         if (!user) return;
 
