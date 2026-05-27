@@ -157,7 +157,7 @@ describe('Theme Fonts Settings & Application Tests', () => {
 
         // Standardmäßig sollte default (Vibrant Modern) aktiv sein -> 2 Felder
         const select = viewContainer.querySelector('#settings-font-theme-select');
-        throw new Error("HTML content is: " + viewContainer.innerHTML);
+        expect(viewContainer.innerHTML).to.contain('Schriftarten anpassen');
         expect(select).to.not.be.null;
         expect(select.value).to.equal('default');
 
