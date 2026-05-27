@@ -1,74 +1,62 @@
 import { renderCollection, attachCollectionEvents } from '../views/collection.js';
-import { db } from '../db.js';
+import { setupTestEnv, cleanup } from './testHelper.js';
 
 const { expect } = chai;
 
 describe('ComicVault UI Integration Tests (Collection View)', () => {
+    let testEnv;
     let container;
-    let originalGetAllComics;
+    let mockComics = [];
 
     before(() => {
         // Event-Listener der Collection-View anbinden
         attachCollectionEvents();
-
-        // Backup der originalen DB-Methode
-        originalGetAllComics = db.getAllComics;
-
-        // Mock-Daten für Comics bereitstellen
-        db.getAllComics = async () => {
-            return [
-                { 
-                    id: '1', 
-                    titel: 'Spider-Man Classic 1', 
-                    serie: 'Spider-Man', 
-                    verlag: 'Marvel', 
-                    bestand: 'vorhanden', 
-                    gelesen_am: '2023-05-19', 
-                    bewertung: 10, 
-                    preis: 5.99,
-                    format: 'Heft',
-                    bezugsquelle: 'Comicladen'
-                },
-                { 
-                    id: '2', 
-                    titel: 'Batman Year One', 
-                    serie: 'Batman', 
-                    verlag: 'DC', 
-                    bestand: 'vorhanden', 
-                    gelesen_am: '', 
-                    bewertung: 8, 
-                    preis: 12.50,
-                    format: 'Hardcover',
-                    bezugsquelle: 'Online'
-                },
-                { 
-                    id: '3', 
-                    titel: 'Superman Rebirth 5', 
-                    serie: 'Superman', 
-                    verlag: 'DC', 
-                    bestand: 'vorbestellt', 
-                    gelesen_am: '2023-05-20', 
-                    bewertung: 0, 
-                    preis: 9.99,
-                    format: 'Softcover',
-                    bezugsquelle: 'Comicladen'
-                }
-            ];
-        };
-
-        // Test-Container erstellen und in den DOM einhängen
-        container = document.createElement('div');
-        container.id = 'view-container';
-        document.body.appendChild(container);
     });
 
-    after(() => {
-        // Mock wiederherstellen
-        db.getAllComics = originalGetAllComics;
-        // Test-Container entfernen
-        if (container) {
-            container.remove();
-        }
+    beforeEach(async () => {
+        mockComics = [
+            { 
+                id: '1', 
+                titel: 'Spider-Man Classic 1', 
+                serie: 'Spider-Man', 
+                verlag: 'Marvel', 
+                bestand: 'vorhanden', 
+                gelesen_am: '2023-05-19', 
+                bewertung: 10, 
+                preis: 5.99,
+                format: 'Heft',
+                bezugsquelle: 'Comicladen'
+            },
+            { 
+                id: '2', 
+                titel: 'Batman Year One', 
+                serie: 'Batman', 
+                verlag: 'DC', 
+                bestand: 'vorhanden', 
+                gelesen_am: '', 
+                bewertung: 8, 
+                preis: 12.50,
+                format: 'Hardcover',
+                bezugsquelle: 'Online'
+            },
+            { 
+                id: '3', 
+                titel: 'Superman Rebirth 5', 
+                serie: 'Superman', 
+                verlag: 'DC', 
+                bestand: 'vorbestellt', 
+                gelesen_am: '2023-05-20', 
+                bewertung: 0, 
+                preis: 9.99,
+                format: 'Softcover',
+                bezugsquelle: 'Comicladen'
+            }
+        ];
+
+        testEnv = setupTestEnv({
+            mockComics: mockComics
+        });
+        container = testEnv.viewContainer;
     });
 
     afterEach(() => {
@@ -77,6 +65,7 @@ describe('ComicVault UI Integration Tests (Collection View)', () => {
         if (resetBtn) {
             resetBtn.click();
         }
+        cleanup();
     });
 
     it('sollte die Collection-View rendern und alle Comics anzeigen', async () => {

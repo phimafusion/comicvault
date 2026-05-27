@@ -1,29 +1,21 @@
 import { renderImport } from '../views/import.js';
+import { setupTestEnv, cleanup } from './testHelper.js';
 import { db } from '../db.js';
 
 const { expect } = chai;
 
 describe('JSON Import Feature Tests', () => {
+    let testEnv;
     let container;
-    let originalGetAllComics;
-    let originalGetWishlist;
-    let originalSaveComic;
-    let originalSaveWish;
     let savedComics = [];
     let savedWishlist = [];
 
     beforeEach(() => {
-        // Backup original methods
-        originalGetAllComics = db.getAllComics;
-        originalGetWishlist = db.getWishlist;
-        originalSaveComic = db.saveComic;
-        originalSaveWish = db.saveWish;
-
         savedComics = [];
         savedWishlist = [];
 
         // Mock DB Methods
-        db.getAllComics = async () => [
+        const existingComics = [
             {
                 id: 'existing-1',
                 titel: 'Batman: The Dark Knight Returns',
@@ -46,7 +38,7 @@ describe('JSON Import Feature Tests', () => {
             }
         ];
 
-        db.getWishlist = async () => [
+        const existingWishes = [
             {
                 id: 'wish-existing-1',
                 titel: 'Saga Vol. 1',
@@ -58,35 +50,30 @@ describe('JSON Import Feature Tests', () => {
             }
         ];
 
+        testEnv = setupTestEnv({
+            mockComics: existingComics,
+            mockWishes: existingWishes
+        });
+        container = testEnv.viewContainer;
+
+        // Add spies to collect saved objects
+        const originalSaveComic = db.saveComic;
         db.saveComic = async (comic) => {
             savedComics.push(comic);
-            return comic.id || 'new-id-' + Math.random();
+            return originalSaveComic(comic);
         };
 
+        const originalSaveWish = db.saveWish;
         db.saveWish = async (wish) => {
             savedWishlist.push(wish);
-            return wish.id || 'new-wish-id-' + Math.random();
+            return originalSaveWish(wish);
         };
 
-        // DOM setup
-        container = document.createElement('div');
-        container.id = 'view-container';
-        document.body.appendChild(container);
         renderImport(container);
     });
 
     afterEach(() => {
-        // Restore DB methods
-        db.getAllComics = originalGetAllComics;
-        db.getWishlist = originalGetWishlist;
-        db.saveComic = originalSaveComic;
-        db.saveWish = originalSaveWish;
-
-        // Cleanup DOM
-        if (container) {
-            container.remove();
-        }
-        
+        cleanup();
         const overlay = document.getElementById('import-log-overlay');
         if (overlay) overlay.remove();
     });
@@ -228,6 +215,43 @@ describe('JSON Import Feature Tests', () => {
         expect(savedWishlist[1].preis).to.equal(17.99);
     });
 
+    it('sollte veraltete Comics löschen, wenn ein JSON-Backup importiert wird', async () => {
+        const importData = {
+            comics: [
+                {
+                    id: 'existing-2',
+                    titel: 'Superman: Red Son',
+                    serie: 'Superman',
+                    nummer: 1,
+                    verlag: 'DC',
+                    format: 'Softcover',
+                    sprache: 'Deutsch',
+                    preis: 14.99
+                }
+            ],
+            wishlist: []
+        };
+
+        const fileInput = container.querySelector('#import-json-file');
+        const btnImport = container.querySelector('#btn-import-json');
+
+        const mockFile = new File([JSON.stringify(importData)], 'backup.json', { type: 'application/json' });
+        
+        Object.defineProperty(fileInput, 'files', {
+            value: [mockFile],
+            writable: true
+        });
+
+        btnImport.click();
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // existing-1 sollte gelöscht worden sein (clearDatabase wurde aufgerufen)
+        expect(testEnv.getLastClearDatabaseCall()).to.be.true;
+        expect(testEnv.getMockComics().length).to.equal(1);
+        expect(testEnv.getMockComics()[0].id).to.equal('existing-2');
+    });
+
     it('sollte Fehler anzeigen, wenn das JSON-Format ungültig ist', async () => {
         const fileInput = container.querySelector('#import-json-file');
         const btnImport = container.querySelector('#btn-import-json');
@@ -250,17 +274,12 @@ describe('JSON Import Feature Tests', () => {
 });
 
 describe('Excel (XLSX) Export Feature Tests', () => {
+    let testEnv;
     let container;
-    let originalGetAllComics;
-    let originalGetWishlist;
 
     beforeEach(() => {
-        // Backup
-        originalGetAllComics = db.getAllComics;
-        originalGetWishlist = db.getWishlist;
-
         // Mock DB Methods
-        db.getAllComics = async () => [
+        const existingComics = [
             {
                 id: 'existing-1',
                 titel: 'Batman: The Dark Knight Returns',
@@ -282,25 +301,16 @@ describe('Excel (XLSX) Export Feature Tests', () => {
                 preis: 14.99
             }
         ];
-        db.getWishlist = async () => [];
 
-        // DOM setup
-        container = document.createElement('div');
-        container.id = 'view-container';
-        document.body.appendChild(container);
+        testEnv = setupTestEnv({
+            mockComics: existingComics
+        });
+        container = testEnv.viewContainer;
         renderImport(container);
     });
 
     afterEach(() => {
-        // Restore
-        db.getAllComics = originalGetAllComics;
-        db.getWishlist = originalGetWishlist;
-
-        // Cleanup DOM
-        if (container) {
-            container.remove();
-        }
-        
+        cleanup();
         const overlay = document.getElementById('import-log-overlay');
         if (overlay) overlay.remove();
     });
@@ -373,49 +383,36 @@ describe('Excel (XLSX) Export Feature Tests', () => {
 });
 
 describe('Excel (XLSX) Import Feature Tests', () => {
+    let testEnv;
     let container;
-    let originalGetAllComics;
-    let originalGetWishlist;
-    let originalSaveComic;
-    let originalSaveWish;
     let savedComics = [];
     let savedWishlist = [];
 
     beforeEach(() => {
-        originalGetAllComics = db.getAllComics;
-        originalGetWishlist = db.getWishlist;
-        originalSaveComic = db.saveComic;
-        originalSaveWish = db.saveWish;
-
         savedComics = [];
         savedWishlist = [];
 
-        db.getAllComics = async () => [];
-        db.getWishlist = async () => [];
+        testEnv = setupTestEnv();
+        container = testEnv.viewContainer;
+
+        // Add spies
+        const originalSaveComic = db.saveComic;
         db.saveComic = async (comic) => {
             savedComics.push(comic);
-            return comic.id || 'new-id-' + Math.random();
-        };
-        db.saveWish = async (wish) => {
-            savedWishlist.push(wish);
-            return wish.id || 'new-wish-id-' + Math.random();
+            return originalSaveComic(comic);
         };
 
-        container = document.createElement('div');
-        container.id = 'view-container';
-        document.body.appendChild(container);
+        const originalSaveWish = db.saveWish;
+        db.saveWish = async (wish) => {
+            savedWishlist.push(wish);
+            return originalSaveWish(wish);
+        };
+
         renderImport(container);
     });
 
     afterEach(() => {
-        db.getAllComics = originalGetAllComics;
-        db.getWishlist = originalGetWishlist;
-        db.saveComic = originalSaveComic;
-        db.saveWish = originalSaveWish;
-
-        if (container) {
-            container.remove();
-        }
+        cleanup();
         const overlay = document.getElementById('import-log-overlay');
         if (overlay) overlay.remove();
     });

@@ -1,9 +1,11 @@
 import { db } from '../db.js';
 import { renderChangelog } from '../views/changelog.js';
+import { setupTestEnv, cleanup } from './testHelper.js';
 
 const { expect } = chai;
 
 describe('Changelog Feature Tests', () => {
+    let testEnv;
     let originalGetCollection;
     let originalGetChangelogCollection;
     let originalBatch;
@@ -25,6 +27,9 @@ describe('Changelog Feature Tests', () => {
     beforeEach(() => {
         mockComics = [];
         mockChangelog = [];
+
+        testEnv = setupTestEnv();
+        container = testEnv.viewContainer;
 
         // Backup
         originalGetCollection = db.getCollection;
@@ -174,22 +179,13 @@ describe('Changelog Feature Tests', () => {
                 })
             };
         };
-
-        // DOM setup
-        container = document.createElement('div');
-        container.id = 'view-container';
-        document.body.appendChild(container);
     });
 
     afterEach(() => {
-        // Restore
+        cleanup();
         db.getCollection = originalGetCollection;
         db.getChangelogCollection = originalGetChangelogCollection;
 
-        // Cleanup DOM
-        if (container) {
-            container.remove();
-        }
         const modal = document.getElementById('changelog-clear-confirm-modal');
         if (modal) modal.remove();
     });

@@ -1,54 +1,30 @@
 import { renderCollection, attachCollectionEvents, isSelectModeActive, selectedComicIds, toggleSelectMode } from '../views/collection.js';
-import { db } from '../db.js';
+import { setupTestEnv, cleanup } from './testHelper.js';
 
 const { expect } = chai;
 
 describe('ComicVault Bulk Delete & Multi-Select Tests', () => {
+    let testEnv;
     let container;
-    let originalGetAllComics;
-    let originalDeleteComics;
-    let deleteComicsCalledWith = null;
+    let mockComics = [];
 
     before(() => {
         // Attach event listeners
         attachCollectionEvents();
-
-        // Backup database methods
-        originalGetAllComics = db.getAllComics;
-        originalDeleteComics = db.deleteComics;
-
-        // Stub database methods
-        db.getAllComics = async () => {
-            return [
-                { id: '1', titel: 'Spider-Man Classic 1', serie: 'Spider-Man', verlag: 'Marvel', bestand: 'vorhanden' },
-                { id: '2', titel: 'Batman Year One', serie: 'Batman', verlag: 'DC', bestand: 'vorhanden' },
-                { id: '3', titel: 'Superman Rebirth 5', serie: 'Superman', verlag: 'DC', bestand: 'vorbestellt' }
-            ];
-        };
-
-        db.deleteComics = async (ids) => {
-            deleteComicsCalledWith = ids;
-        };
-
-        // Create test view container
-        container = document.createElement('div');
-        container.id = 'view-container';
-        document.body.appendChild(container);
-    });
-
-    after(() => {
-        // Restore database methods
-        db.getAllComics = originalGetAllComics;
-        db.deleteComics = originalDeleteComics;
-
-        // Clean up test view container
-        if (container) {
-            container.remove();
-        }
     });
 
     beforeEach(async () => {
-        deleteComicsCalledWith = null;
+        mockComics = [
+            { id: '1', titel: 'Spider-Man Classic 1', serie: 'Spider-Man', verlag: 'Marvel', bestand: 'vorhanden' },
+            { id: '2', titel: 'Batman Year One', serie: 'Batman', verlag: 'DC', bestand: 'vorhanden' },
+            { id: '3', titel: 'Superman Rebirth 5', serie: 'Superman', verlag: 'DC', bestand: 'vorbestellt' }
+        ];
+
+        testEnv = setupTestEnv({
+            mockComics: mockComics
+        });
+        container = testEnv.viewContainer;
+
         selectedComicIds.clear();
         if (isSelectModeActive) {
             toggleSelectMode(); // Reset to inactive state
@@ -59,11 +35,7 @@ describe('ComicVault Bulk Delete & Multi-Select Tests', () => {
     });
 
     afterEach(() => {
-        const bar = document.getElementById('bulk-action-bar');
-        if (bar) bar.remove();
-        const modal = document.getElementById('bulk-delete-confirm-modal');
-        if (modal) modal.remove();
-        document.body.classList.remove('bulk-select-active');
+        cleanup();
     });
 
     it('sollte standardmäßig den Auswahlmodus deaktiviert haben', () => {
@@ -182,7 +154,7 @@ describe('ComicVault Bulk Delete & Multi-Select Tests', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
 
         // Verify database delete call (order independent)
-        expect(deleteComicsCalledWith).to.have.members(['1', '2']);
+        expect(testEnv.getLastDeleteComicsCall()).to.have.members(['1', '2']);
         
         // Verify selection state is reset
         expect(isSelectModeActive).to.be.false;

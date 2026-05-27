@@ -39,6 +39,9 @@ export function setupTestEnv(options = {}) {
     if (!backups.saveWish) backups.saveWish = db.saveWish;
     if (!backups.deleteWish) backups.deleteWish = db.deleteWish;
     if (!backups.saveComic) backups.saveComic = db.saveComic;
+    if (!backups.updateComics) backups.updateComics = db.updateComics;
+    if (!backups.deleteComics) backups.deleteComics = db.deleteComics;
+    if (!backups.clearDatabase) backups.clearDatabase = db.clearDatabase;
     if (!backups.navigate) backups.navigate = App.prototype.navigate;
 
     // 2. Setup standard settings mock
@@ -60,6 +63,10 @@ export function setupTestEnv(options = {}) {
     mockWishes = options.mockWishes || [];
     mockComics = options.mockComics || [];
     
+    let lastUpdateComicsCall = null;
+    let lastDeleteComicsCall = null;
+    let lastClearDatabaseCall = false;
+
     db.getWishlist = async () => [...mockWishes];
     db.getAllComics = async () => [...mockComics];
 
@@ -80,6 +87,29 @@ export function setupTestEnv(options = {}) {
     db.saveComic = async (comic) => {
         mockComics.push(comic);
         return comic.id || 'comic-' + Math.random();
+    };
+    db.updateComics = async (ids, updates) => {
+        lastUpdateComicsCall = { ids, updates };
+        ids.forEach(id => {
+            const comic = mockComics.find(c => c.id === id);
+            if (comic) {
+                Object.assign(comic, updates);
+            }
+        });
+    };
+    db.deleteComics = async (ids) => {
+        lastDeleteComicsCall = ids;
+        ids.forEach(id => {
+            const index = mockComics.findIndex(c => c.id === id);
+            if (index !== -1) {
+                mockComics.splice(index, 1);
+            }
+        });
+    };
+    db.clearDatabase = async () => {
+        lastClearDatabaseCall = true;
+        mockComics.splice(0, mockComics.length);
+        mockWishes.splice(0, mockWishes.length);
     };
 
     // 5. Override App.prototype.navigate to prevent real loading unless specified
@@ -134,7 +164,15 @@ export function setupTestEnv(options = {}) {
         getMockWishes: () => mockWishes,
         setMockWishes: (w) => { mockWishes = w; },
         getMockComics: () => mockComics,
-        setMockComics: (c) => { mockComics = c; }
+        setMockComics: (c) => { mockComics = c; },
+        getLastUpdateComicsCall: () => lastUpdateComicsCall,
+        getLastDeleteComicsCall: () => lastDeleteComicsCall,
+        getLastClearDatabaseCall: () => lastClearDatabaseCall,
+        resetCalls: () => {
+            lastUpdateComicsCall = null;
+            lastDeleteComicsCall = null;
+            lastClearDatabaseCall = false;
+        }
     };
 }
 
@@ -151,6 +189,9 @@ export function cleanup() {
     if (backups.saveWish) db.saveWish = backups.saveWish;
     if (backups.deleteWish) db.deleteWish = backups.deleteWish;
     if (backups.saveComic) db.saveComic = backups.saveComic;
+    if (backups.updateComics) db.updateComics = backups.updateComics;
+    if (backups.deleteComics) db.deleteComics = backups.deleteComics;
+    if (backups.clearDatabase) db.clearDatabase = backups.clearDatabase;
     if (backups.navigate) App.prototype.navigate = backups.navigate;
     backups = {};
 
@@ -166,7 +207,9 @@ export function cleanup() {
     // 4. Remove floating widgets and leaked DOM components
     const idsToRemove = [
         'wishlist-bulk-bar',
-        'db-clear-confirm-modal'
+        'db-clear-confirm-modal',
+        'bulk-action-bar',
+        'bulk-delete-confirm-modal'
     ];
     idsToRemove.forEach(id => {
         const el = document.getElementById(id);
@@ -180,7 +223,8 @@ export function cleanup() {
         modal.style.opacity = '0';
     }
 
-    // 6. Clean up root style properties
+    // 6. Clean up root style properties and body classes
+    document.body.classList.remove('bulk-select-active');
     const fontVars = ['--font-primary', '--font-display', '--font-typewriter', '--font-code'];
     fontVars.forEach(v => document.documentElement.style.removeProperty(v));
 }

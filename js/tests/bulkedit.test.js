@@ -1,55 +1,32 @@
 import { renderCollection, attachCollectionEvents, isSelectModeActive, selectedComicIds, toggleSelectMode } from '../views/collection.js';
 import { openBulkEditModal } from '../views/form.js';
+import { setupTestEnv, cleanup } from './testHelper.js';
 import { db } from '../db.js';
 
 const { expect } = chai;
 
 describe('ComicVault Bulk Edit Tests', () => {
+    let testEnv;
     let container;
-    let originalGetAllComics;
-    let originalUpdateComics;
-    let updateComicsCalledWith = null;
+    let mockComics = [];
 
     before(() => {
         // Attach event listeners
         attachCollectionEvents();
-
-        // Backup database methods
-        originalGetAllComics = db.getAllComics;
-        originalUpdateComics = db.updateComics;
-
-        // Stub database methods
-        db.getAllComics = async () => {
-            return [
-                { id: '1', titel: 'Spider-Man 1', verlag: 'Marvel', serie: 'Spider-Man', preis: 4.99, limitierung: true, bewertung: 8 },
-                { id: '2', titel: 'Spider-Man 2', verlag: 'Marvel', serie: 'Spider-Man', preis: 5.99, limitierung: true, bewertung: 8 },
-                { id: '3', titel: 'Batman 1', verlag: 'DC', serie: 'Batman', preis: 4.99, limitierung: false, bewertung: 6 }
-            ];
-        };
-
-        db.updateComics = async (ids, updates) => {
-            updateComicsCalledWith = { ids, updates };
-        };
-
-        // Create test view container
-        container = document.createElement('div');
-        container.id = 'view-container';
-        document.body.appendChild(container);
-    });
-
-    after(() => {
-        // Restore database methods
-        db.getAllComics = originalGetAllComics;
-        db.updateComics = originalUpdateComics;
-
-        // Clean up test view container
-        if (container) {
-            container.remove();
-        }
     });
 
     beforeEach(async () => {
-        updateComicsCalledWith = null;
+        mockComics = [
+            { id: '1', titel: 'Spider-Man 1', verlag: 'Marvel', serie: 'Spider-Man', preis: 4.99, limitierung: true, bewertung: 8 },
+            { id: '2', titel: 'Spider-Man 2', verlag: 'Marvel', serie: 'Spider-Man', preis: 5.99, limitierung: true, bewertung: 8 },
+            { id: '3', titel: 'Batman 1', verlag: 'DC', serie: 'Batman', preis: 4.99, limitierung: false, bewertung: 6 }
+        ];
+
+        testEnv = setupTestEnv({
+            mockComics: mockComics
+        });
+        container = testEnv.viewContainer;
+
         selectedComicIds.clear();
         if (isSelectModeActive) {
             toggleSelectMode(); // Reset select mode
@@ -60,10 +37,7 @@ describe('ComicVault Bulk Edit Tests', () => {
     });
 
     afterEach(() => {
-        const modal = document.getElementById('comic-modal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
+        cleanup();
     });
 
     it('sollte das Bulk-Edit-Formular mit einheitlichen Werten vorausfüllen und unterschiedliche Werte als Platzhalter anzeigen', async () => {
@@ -142,11 +116,12 @@ describe('ComicVault Bulk Edit Tests', () => {
         await new Promise(resolve => setTimeout(resolve, 50));
 
         // Verify update database call
-        expect(updateComicsCalledWith).to.not.be.null;
-        expect(updateComicsCalledWith.ids).to.have.members(['1', '2']);
+        const call = testEnv.getLastUpdateComicsCall();
+        expect(call).to.not.be.null;
+        expect(call.ids).to.have.members(['1', '2']);
         
         // Updates object should ONLY contain 'verlag', not title, price, etc.
-        expect(updateComicsCalledWith.updates).to.deep.equal({
+        expect(call.updates).to.deep.equal({
             verlag: 'Vertigo'
         });
     });

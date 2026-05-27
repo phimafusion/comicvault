@@ -1,5 +1,6 @@
 import { initAutocomplete } from '../components/autocomplete.js';
 import { renderSettings } from '../views/settings.js';
+import { setupTestEnv, cleanup } from './testHelper.js';
 import { db } from '../db.js';
 
 const { expect } = chai;
@@ -171,43 +172,27 @@ describe('Autocomplete Feature Tests', () => {
 });
 
 describe('Configurable Suggestions Settings Tests', () => {
+    let testEnv;
     let settingsContainer;
-    let originalGetSettings;
-    let originalSaveSettings;
-    let originalGetAllComics;
-    let originalGetWishlist;
     let originalAlert;
     let alertMessage = null;
 
     before(() => {
-        // Backup
-        originalGetSettings = db.getSettings;
-        originalSaveSettings = db.saveSettings;
-        originalGetAllComics = db.getAllComics;
-        originalGetWishlist = db.getWishlist;
         originalAlert = window.alert;
-        
         window.alert = (msg) => {
             alertMessage = msg;
         };
     });
 
     after(() => {
-        // Restore
-        db.getSettings = originalGetSettings;
-        db.saveSettings = originalSaveSettings;
-        db.getAllComics = originalGetAllComics;
-        db.getWishlist = originalGetWishlist;
         window.alert = originalAlert;
     });
 
     beforeEach(() => {
         alertMessage = null;
-        settingsContainer = document.createElement('div');
-        document.body.appendChild(settingsContainer);
         
         // Mock DB settings
-        let mockSettings = {
+        const mockSettings = {
             theme: 'dark',
             customSuggestions: {
                 typ: ['Comic', 'Manga'],
@@ -217,20 +202,20 @@ describe('Configurable Suggestions Settings Tests', () => {
             }
         };
 
-        db.getSettings = () => JSON.parse(JSON.stringify(mockSettings));
-        db.saveSettings = (s) => {
-            mockSettings = JSON.parse(JSON.stringify(s));
-        };
-        db.getAllComics = async () => [
+        const mockComics = [
             { id: '1', verlag: 'Panini', typ: 'Comic' }
         ];
-        db.getWishlist = async () => [];
+
+        testEnv = setupTestEnv({
+            settings: mockSettings,
+            mockComics: mockComics
+        });
+        
+        settingsContainer = testEnv.viewContainer;
     });
 
     afterEach(() => {
-        if (settingsContainer) {
-            settingsContainer.remove();
-        }
+        cleanup();
     });
 
     it('sollte die Vorschläge aus den Einstellungen rendern und Autocomplete für Standardwerte aktivieren', async () => {
@@ -289,8 +274,8 @@ describe('Configurable Suggestions Settings Tests', () => {
 
     it('sollte einen ungenutzten Vorschlag löschen können', async () => {
         // Keine Comics/Wünsche vorhanden
-        db.getAllComics = async () => [];
-        db.getWishlist = async () => [];
+        testEnv.setMockComics([]);
+        testEnv.setMockWishes([]);
 
         renderSettings(settingsContainer);
         
@@ -313,8 +298,8 @@ describe('Configurable Suggestions Settings Tests', () => {
 
     it('sollte das Löschen eines genutzten Vorschlags verhindern und eine Warnung anzeigen', async () => {
         // Comic verwendet "Comic"
-        db.getAllComics = async () => [{ id: '1', typ: 'Comic' }];
-        db.getWishlist = async () => [];
+        testEnv.setMockComics([{ id: '1', typ: 'Comic' }]);
+        testEnv.setMockWishes([]);
 
         renderSettings(settingsContainer);
         
@@ -339,8 +324,7 @@ describe('Configurable Suggestions Settings Tests', () => {
 
     it('sollte bei vorhandenen Einstellungen "verliehen" migrieren, falls es fehlt', () => {
         // Original getSettings und saveSettings wiederherstellen für diesen Test
-        db.getSettings = originalGetSettings;
-        db.saveSettings = originalSaveSettings;
+        cleanup();
         
         // Backup real localStorage settings
         const originalSettingsStr = localStorage.getItem('comicvault_settings');
