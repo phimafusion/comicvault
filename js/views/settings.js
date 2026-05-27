@@ -1,6 +1,51 @@
 import { db } from '../db.js';
 import { initAutocomplete } from '../components/autocomplete.js';
 
+const fontPresets = [
+    { name: 'Inter', value: "'Inter', sans-serif" },
+    { name: 'Outfit', value: "'Outfit', sans-serif" },
+    { name: 'Bangers', value: "'Bangers', cursive" },
+    { name: 'Special Elite', value: "'Special Elite', cursive" },
+    { name: 'Rajdhani', value: "'Rajdhani', sans-serif" },
+    { name: 'Courier New', value: "'Courier New', monospace" },
+    { name: 'Georgia', value: "Georgia, serif" },
+    { name: 'System UI', value: "system-ui, sans-serif" }
+];
+
+const themeFontConfigs = {
+    default: [
+        { label: 'Text-Schriftart', varName: '--font-primary', defaultPreset: "'Inter', sans-serif" },
+        { label: 'Titel-Schriftart', varName: '--font-display', defaultPreset: "'Outfit', sans-serif" }
+    ],
+    hero: [
+        { label: 'Text-Schriftart', varName: '--font-primary', defaultPreset: "'Inter', sans-serif" },
+        { label: 'Titel-Schriftart', varName: '--font-display', defaultPreset: "'Bangers', cursive" }
+    ],
+    gotham: [
+        { label: 'Text-Schriftart', varName: '--font-primary', defaultPreset: "'Inter', sans-serif" },
+        { label: 'Titel-Schriftart', varName: '--font-display', defaultPreset: "'Outfit', sans-serif" }
+    ],
+    newsprint: [
+        { label: 'Text-Schriftart', varName: '--font-primary', defaultPreset: "'Inter', sans-serif" },
+        { label: 'Titel-Schriftart', varName: '--font-display', defaultPreset: "'Special Elite', cursive" },
+        { label: 'Schreibmaschinen-Schriftart', varName: '--font-typewriter', defaultPreset: "'Courier New', monospace" }
+    ],
+    cyberpunk: [
+        { label: 'Text-Schriftart', varName: '--font-primary', defaultPreset: "'Inter', sans-serif" },
+        { label: 'Titel-Schriftart', varName: '--font-display', defaultPreset: "'Rajdhani', sans-serif" },
+        { label: 'Code-Schriftart', varName: '--font-code', defaultPreset: "'Courier New', monospace" }
+    ],
+    emerald: [
+        { label: 'Text-Schriftart', varName: '--font-primary', defaultPreset: "'Inter', sans-serif" },
+        { label: 'Titel-Schriftart', varName: '--font-display', defaultPreset: "'Outfit', sans-serif" }
+    ]
+};
+
+function normalizeFontFamily(font) {
+    if (!font) return '';
+    return font.toLowerCase().replace(/['"]/g, '').trim();
+}
+
 export function renderSettings(container) {
     const settings = db.getSettings();
 
@@ -38,6 +83,45 @@ export function renderSettings(container) {
                         <label class="form-label">Modus</label>
                         <button class="btn btn-secondary" id="settings-toggle-dark" style="justify-content: flex-start; width: 100%;">
                             ${settings.theme === 'light' ? '<i class="fa-solid fa-sun"></i> Light Mode' : '<i class="fa-solid fa-moon"></i> Dark Mode'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sektion: Schriftarten anpassen -->
+            <div class="details-card collapsible" style="flex-direction: column;">
+                <div class="settings-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%; user-select: none;">
+                    <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-font" style="color: var(--primary-color);"></i> Schriftarten anpassen
+                    </h3>
+                    <i class="fa-solid fa-chevron-right toggle-icon" style="color: var(--text-secondary); transition: transform 0.2s ease;"></i>
+                </div>
+                
+                <div class="collapsible-content" style="display: none; flex-direction: column; width: 100%; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                    <p style="color: var(--text-secondary); margin-bottom: 16px; margin-top: 0;">Passe die Schriftarten für jedes Design individuell an.</p>
+                    
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label class="form-label">Zu konfigurierendes Design</label>
+                        <select id="settings-font-theme-select" class="form-control">
+                            <option value="default">Vibrant Modern</option>
+                            <option value="hero">Classic Hero</option>
+                            <option value="gotham">Midnight Gotham</option>
+                            <option value="newsprint">Retro Newsprint</option>
+                            <option value="cyberpunk">Cyberpunk Panel</option>
+                            <option value="emerald">Emerald Forest</option>
+                        </select>
+                    </div>
+                    
+                    <div id="settings-theme-fonts-container" style="display: flex; flex-direction: column; gap: 16px; width: 100%;">
+                        <!-- Wird per JS befüllt -->
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; margin-top: 24px; width: 100%;">
+                        <button class="btn btn-primary" id="btn-save-theme-fonts" style="flex: 1;">
+                            Speichern
+                        </button>
+                        <button class="btn btn-secondary" id="btn-reset-theme-fonts" style="flex: 1;">
+                            Zurücksetzen
                         </button>
                     </div>
                 </div>
@@ -290,9 +374,174 @@ export function renderSettings(container) {
     // Initial rendern
     renderTags();
 
+    // Schriftarten anpassen Logik
+    function renderFontConfigsForTheme(themeName) {
+        const fontContainer = document.getElementById('settings-theme-fonts-container');
+        if (!fontContainer) return;
+
+        const currentSettings = db.getSettings();
+        const customFonts = (currentSettings.themeFonts && currentSettings.themeFonts[themeName]) || {};
+
+        const configs = themeFontConfigs[themeName] || [];
+        fontContainer.innerHTML = '';
+
+        configs.forEach((cfg) => {
+            const savedVal = customFonts[cfg.varName] || '';
+            
+            let matchedPreset = null;
+            if (savedVal) {
+                matchedPreset = fontPresets.find(p => normalizeFontFamily(p.value) === normalizeFontFamily(savedVal));
+            }
+
+            const isCustom = savedVal && !matchedPreset;
+            const selectedValue = isCustom ? 'custom' : (matchedPreset ? matchedPreset.value : '');
+
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'form-group font-config-group';
+            groupDiv.dataset.varName = cfg.varName;
+            groupDiv.style.display = 'flex';
+            groupDiv.style.flexDirection = 'column';
+            groupDiv.style.gap = '8px';
+
+            groupDiv.innerHTML = `
+                <label class="form-label">${cfg.label} (<code style="font-size:0.8rem; color:var(--primary-color);">${cfg.varName}</code>)</label>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <select class="form-control font-preset-select">
+                        <option value="" ${!selectedValue ? 'selected' : ''}>-- Standard-Schriftart --</option>
+                        ${fontPresets.map(p => `<option value="${p.value}" ${selectedValue === p.value ? 'selected' : ''}>${p.name}</option>`).join('')}
+                        <option value="custom" ${selectedValue === 'custom' ? 'selected' : ''}>Eigene Schriftart...</option>
+                    </select>
+                    <input type="text" class="form-control font-custom-input" 
+                           placeholder="Schriftart-Name (z.B. 'Roboto', sans-serif)" 
+                           value="${isCustom ? savedVal : ''}" 
+                           style="display: ${isCustom ? 'block' : 'none'};">
+                    <div class="font-preview" style="font-size: 1rem; margin-top: 4px; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px dashed var(--border-color); background-color: var(--bg-main); transition: var(--transition);">
+                        ComicVault - Die ultimative Comicsammlung!
+                    </div>
+                </div>
+            `;
+
+            const select = groupDiv.querySelector('.font-preset-select');
+            const customInput = groupDiv.querySelector('.font-custom-input');
+            const preview = groupDiv.querySelector('.font-preview');
+
+            const updatePreview = () => {
+                let fontValue = '';
+                if (select.value === 'custom') {
+                    fontValue = customInput.value.trim();
+                } else {
+                    fontValue = select.value;
+                }
+
+                if (fontValue) {
+                    preview.style.fontFamily = fontValue;
+                } else {
+                    preview.style.fontFamily = cfg.defaultPreset;
+                }
+            };
+
+            select.addEventListener('change', (e) => {
+                if (e.target.value === 'custom') {
+                    customInput.style.display = 'block';
+                    customInput.focus();
+                } else {
+                    customInput.style.display = 'none';
+                }
+                updatePreview();
+            });
+
+            customInput.addEventListener('input', updatePreview);
+
+            // Initial preview application
+            updatePreview();
+
+            fontContainer.appendChild(groupDiv);
+        });
+    }
+
+    const activeColorScheme = settings.colorScheme || 'default';
+    const fontThemeSelect = document.getElementById('settings-font-theme-select');
+    if (fontThemeSelect) {
+        fontThemeSelect.value = activeColorScheme;
+        renderFontConfigsForTheme(activeColorScheme);
+
+        fontThemeSelect.addEventListener('change', (e) => {
+            renderFontConfigsForTheme(e.target.value);
+        });
+    }
+
+    const saveThemeFontsBtn = document.getElementById('btn-save-theme-fonts');
+    if (saveThemeFontsBtn) {
+        saveThemeFontsBtn.addEventListener('click', () => {
+            const themeName = fontThemeSelect.value;
+            const currentSettings = db.getSettings();
+            
+            if (!currentSettings.themeFonts) {
+                currentSettings.themeFonts = {};
+            }
+            if (!currentSettings.themeFonts[themeName]) {
+                currentSettings.themeFonts[themeName] = {};
+            }
+
+            const groups = container.querySelectorAll('.font-config-group');
+            groups.forEach(group => {
+                const varName = group.dataset.varName;
+                const select = group.querySelector('.font-preset-select');
+                const customInput = group.querySelector('.font-custom-input');
+
+                let fontValue = '';
+                if (select.value === 'custom') {
+                    fontValue = customInput.value.trim();
+                } else {
+                    fontValue = select.value;
+                }
+
+                if (fontValue) {
+                    currentSettings.themeFonts[themeName][varName] = fontValue;
+                } else {
+                    delete currentSettings.themeFonts[themeName][varName];
+                }
+            });
+
+            db.saveSettings(currentSettings);
+            
+            if (window.app) {
+                window.app.applyTheme();
+            }
+            
+            alert('Schriftarten für dieses Design wurden gespeichert.');
+        });
+    }
+
+    const resetThemeFontsBtn = document.getElementById('btn-reset-theme-fonts');
+    if (resetThemeFontsBtn) {
+        resetThemeFontsBtn.addEventListener('click', () => {
+            const themeName = fontThemeSelect.value;
+            const currentSettings = db.getSettings();
+            
+            if (currentSettings.themeFonts && currentSettings.themeFonts[themeName]) {
+                delete currentSettings.themeFonts[themeName];
+                db.saveSettings(currentSettings);
+            }
+
+            if (window.app) {
+                window.app.applyTheme();
+            }
+
+            renderFontConfigsForTheme(themeName);
+            alert('Schriftarten wurden auf Standard zurückgesetzt.');
+        });
+    }
+
     // Theme Events
     document.getElementById('settings-color-scheme').addEventListener('change', (e) => {
-        if (window.app) window.app.setColorScheme(e.target.value);
+        const newScheme = e.target.value;
+        if (window.app) window.app.setColorScheme(newScheme);
+        const fSelect = document.getElementById('settings-font-theme-select');
+        if (fSelect) {
+            fSelect.value = newScheme;
+            renderFontConfigsForTheme(newScheme);
+        }
     });
 
     document.getElementById('settings-toggle-dark').addEventListener('click', () => {

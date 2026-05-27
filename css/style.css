@@ -89,6 +89,7 @@
     --secondary-rgb: 5, 150, 105;
     --accent-color: #7C3AED;
     --font-display: 'Special Elite', cursive;
+    --font-typewriter: 'Courier New', monospace;
     --radius-lg: 4px; /* Shaper, paper-like corners */
 }
 [data-theme="newsprint"]:not(.dark-mode) {
@@ -107,6 +108,12 @@
     --border-color: #3D342F;
 }
 
+[data-theme="newsprint"] .badge,
+[data-theme="newsprint"] #filter-count,
+[data-theme="newsprint"] .list-header {
+    font-family: var(--font-typewriter), monospace;
+}
+
 /* 4. Cyberpunk Panel (Cyber / Techy / Neon) */
 [data-theme="cyberpunk"] {
     --primary-color: #EC4899;
@@ -115,6 +122,7 @@
     --secondary-rgb: 6, 182, 212;
     --accent-color: #8B5CF6;
     --font-display: 'Rajdhani', sans-serif;
+    --font-code: 'Courier New', monospace;
     --radius-lg: 0px; /* Industrial / Tech sharp edges */
 }
 [data-theme="cyberpunk"].dark-mode {
@@ -123,6 +131,12 @@
     --bg-sidebar: #000000;
     --border-color: #1E293B;
     --shadow-color: rgba(236, 72, 153, 0.2);
+}
+
+[data-theme="cyberpunk"] .badge,
+[data-theme="cyberpunk"] #filter-count,
+[data-theme="cyberpunk"] .list-header {
+    font-family: var(--font-code), monospace;
 }
 
 /* 5. Emerald Forest (Earthy / Fantasy / Soft) */
