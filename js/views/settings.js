@@ -415,11 +415,30 @@ export function renderSettings(container) {
                            placeholder="Schriftart-Name (z.B. 'Roboto', sans-serif)" 
                            value="${isCustom ? savedVal : ''}" 
                            style="display: ${isCustom ? 'block' : 'none'};">
+                    <div class="font-preview" style="font-size: 1rem; margin-top: 4px; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px dashed var(--border-color); background-color: var(--bg-main); transition: var(--transition);">
+                        ComicVault - Die ultimative Comicsammlung!
+                    </div>
                 </div>
             `;
 
             const select = groupDiv.querySelector('.font-preset-select');
             const customInput = groupDiv.querySelector('.font-custom-input');
+            const preview = groupDiv.querySelector('.font-preview');
+
+            const updatePreview = () => {
+                let fontValue = '';
+                if (select.value === 'custom') {
+                    fontValue = customInput.value.trim();
+                } else {
+                    fontValue = select.value;
+                }
+
+                if (fontValue) {
+                    preview.style.fontFamily = fontValue;
+                } else {
+                    preview.style.fontFamily = cfg.defaultPreset;
+                }
+            };
 
             select.addEventListener('change', (e) => {
                 if (e.target.value === 'custom') {
@@ -428,7 +447,13 @@ export function renderSettings(container) {
                 } else {
                     customInput.style.display = 'none';
                 }
+                updatePreview();
             });
+
+            customInput.addEventListener('input', updatePreview);
+
+            // Initial preview application
+            updatePreview();
 
             fontContainer.appendChild(groupDiv);
         });

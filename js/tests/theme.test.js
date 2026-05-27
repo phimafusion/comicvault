@@ -251,4 +251,36 @@ describe('Theme Fonts Settings & Application Tests', () => {
         // Im documentElement prüfen
         expect(document.documentElement.style.getPropertyValue('--font-primary')).to.equal('');
     });
+
+    it('sollte eine Live-Schriftartenvorschau anzeigen, wenn eine Schriftart ausgewählt oder eingegeben wird', () => {
+        const viewContainer = container.querySelector('#view-container');
+        renderSettings(viewContainer);
+
+        const select = viewContainer.querySelector('#settings-font-theme-select');
+        select.value = 'default';
+        select.dispatchEvent(new Event('change'));
+
+        const groups = viewContainer.querySelectorAll('.font-config-group');
+        const primaryGroup = Array.from(groups).find(g => g.dataset.varName === '--font-primary');
+        const primarySelect = primaryGroup.querySelector('.font-preset-select');
+        const primaryInput = primaryGroup.querySelector('.font-custom-input');
+        const primaryPreview = primaryGroup.querySelector('.font-preview');
+
+        expect(primaryPreview).to.not.be.null;
+        
+        // Sollte standardmäßig den defaultPreset-Wert nutzen
+        expect(normalizeFontFamily(primaryPreview.style.fontFamily)).to.equal(normalizeFontFamily("'Inter', sans-serif"));
+
+        // Preset ändern -> Vorschau aktualisiert
+        primarySelect.value = "'Bangers', cursive";
+        primarySelect.dispatchEvent(new Event('change'));
+        expect(normalizeFontFamily(primaryPreview.style.fontFamily)).to.equal(normalizeFontFamily("'Bangers', cursive"));
+
+        // Custom auswählen und eingeben -> Vorschau aktualisiert
+        primarySelect.value = "custom";
+        primarySelect.dispatchEvent(new Event('change'));
+        primaryInput.value = "MyTemporaryFont";
+        primaryInput.dispatchEvent(new Event('input'));
+        expect(normalizeFontFamily(primaryPreview.style.fontFamily)).to.equal(normalizeFontFamily("MyTemporaryFont"));
+    });
 });
