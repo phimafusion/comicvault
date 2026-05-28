@@ -1,65 +1,281 @@
 import { db } from '../db.js';
+import { renderStars } from '../utils.js';
 
 let activeStatsFilters = {
     verlag: [],
     format: [],
-    bestand: [],
-    gelesen: [],
-    bezugsquelle: [],
-    serie: []
+    bestand: ['vorhanden'],
+    sprache: [],
+    typ: [],
+    serie: [],
+    zeitraum: 'all'
 };
 
 let statsCharts = {};
+let statsEventsAttached = false;
+
+// Hilfsfunktion zum Parsen von Datumswerten
+function parseToDate(dateStr) {
+    if (!dateStr) return null;
+    const s = String(dateStr).trim();
+    // 1. ISO-Format checken (YYYY-MM-DD...)
+    const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) {
+        return new Date(parseInt(isoMatch[1], 10), parseInt(isoMatch[2], 10) - 1, parseInt(isoMatch[3], 10));
+    }
+    // 2. Deutsches Format checken (DD.MM.YYYY)
+    const gerMatch = s.match(/^(\d{2})\.(\d{2})\.(\d{4})/);
+    if (gerMatch) {
+        return new Date(parseInt(gerMatch[3], 10), parseInt(gerMatch[2], 10) - 1, parseInt(gerMatch[1], 10));
+    }
+    // 3. Deutsches Format mit 2-stelligem Jahr checken (DD.MM.YY)
+    const gerShortMatch = s.match(/^(\d{2})\.(\d{2})\.(\d{2})$/);
+    if (gerShortMatch) {
+        let yr = parseInt(gerShortMatch[3], 10);
+        yr = (yr >= 50 ? 1900 : 2000) + yr;
+        return new Date(yr, parseInt(gerShortMatch[2], 10) - 1, parseInt(gerShortMatch[1], 10));
+    }
+    // 4. Nur DD.MM checken (ohne Jahr -> aktuelles Jahr annehmen)
+    const dayMonthMatch = s.match(/^(\d{2})\.(\d{2})\.?$/);
+    if (dayMonthMatch) {
+        const now = new Date();
+        return new Date(now.getFullYear(), parseInt(dayMonthMatch[2], 10) - 1, parseInt(dayMonthMatch[1], 10));
+    }
+    // Fallback: Natives JS Parsing
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+}
+
+// Hilfsfunktion zur Überprüfung, ob ein Datum in einem Zeitraum liegt
+function checkDateInRange(dateStr, timeframe) {
+    const d = parseToDate(dateStr);
+    if (!d) return false;
+    if (timeframe === 'all') return true;
+    
+    const now = new Date();
+    let minDate = null;
+    let maxDate = null;
+    
+    if (timeframe === 'last6') {
+        minDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    } else if (timeframe === 'last12') {
+        minDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+    } else if (timeframe === 'thisYear') {
+        minDate = new Date(now.getFullYear(), 0, 1);
+        maxDate = new Date(now.getFullYear(), 11, 31);
+    } else if (timeframe === 'lastYear') {
+        minDate = new Date(now.getFullYear() - 1, 0, 1);
+        maxDate = new Date(now.getFullYear() - 1, 11, 31);
+    } else if (timeframe.startsWith('year-')) {
+        const yr = parseInt(timeframe.split('-')[1], 10);
+        minDate = new Date(yr, 0, 1);
+        maxDate = new Date(yr, 11, 31);
+    }
+    
+    if (minDate && d < minDate) return false;
+    if (maxDate && d > maxDate) return false;
+    return true;
+}
+
+// Hilfsfunktion zur Prüfung, ob ein Comic zum ausgewählten Zeitraum gehört
+function isComicInTimeframe(c, timeframe) {
+    if (timeframe === 'all') return true;
+    const buyDateStr = c.kaufdatum || c.created_at;
+    return checkDateInRange(buyDateStr, timeframe) || (c.gelesen_am && checkDateInRange(c.gelesen_am, timeframe));
+}
 
 export async function renderStats(container) {
+    activeStatsFilters = {
+        verlag: [],
+        format: [],
+        bestand: ['vorhanden'],
+        sprache: [],
+        typ: [],
+        serie: [],
+        zeitraum: 'all'
+    };
     const comics = await db.getAllComics();
     
     // Filter-Optionen sammeln
     const verlage = [...new Set(comics.map(c => c.verlag).filter(Boolean))].sort();
     const formate = [...new Set(comics.map(c => c.format).filter(Boolean))].sort();
     const bestände = [...new Set(comics.map(c => c.bestand).filter(Boolean))].sort();
-    const quellen = [...new Set(comics.map(c => c.bezugsquelle).filter(Boolean))].sort();
+    const sprachen = [...new Set(comics.map(c => c.sprache).filter(Boolean))].sort();
+    const typen = [...new Set(comics.map(c => c.typ).filter(Boolean))].sort();
     const serien = [...new Set(comics.map(c => c.serie).filter(Boolean))].sort();
-    const gelesenStatus = ['Ja', 'Nein'];
+
+    // Jahre für Zeitraum-Auswahl finden
+    const yearsSet = new Set();
+    comics.forEach(c => {
+        const b = parseToDate(c.kaufdatum || c.created_at);
+        if (b) yearsSet.add(b.getFullYear());
+        const r = parseToDate(c.gelesen_am);
+        if (r) yearsSet.add(r.getFullYear());
+    });
+    const sortedYears = [...yearsSet].sort((a, b) => b - a).filter(y => y >= 2000 && y <= new Date().getFullYear());
+
+    const currentYear = new Date().getFullYear();
 
     const html = `
         <div class="view-controls" style="flex-wrap: wrap; gap: 15px; margin-bottom: 25px; padding-top: 32px;">
-            <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap; flex: 1;">
-                <h2 class="view-title" style="margin-bottom: 0; white-space: nowrap;">Statistiken</h2>
-                
-                <div class="direct-filters" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-                    ${renderStatsMultiSelect('verlag', 'Verlag', verlage)}
-                    ${renderStatsMultiSelect('serie', 'Serie', serien)}
-                    ${renderStatsMultiSelect('format', 'Format', formate)}
-                    ${renderStatsMultiSelect('bestand', 'Bestand', bestände)}
-                    ${renderStatsMultiSelect('bezugsquelle', 'Quelle', quellen)}
-                    ${renderStatsMultiSelect('gelesen', 'Gelesen', gelesenStatus)}
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 15px;">
+                <h2 class="view-title" style="margin-bottom: 0;">Statistiken & Analysen</h2>
+                <button id="btn-reset-stats-filters" class="btn btn-secondary" style="display: flex; align-items: center; gap: 8px; border-radius: 8px;" title="Alle Filter zurücksetzen">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>Filter zurücksetzen</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Filter Panel -->
+        <div class="details-card" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; padding: 20px;">
+            <h3 style="font-family: var(--font-display); font-size: 1.1rem; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-filter" style="color: var(--secondary-color);"></i>
+                <span>Filter-Optionen</span>
+            </h3>
+            <div class="direct-filters" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                ${renderStatsMultiSelect('verlag', 'Verlag', verlage)}
+                ${renderStatsMultiSelect('serie', 'Serie', serien)}
+                ${renderStatsMultiSelect('format', 'Format', formate)}
+                ${renderStatsMultiSelect('bestand', 'Bestand', bestände)}
+                ${renderStatsMultiSelect('sprache', 'Sprache', sprachen)}
+                ${renderStatsMultiSelect('typ', 'Typ', typen)}
+                ${renderTimeframeSelect(sortedYears)}
+            </div>
+        </div>
+        
+        <!-- KPI Zähler -->
+        <div id="stats-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px;">
+            <!-- Wird von updateStats() befüllt -->
+        </div>
+
+        <!-- Typ-spezifische KPIs -->
+        <div id="stats-by-type-container" style="margin-bottom: 24px;">
+            <!-- Wird von updateStats() befüllt -->
+        </div>
+        
+        <!-- Lese-Challenge & Highlights -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;" class="stats-top-grid">
+            <!-- Challenge Card -->
+            <div class="details-card" style="flex-direction: column; padding: 24px; position: relative; justify-content: space-between;">
+                <div>
+                    <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-trophy" style="color: var(--warning);"></i>
+                        <span>Lese-Challenge ${currentYear}</span>
+                    </h3>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 12px; flex: 1; justify-content: center;">
+                    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                        <span style="font-size: 0.9rem; color: var(--text-secondary);">Fortschritt:</span>
+                        <span style="font-size: 1.5rem; font-family: var(--font-display); font-weight: 800; color: var(--text-primary);" id="challenge-ratio">0 / 50</span>
+                    </div>
                     
-                    <button id="btn-reset-stats-filters" class="btn btn-secondary" style="height: 36px; width: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; border-color: transparent;" title="Alle Filter zurücksetzen">
-                        <i class="fa-solid fa-rotate-left"></i>
-                    </button>
+                    <div style="width: 100%; height: 16px; background-color: var(--bg-main); border-radius: var(--radius-full); overflow: hidden; border: 1px solid var(--border-color);">
+                        <div id="challenge-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); border-radius: var(--radius-full); transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                        <span id="challenge-percent-text" style="font-size: 0.85rem; font-weight: 600; color: var(--secondary-color);">0% abgeschlossen</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 0.8rem; color: var(--text-secondary);">Ziel:</span>
+                            <input type="number" id="input-reading-goal" style="width: 60px; height: 28px; padding: 0 6px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-primary); text-align: center; font-size: 0.85rem; font-weight: 600;" min="1" value="50">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Highlights Card -->
+            <div class="details-card" style="flex-direction: column; padding: 24px;">
+                <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-bolt" style="color: var(--primary-color);"></i>
+                    <span>Averages & Rekorde</span>
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1;" id="stats-highlights">
+                    <!-- Wird dynamisch befüllt -->
                 </div>
             </div>
         </div>
         
-        <div id="stats-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 32px;">
-            <!-- Wird von updateStats() befüllt -->
+        <!-- Timeline Chart (TBR-Verlauf) -->
+        <div class="stats-grid" style="display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 24px;">
+            <div class="details-card" style="flex-direction: column; padding: 24px;">
+                <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 8px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i>
+                    <span>Lesestapel- & Leseaktivitätsverlauf</span>
+                </h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">
+                    Vergleicht den Zuwachs an Käufen (kumuliert) mit den gelesenen Comics (kumuliert). Die gefüllte Fläche zeigt die Größe deines Lesestapels (TBR) über die Zeit.
+                </p>
+                <div style="position: relative; height: 350px;">
+                    <canvas id="chartTimeline"></canvas>
+                </div>
+            </div>
         </div>
 
-        <div class="stats-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-            <div class="details-card" style="flex-direction: column;">
-                <h3 style="margin-bottom: 20px;"><i class="fa-solid fa-box-archive"></i> Bestands-Verteilung</h3>
-                <div style="position: relative; height: 300px;"><canvas id="chartBestand"></canvas></div>
+        <!-- Format & Bestands-Verteilung -->
+        <div class="stats-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;" id="distribution-charts-grid">
+            <div class="details-card" style="flex-direction: column; padding: 24px;">
+                <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-book" style="color: var(--primary-color);"></i>
+                    <span>Format-Verteilung</span>
+                </h3>
+                <div style="position: relative; height: 280px;">
+                    <canvas id="chartFormat"></canvas>
+                </div>
             </div>
-            <div class="details-card" style="flex-direction: column;">
-                <h3 style="margin-bottom: 20px;"><i class="fa-solid fa-hand-holding-dollar"></i> Abgänge (Verkauft/Abgegeben)</h3>
-                <div style="position: relative; height: 300px;"><canvas id="chartAbgaenge"></canvas></div>
-            </div>
-            <div class="details-card" style="flex-direction: column; grid-column: 1 / -1;">
-                <h3 style="margin-bottom: 20px;"><i class="fa-solid fa-wallet"></i> Ausgaben nach Bezugsquelle (${db.getSettings().currency || '€'})</h3>
-                <div style="position: relative; height: 350px;"><canvas id="chartQuellen"></canvas></div>
+            
+            <div class="details-card" style="flex-direction: column; padding: 24px;">
+                <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-box-archive" style="color: var(--success);"></i>
+                    <span>Bestands-Verteilung</span>
+                </h3>
+                <div style="position: relative; height: 280px;">
+                    <canvas id="chartBestand"></canvas>
+                </div>
             </div>
         </div>
+
+        <!-- Ausgaben nach Bezugsquelle -->
+        <div class="stats-grid" style="display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 24px;">
+            <div class="details-card" style="flex-direction: column; padding: 24px;">
+                <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-wallet" style="color: var(--primary-color);"></i>
+                    <span>Ausgaben nach Bezugsquelle</span>
+                </h3>
+                <div style="position: relative; height: 300px;">
+                    <canvas id="chartQuellen"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Verlage & Serien -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;" class="stats-tables-grid">
+            <div class="details-card" style="flex-direction: column; padding: 24px;">
+                <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-building" style="color: var(--secondary-color);"></i>
+                    <span>Top 5 Verlage</span>
+                </h3>
+                <div style="overflow-x: auto; width: 100%;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;" id="table-top-publishers">
+                        <!-- Wird dynamisch befüllt -->
+                    </table>
+                </div>
+            </div>
+
+            <div class="details-card" style="flex-direction: column; padding: 24px;">
+                <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-tags" style="color: var(--primary-color);"></i>
+                    <span>Top 5 Serien</span>
+                </h3>
+                <div style="overflow-x: auto; width: 100%;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;" id="table-top-series">
+                        <!-- Wird dynamisch befüllt -->
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- Diagnostik Container -->
+        <div id="stats-debug-container" style="margin-top: 24px; padding: 20px; background: rgba(245, 158, 11, 0.08); border: 1px dashed var(--warning); border-radius: var(--radius-lg); display: none;"></div>
     `;
     
     container.innerHTML = html;
@@ -81,7 +297,9 @@ function renderStatsMultiSelect(key, label, options) {
                 <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem; opacity: 0.6;"></i>
             </button>
             <div class="multi-select-dropdown" id="dropdown-stats-${key}" style="display: none; position: absolute; top: 42px; left: 0; z-index: 1000; background: #1e293b; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5); min-width: 240px; max-height: 400px; overflow-y: auto; padding: 8px;">
-                ${options.map(opt => `
+                ${options.length === 0 ? `
+                    <div style="padding: 10px; color: var(--text-secondary); font-size: 0.85rem; text-align: center;">Keine Optionen verfügbar</div>
+                ` : options.map(opt => `
                     <label style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; font-size: 0.85rem; border-radius: 6px; transition: background 0.2s; margin-bottom: 2px;" class="filter-option">
                         <input type="checkbox" class="stats-filter-checkbox" data-key="${key}" value="${opt}" ${selected.includes(opt) ? 'checked' : ''} style="accent-color: var(--primary-color); width: 16px; height: 16px;">
                         <span style="flex: 1; color: var(--text-main);">${opt}</span>
@@ -92,12 +310,34 @@ function renderStatsMultiSelect(key, label, options) {
     `;
 }
 
-let statsEventsAttached = false;
+function renderTimeframeSelect(years) {
+    const val = activeStatsFilters.zeitraum;
+    const options = [
+        { value: 'all', label: 'Gesamter Zeitraum' },
+        { value: 'last6', label: 'Letzte 6 Monate' },
+        { value: 'last12', label: 'Letzte 12 Monate' },
+        { value: 'thisYear', label: 'Dieses Jahr' },
+        { value: 'lastYear', label: 'Letztes Jahr' }
+    ];
+    years.forEach(y => {
+        options.push({ value: `year-${y}`, label: `Jahr ${y}` });
+    });
+    
+    return `
+        <div class="timeframe-select-container">
+            <select id="select-stats-timeframe" class="btn btn-secondary" style="height: 36px; font-size: 0.85rem; border-radius: 8px; padding: 0 15px; background: var(--bg-card); border: 1px solid var(--border-color); color: inherit; min-width: 140px; text-align: left; cursor: pointer; outline: none;">
+                ${options.map(opt => `<option value="${opt.value}" ${val === opt.value ? 'selected' : ''}>${opt.label}</option>`).join('')}
+            </select>
+        </div>
+    `;
+}
+
 const handleGlobalStatsClick = () => {
     document.querySelectorAll('.multi-select-dropdown').forEach(d => d.style.display = 'none');
 };
 
 function attachStatsEvents() {
+    // Dropdowns toggeln
     document.querySelectorAll('.stats-filter-trigger').forEach(trigger => {
         trigger.addEventListener('click', (e) => {
             const key = trigger.dataset.key;
@@ -109,13 +349,21 @@ function attachStatsEvents() {
         });
     });
 
+    // Klicks innerhalb des Dropdowns stoppen, damit es nicht einklappt
+    document.querySelectorAll('.multi-select-dropdown').forEach(dropdown => {
+        dropdown.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    });
+
     if (!statsEventsAttached) {
         document.addEventListener('click', handleGlobalStatsClick);
         statsEventsAttached = true;
     }
 
+    // Checkboxen
     document.querySelectorAll('.stats-filter-checkbox').forEach(cb => {
-        cb.addEventListener('change', (e) => {
+        cb.addEventListener('change', () => {
             const key = cb.dataset.key;
             const value = cb.value;
             if (cb.checked) {
@@ -123,14 +371,52 @@ function attachStatsEvents() {
             } else {
                 activeStatsFilters[key] = activeStatsFilters[key].filter(v => v !== value);
             }
+            // Button Text aktualisieren
+            const trigger = document.querySelector(`.stats-filter-trigger[data-key="${key}"]`);
+            if (trigger) {
+                const labelMap = { verlag: 'Verlag', format: 'Format', bestand: 'Bestand', sprache: 'Sprache', typ: 'Typ', serie: 'Serie' };
+                const count = activeStatsFilters[key].length;
+                trigger.querySelector('span').textContent = count > 0 ? `${labelMap[key]} (${count})` : labelMap[key];
+                
+                const isActive = count > 0;
+                trigger.style.background = isActive ? 'rgba(6, 182, 212, 0.1)' : 'var(--bg-card)';
+                trigger.style.borderColor = isActive ? 'var(--primary-color)' : 'var(--border-color)';
+                trigger.style.color = isActive ? 'var(--primary-color)' : 'inherit';
+            }
             updateStats();
         });
     });
 
+    // Zeitraum ändern
+    const timeframeSelect = document.getElementById('select-stats-timeframe');
+    if (timeframeSelect) {
+        timeframeSelect.addEventListener('change', (e) => {
+            activeStatsFilters.zeitraum = e.target.value;
+            updateStats();
+        });
+    }
+
+    // Lese-Jahresziel ändern
+    const goalInput = document.getElementById('input-reading-goal');
+    if (goalInput) {
+        goalInput.addEventListener('change', (e) => {
+            let val = parseInt(e.target.value, 10);
+            if (isNaN(val) || val < 1) val = 1;
+            e.target.value = val;
+            
+            const settings = db.getSettings();
+            settings.readingGoal = val;
+            db.saveSettings(settings);
+            
+            updateStatsChallengeOnly();
+        });
+    }
+
+    // Reset Button
     const resetBtn = document.getElementById('btn-reset-stats-filters');
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
-            activeStatsFilters = { verlag: [], format: [], bestand: [], gelesen: [], bezugsquelle: [], serie: [] };
+            activeStatsFilters = { verlag: [], format: [], bestand: [], sprache: [], typ: [], serie: [], zeitraum: 'all' };
             const container = document.getElementById('view-container');
             renderStats(container);
         });
@@ -140,120 +426,765 @@ function attachStatsEvents() {
 export function cleanupStats() {
     document.removeEventListener('click', handleGlobalStatsClick);
     statsEventsAttached = false;
+    
+    // Charts zerstören zur Vermeidung von Speicherlecks
+    Object.keys(statsCharts).forEach(key => {
+        if (statsCharts[key]) {
+            statsCharts[key].destroy();
+        }
+    });
+    statsCharts = {};
+}
+
+// Hilfsfunktion zum alleinigen Aktualisieren der Lese-Challenge
+async function updateStatsChallengeOnly() {
+    const comics = await db.getAllComics();
+    const settings = db.getSettings();
+    const readingGoal = settings.readingGoal || 50;
+    
+    const currentYear = new Date().getFullYear();
+    const readThisYearCount = comics.filter(c => c.gelesen_am && checkDateInRange(c.gelesen_am, 'thisYear')).length;
+    const challengePercent = Math.min(100, Math.round((readThisYearCount / readingGoal) * 100));
+
+    const ratioSpan = document.getElementById('challenge-ratio');
+    if (ratioSpan) ratioSpan.textContent = `${readThisYearCount} / ${readingGoal}`;
+    
+    const progressBar = document.getElementById('challenge-progress-bar');
+    if (progressBar) progressBar.style.width = `${challengePercent}%`;
+    
+    const percentText = document.getElementById('challenge-percent-text');
+    if (percentText) percentText.textContent = `${challengePercent}% abgeschlossen`;
 }
 
 async function updateStats() {
-    let comics = await db.getAllComics();
-
-    // Filter anwenden
-    if (activeStatsFilters.verlag.length > 0) comics = comics.filter(c => activeStatsFilters.verlag.includes(c.verlag));
-    if (activeStatsFilters.format.length > 0) comics = comics.filter(c => activeStatsFilters.format.includes(c.format));
-    if (activeStatsFilters.bestand.length > 0) comics = comics.filter(c => activeStatsFilters.bestand.includes(c.bestand));
-    if (activeStatsFilters.bezugsquelle.length > 0) comics = comics.filter(c => activeStatsFilters.bezugsquelle.includes(c.bezugsquelle));
-    if (activeStatsFilters.serie.length > 0) comics = comics.filter(c => activeStatsFilters.serie.includes(c.serie));
-    if (activeStatsFilters.gelesen.length > 0) {
-        comics = comics.filter(c => {
-            const status = c.gelesen_am ? 'Ja' : 'Nein';
-            return activeStatsFilters.gelesen.includes(status);
-        });
+    const allComics = await db.getAllComics();
+    
+    // 1. Dropdown-Filter anwenden
+    let filteredComics = [...allComics];
+    if (activeStatsFilters.verlag.length > 0) {
+        filteredComics = filteredComics.filter(c => activeStatsFilters.verlag.includes(c.verlag));
+    }
+    if (activeStatsFilters.format.length > 0) {
+        filteredComics = filteredComics.filter(c => activeStatsFilters.format.includes(c.format));
+    }
+    if (activeStatsFilters.bestand.length > 0) {
+        filteredComics = filteredComics.filter(c => activeStatsFilters.bestand.includes(c.bestand));
+    }
+    if (activeStatsFilters.sprache.length > 0) {
+        filteredComics = filteredComics.filter(c => activeStatsFilters.sprache.includes(c.sprache));
+    }
+    if (activeStatsFilters.typ.length > 0) {
+        filteredComics = filteredComics.filter(c => activeStatsFilters.typ.includes(c.typ));
+    }
+    if (activeStatsFilters.serie.length > 0) {
+        filteredComics = filteredComics.filter(c => activeStatsFilters.serie.includes(c.serie));
     }
 
-    // Berechnungen
-    const totalComics = comics.length;
-    // Gesamtwert nur für vorhanden/vorbestellt
-    const valueComics = comics.filter(c => ['vorhanden', 'vorbestellt'].includes(String(c.bestand).toLowerCase()));
-    const totalValue = valueComics.reduce((sum, c) => sum + (c.preis || 0), 0);
-    const readComics = comics.filter(c => c.gelesen_am).length;
-    const readPercent = totalComics > 0 ? Math.round((readComics / totalComics) * 100) : 0;
+    // 2. Zeitraum-Filter für KPIs, Averages und Verteilungs-Charts anwenden
+    const kpiComics = filteredComics.filter(c => isComicInTimeframe(c, activeStatsFilters.zeitraum));
 
-    // Summary befüllen
+    // Berechnungen für KPIs
+    const totalComics = kpiComics.length;
+    const valueComics = kpiComics.filter(c => ['vorhanden', 'vorbestellt', 'verliehen'].includes(String(c.bestand).toLowerCase()));
+    const totalValue = valueComics.reduce((sum, c) => sum + (Number(c.preis) || 0), 0);
+    
+    const readCount = kpiComics.filter(c => c.gelesen_am && checkDateInRange(c.gelesen_am, activeStatsFilters.zeitraum)).length;
+    const readPercent = totalComics > 0 ? Math.round((readCount / totalComics) * 100) : 0;
+    
+    // Lesestapel (TBR): ungelockte Comics, die nicht gelesen sind und im Besitz/bestellt sind
+    const tbrComics = kpiComics.filter(c => !c.gelesen_am && ['vorhanden', 'vorbestellt', 'verliehen'].includes(String(c.bestand).toLowerCase()));
+    const tbrCount = tbrComics.length;
+    const tbrValue = tbrComics.reduce((sum, c) => sum + (Number(c.preis) || 0), 0);
+
+    const currencySymbol = db.getSettings().currency || '€';
+
+    // KPIs befüllen
     const summary = document.getElementById('stats-summary');
     if (summary) {
         summary.innerHTML = `
-            <div class="details-card" style="flex-direction: column; align-items: center; justify-content: center; padding: 24px 20px; border-left: 4px solid var(--primary-color);">
-                <div style="font-size: 2.2rem; font-family: var(--font-display); font-weight: 800; color: var(--text-primary)">${totalComics}</div>
-                <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 0.75rem; font-weight: 600; letter-spacing: 1px;">Comics (gefiltert)</div>
+            <div class="details-card" style="flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-left: 4px solid var(--primary-color);">
+                <div style="font-size: 2rem; font-family: var(--font-display); font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">${totalComics}</div>
+                <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 0.7rem; font-weight: 600; letter-spacing: 1px; text-align: center;">Comics (gefiltert)</div>
             </div>
-            <div class="details-card" style="flex-direction: column; align-items: center; justify-content: center; padding: 24px 20px; border-left: 4px solid var(--success);">
-                <div style="font-size: 2.2rem; font-family: var(--font-display); font-weight: 800; color: var(--success)">${totalValue.toFixed(2)} ${db.getSettings().currency || '€'}</div>
-                <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 0.75rem; font-weight: 600; letter-spacing: 1px;">Wert (Bestand)</div>
+            <div class="details-card" style="flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-left: 4px solid var(--success);">
+                <div style="font-size: 2rem; font-family: var(--font-display); font-weight: 800; color: var(--success); margin-bottom: 4px;">${totalValue.toFixed(2)} ${currencySymbol}</div>
+                <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 0.7rem; font-weight: 600; letter-spacing: 1px; text-align: center;">Sammlungswert</div>
             </div>
-            <div class="details-card" style="flex-direction: column; align-items: center; justify-content: center; padding: 24px 20px; border-left: 4px solid var(--secondary-color);">
-                <div style="font-size: 2.2rem; font-family: var(--font-display); font-weight: 800; color: var(--secondary-color)">${readPercent}%</div>
-                <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 0.75rem; font-weight: 600; letter-spacing: 1px;">Gelesen</div>
+            <div class="details-card" style="flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-left: 4px solid var(--secondary-color);">
+                <div style="font-size: 2rem; font-family: var(--font-display); font-weight: 800; color: var(--secondary-color); margin-bottom: 4px;">${readPercent}%</div>
+                <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 0.7rem; font-weight: 600; letter-spacing: 1px; text-align: center;">Gelesen Quote</div>
+            </div>
+            <div class="details-card" style="flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-left: 4px solid var(--warning);">
+                <div style="font-size: 2rem; font-family: var(--font-display); font-weight: 800; color: var(--warning); margin-bottom: 4px;">${tbrCount}</div>
+                <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 0.7rem; font-weight: 600; letter-spacing: 1px; text-align: center;">Lesestapel (TBR)</div>
+            </div>
+            <div class="details-card" style="flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-left: 4px solid var(--accent-color);">
+                <div style="font-size: 2rem; font-family: var(--font-display); font-weight: 800; color: var(--accent-color); margin-bottom: 4px;">${tbrValue.toFixed(2)} ${currencySymbol}</div>
+                <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 0.7rem; font-weight: 600; letter-spacing: 1px; text-align: center;">Ungelesener Wert</div>
             </div>
         `;
     }
 
-    // Daten für Charts vorbereiten
-    const bestandData = {};
-    const abgaengeData = { 'Verkauft': 0, 'Abgegeben': 0, 'Verliehen': 0 };
-    const quellenSpend = {};
+    // 2b. Typ-spezifische KPIs befüllen
+    const typeContainer = document.getElementById('stats-by-type-container');
+    if (typeContainer) {
+        const uniqueTypes = [...new Set(kpiComics.map(c => c.typ || 'Unbekannt'))].sort();
+        if (uniqueTypes.length === 0) {
+            typeContainer.innerHTML = '';
+            typeContainer.style.display = 'none';
+        } else {
+            typeContainer.style.display = 'block';
+            
+            const typeStats = uniqueTypes.map(type => {
+                const typeComics = kpiComics.filter(c => (c.typ || 'Unbekannt') === type);
+                const tComics = typeComics.length;
+                
+                const valComics = typeComics.filter(c => ['vorhanden', 'vorbestellt', 'verliehen'].includes(String(c.bestand).toLowerCase()));
+                const valSum = valComics.reduce((sum, c) => sum + (Number(c.preis) || 0), 0);
+                
+                const rCount = typeComics.filter(c => c.gelesen_am && checkDateInRange(c.gelesen_am, activeStatsFilters.zeitraum)).length;
+                const rPercent = tComics > 0 ? Math.round((rCount / tComics) * 100) : 0;
+                
+                const tbrC = typeComics.filter(c => !c.gelesen_am && ['vorhanden', 'vorbestellt', 'verliehen'].includes(String(c.bestand).toLowerCase()));
+                const tbrCCount = tbrC.length;
+                const tbrCValue = tbrC.reduce((sum, c) => sum + (Number(c.preis) || 0), 0);
+                
+                return {
+                    type,
+                    total: tComics,
+                    value: valSum,
+                    readPercent: rPercent,
+                    tbrCount: tbrCCount,
+                    tbrValue: tbrCValue
+                };
+            });
+            
+            typeContainer.innerHTML = `
+                <div class="details-card" style="flex-direction: column; padding: 24px; overflow-x: auto; border: 1px solid var(--border-color); background: var(--bg-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+                    <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; color: var(--text-primary);">
+                        <i class="fa-solid fa-layer-group" style="color: var(--primary-color);"></i>
+                        <span>Kennzahlen nach Typ</span>
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                <th style="padding: 12px 16px;">Typ</th>
+                                <th style="padding: 12px 16px; text-align: center;">Anzahl</th>
+                                <th style="padding: 12px 16px; text-align: right;">Sammlungswert</th>
+                                <th style="padding: 12px 16px; text-align: center;">Gelesen Quote</th>
+                                <th style="padding: 12px 16px; text-align: center;">Lesestapel (TBR)</th>
+                                <th style="padding: 12px 16px; text-align: right;">Ungelesener Wert</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${typeStats.map(stat => `
+                                <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.2s;" class="stats-type-row" data-type="${stat.type}">
+                                    <td style="padding: 16px; font-weight: 700; color: var(--text-primary); font-family: var(--font-display); font-size: 0.95rem;">${stat.type}</td>
+                                    <td style="padding: 16px; text-align: center; font-weight: 600; color: var(--primary-color);">${stat.total}</td>
+                                    <td style="padding: 16px; text-align: right; font-weight: 600; color: var(--success);">${stat.value.toFixed(2)} ${currencySymbol}</td>
+                                    <td style="padding: 16px; text-align: center;">
+                                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                                            <span style="font-weight: 600; color: var(--secondary-color); min-width: 36px; text-align: right;">${stat.readPercent}%</span>
+                                            <div style="width: 60px; height: 6px; background-color: var(--bg-main); border-radius: var(--radius-full); overflow: hidden; border: 1px solid var(--border-color); display: inline-block;">
+                                                <div style="width: ${stat.readPercent}%; height: 100%; background-color: var(--secondary-color); border-radius: var(--radius-full);"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style="padding: 16px; text-align: center; font-weight: 600; color: var(--warning);">${stat.tbrCount}</td>
+                                    <td style="padding: 16px; text-align: right; font-weight: 600; color: var(--accent-color);">${stat.tbrValue.toFixed(2)} ${currencySymbol}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+    }
 
-    comics.forEach(c => {
-        const b = c.bestand || 'Unbekannt';
-        bestandData[b] = (bestandData[b] || 0) + 1;
+    // Lese-Challenge updaten
+    const settings = db.getSettings();
+    const readingGoal = settings.readingGoal || 50;
+    const currentYear = new Date().getFullYear();
+    const readThisYearCount = allComics.filter(c => c.gelesen_am && checkDateInRange(c.gelesen_am, 'thisYear')).length;
+    const challengePercent = Math.min(100, Math.round((readThisYearCount / readingGoal) * 100));
 
-        if (['verkauft', 'abgegeben', 'verliehen'].includes(b.toLowerCase())) {
-            const key = b.charAt(0).toUpperCase() + b.slice(1);
-            abgaengeData[key] = (abgaengeData[key] || 0) + 1;
+    const ratioSpan = document.getElementById('challenge-ratio');
+    if (ratioSpan) ratioSpan.textContent = `${readThisYearCount} / ${readingGoal}`;
+    const progressBar = document.getElementById('challenge-progress-bar');
+    if (progressBar) progressBar.style.width = `${challengePercent}%`;
+    const percentText = document.getElementById('challenge-percent-text');
+    if (percentText) percentText.textContent = `${challengePercent}% abgeschlossen`;
+    const goalInput = document.getElementById('input-reading-goal');
+    if (goalInput) goalInput.value = readingGoal;
+
+    // Highlights befüllen
+    // 1. Aktivste Monate
+    const purchaseMonths = {};
+    const readMonths = {};
+    let maxPriceComic = null;
+    let pricedCount = 0;
+    let priceSum = 0;
+
+    kpiComics.forEach(c => {
+        // Kaufmonat tracken
+        const buyDate = parseToDate(c.kaufdatum || c.created_at);
+        if (buyDate) {
+            const mKey = `${buyDate.getFullYear()}-${String(buyDate.getMonth() + 1).padStart(2, '0')}`;
+            purchaseMonths[mKey] = (purchaseMonths[mKey] || 0) + 1;
         }
 
-        if (c.bezugsquelle && c.preis) {
-            quellenSpend[c.bezugsquelle] = (quellenSpend[c.bezugsquelle] || 0) + c.preis;
+        // Lesemonat tracken
+        if (c.gelesen_am) {
+            const readDate = parseToDate(c.gelesen_am);
+            if (readDate) {
+                const yr = readDate.getFullYear();
+                const mon = readDate.getMonth();
+                // Januar 2023 als Platzhalter ignorieren
+                if (!(yr === 2023 && mon === 0)) {
+                    const mKey = `${yr}-${String(mon + 1).padStart(2, '0')}`;
+                    readMonths[mKey] = (readMonths[mKey] || 0) + 1;
+                }
+            }
+        }
+
+        // Teuerster Comic
+        const price = Number(c.preis);
+        if (!isNaN(price) && c.preis !== null) {
+            pricedCount++;
+            priceSum += price;
+            if (!maxPriceComic || price > Number(maxPriceComic.preis)) {
+                maxPriceComic = c;
+            }
         }
     });
 
-    // Charts zeichnen
-    initChart('chartBestand', 'doughnut', Object.keys(bestandData), Object.values(bestandData), 'Anzahl');
-    initChart('chartAbgaenge', 'pie', Object.keys(abgaengeData), Object.values(abgaengeData), 'Anzahl');
+    const MONATE_MAP = ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sept.", "Okt.", "Nov.", "Dez."];
+    const formatKeyToDisplay = (key) => {
+        if (!key) return '-';
+        const [y, m] = key.split('-');
+        return `${MONATE_MAP[parseInt(m, 10) - 1]} ${y}`;
+    };
+
+    let topPurchaseMonth = '-';
+    let topPurchaseVal = 0;
+    Object.entries(purchaseMonths).forEach(([key, val]) => {
+        if (val > topPurchaseVal) {
+            topPurchaseVal = val;
+            topPurchaseMonth = formatKeyToDisplay(key);
+        }
+    });
+
+    let topReadMonth = '-';
+    let topReadVal = 0;
+    Object.entries(readMonths).forEach(([key, val]) => {
+        if (val > topReadVal) {
+            topReadVal = val;
+            topReadMonth = formatKeyToDisplay(key);
+        }
+    });
+
+    // Lese-Geschwindigkeit
+    let speedText = '-';
+    if (activeStatsFilters.zeitraum === 'all') {
+        const totalRead = allComics.filter(c => c.gelesen_am).length;
+        // Zeitraum in Monaten berechnen
+        let earliestDate = new Date();
+        allComics.forEach(c => {
+            const d = parseToDate(c.kaufdatum || c.created_at);
+            if (d && d < earliestDate && d.getFullYear() >= 2000) earliestDate = d;
+        });
+        const monthDiff = Math.max(1, (new Date().getFullYear() - earliestDate.getFullYear()) * 12 + (new Date().getMonth() - earliestDate.getMonth()) + 1);
+        speedText = `${(totalRead / monthDiff).toFixed(1)} / Monat`;
+    } else {
+        const readInPeriod = kpiComics.filter(c => c.gelesen_am && checkDateInRange(c.gelesen_am, activeStatsFilters.zeitraum)).length;
+        let months = 1;
+        if (activeStatsFilters.zeitraum === 'last6') months = 6;
+        else if (activeStatsFilters.zeitraum === 'last12') months = 12;
+        else if (activeStatsFilters.zeitraum === 'thisYear') months = new Date().getMonth() + 1;
+        else if (activeStatsFilters.zeitraum === 'lastYear') months = 12;
+        else if (activeStatsFilters.zeitraum.startsWith('year-')) months = 12;
+        speedText = `${(readInPeriod / months).toFixed(1)} / Monat`;
+    }
+
+    const avgPrice = pricedCount > 0 ? (priceSum / pricedCount).toFixed(2) : '0.00';
+    const teuersterText = maxPriceComic ? `${maxPriceComic.titel} (${Number(maxPriceComic.preis).toFixed(2)} ${currencySymbol})` : '-';
+
+    const highlightsEl = document.getElementById('stats-highlights');
+    if (highlightsEl) {
+        highlightsEl.innerHTML = `
+            <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Ø Preis pro Comic</span>
+                <span style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-top: 2px;">${avgPrice} ${currencySymbol}</span>
+            </div>
+            <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Leseaktivität</span>
+                <span style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-top: 2px;">${speedText}</span>
+            </div>
+            <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Aktivster Kaufmonat</span>
+                <span style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-top: 2px;">${topPurchaseMonth} ${topPurchaseVal > 0 ? `(${topPurchaseVal} Käufe)` : ''}</span>
+            </div>
+            <div style="display: flex; flex-direction: column;">
+                <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Aktivster Lesemonat</span>
+                <span style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-top: 2px;">${topReadMonth} ${topReadVal > 0 ? `(${topReadVal} gelesen)` : ''}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; grid-column: 1 / -1; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 4px;">
+                <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Teuerster Comic</span>
+                <span style="font-size: 0.95rem; font-weight: 700; color: var(--accent-color); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${teuersterText}">${teuersterText}</span>
+            </div>
+        `;
+    }
+
+    // 3. Timeline-Daten (TBR-Verlauf) vorbereiten
+    // Wir nutzen filteredComics (nur Dropdown-gefiltert, damit Timeline-historische Kumulierung korrekt ist)
+    let earliestDate = new Date();
+    let hasPurchase = false;
+    filteredComics.forEach(c => {
+        if (c.kaufdatum) {
+            const d = parseToDate(c.kaufdatum);
+            if (d && d.getFullYear() >= 2000) {
+                if (!hasPurchase || d < earliestDate) {
+                    earliestDate = d;
+                    hasPurchase = true;
+                }
+            }
+        }
+    });
+    // Fallback falls kein Comic ein Kaufdatum besitzt
+    if (!hasPurchase) {
+        filteredComics.forEach(c => {
+            const d = parseToDate(c.created_at);
+            if (d && d < earliestDate && d.getFullYear() >= 2000) {
+                earliestDate = d;
+            }
+        });
+    }
+
+    const now = new Date();
+    let startDate = new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
+    let endDate = new Date(now.getFullYear(), now.getMonth(), 1);
     
+    // Falls das Startdatum in der Zukunft liegt oder ungültig ist
+    if (startDate > endDate) startDate = new Date(endDate);
+
+    const months = [];
+    let curr = new Date(startDate);
+    while (curr <= endDate) {
+        months.push(new Date(curr));
+        curr.setMonth(curr.getMonth() + 1);
+    }
+
+    const timelineData = [];
+    months.forEach(m => {
+        const endOfMonth = new Date(m.getFullYear(), m.getMonth() + 1, 0, 23, 59, 59, 999);
+        
+        const purchased = filteredComics.filter(c => {
+            const pDate = parseToDate(c.kaufdatum || c.created_at);
+            return pDate && pDate <= endOfMonth;
+        }).length;
+        
+        const read = filteredComics.filter(c => {
+            const rDate = parseToDate(c.gelesen_am);
+            // Januar 2023 als Platzhalter beim gelesenen Verlauf ignorieren
+            if (rDate && rDate.getFullYear() === 2023 && rDate.getMonth() === 0) {
+                return false;
+            }
+            return rDate && rDate <= endOfMonth;
+        }).length;
+        
+        const tbr = Math.max(0, purchased - read);
+        
+        timelineData.push({
+            date: m,
+            purchased,
+            read,
+            tbr
+        });
+    });
+
+    // Zeitraumfilter auf die Timeline-Anzeige anwenden
+    let displayTimeline = [...timelineData];
+    if (activeStatsFilters.zeitraum !== 'all') {
+        let minDate = null;
+        let maxDate = null;
+        
+        if (activeStatsFilters.zeitraum === 'last6') {
+            minDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+        } else if (activeStatsFilters.zeitraum === 'last12') {
+            minDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+        } else if (activeStatsFilters.zeitraum === 'thisYear') {
+            minDate = new Date(now.getFullYear(), 0, 1);
+            maxDate = new Date(now.getFullYear(), 11, 31);
+        } else if (activeStatsFilters.zeitraum === 'lastYear') {
+            minDate = new Date(now.getFullYear() - 1, 0, 1);
+            maxDate = new Date(now.getFullYear() - 1, 11, 31);
+        } else if (activeStatsFilters.zeitraum.startsWith('year-')) {
+            const yr = parseInt(activeStatsFilters.zeitraum.split('-')[1], 10);
+            minDate = new Date(yr, 0, 1);
+            maxDate = new Date(yr, 11, 31);
+        }
+        
+        displayTimeline = displayTimeline.filter(d => {
+            if (minDate && d.date < minDate) return false;
+            if (maxDate && d.date > maxDate) return false;
+            return true;
+        });
+    }
+
+    if (displayTimeline.length === 0) {
+        displayTimeline.push({
+            date: new Date(),
+            purchased: 0,
+            read: 0,
+            tbr: 0
+        });
+    }
+
+    // 4. Verteilungsdaten für Diagramme sammeln (aus kpiComics)
+    const formatData = {};
+    const bestandData = {};
+    const quellenSpend = {};
+
+    kpiComics.forEach(c => {
+        // Format
+        const f = c.format || 'Unbekannt';
+        formatData[f] = (formatData[f] || 0) + 1;
+
+        // Bestand
+        const b = c.bestand || 'Unbekannt';
+        const normalizedBestand = b.charAt(0).toUpperCase() + b.slice(1).toLowerCase();
+        bestandData[normalizedBestand] = (bestandData[normalizedBestand] || 0) + 1;
+
+        // Bezugsquellen Ausgaben
+        if (c.bezugsquelle && c.preis) {
+            quellenSpend[c.bezugsquelle] = (quellenSpend[c.bezugsquelle] || 0) + Number(c.preis);
+        }
+    });
+
+    // Top Listen berechnen
+    const publishersMap = {};
+    const seriesMap = {};
+
+    kpiComics.forEach(c => {
+        // Verlage
+        if (c.verlag) {
+            if (!publishersMap[c.verlag]) {
+                publishersMap[c.verlag] = { name: c.verlag, total: 0, read: 0, ratingSum: 0, ratedCount: 0 };
+            }
+            publishersMap[c.verlag].total++;
+            if (c.gelesen_am) publishersMap[c.verlag].read++;
+            if (c.bewertung) {
+                publishersMap[c.verlag].ratingSum += Number(c.bewertung);
+                publishersMap[c.verlag].ratedCount++;
+            }
+        }
+
+        // Serien
+        if (c.serie) {
+            if (!seriesMap[c.serie]) {
+                seriesMap[c.serie] = { name: c.serie, total: 0, read: 0, ratingSum: 0, ratedCount: 0 };
+            }
+            seriesMap[c.serie].total++;
+            if (c.gelesen_am) seriesMap[c.serie].read++;
+            if (c.bewertung) {
+                seriesMap[c.serie].ratingSum += Number(c.bewertung);
+                seriesMap[c.serie].ratedCount++;
+            }
+        }
+    });
+
+    const topPublishers = Object.values(publishersMap)
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 5);
+
+    const topSeries = Object.values(seriesMap)
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 5);
+
+    // Tabellen rendern
+    const publishersTable = document.getElementById('table-top-publishers');
+    if (publishersTable) {
+        if (topPublishers.length === 0) {
+            publishersTable.innerHTML = `<tr><td style="padding:15px; text-align:center; color:var(--text-secondary);">Keine Verlagsdaten vorhanden.</td></tr>`;
+        } else {
+            publishersTable.innerHTML = `
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-weight: 600; font-size: 0.8rem;">
+                        <th style="padding: 10px 8px;">Verlag</th>
+                        <th style="padding: 10px 8px; text-align: center;">Comics</th>
+                        <th style="padding: 10px 8px; text-align: center;">Gelesen</th>
+                        <th style="padding: 10px 8px; text-align: right;">Ø Bewertung</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${topPublishers.map(p => {
+                        const avgRate = p.ratedCount > 0 ? (p.ratingSum / p.ratedCount) : 0;
+                        return `
+                            <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: background 0.2s;">
+                                <td style="padding: 10px 8px; font-weight: 600; color: var(--text-primary);">${p.name}</td>
+                                <td style="padding: 10px 8px; text-align: center; font-weight: 600;">${p.total}</td>
+                                <td style="padding: 10px 8px; text-align: center; color: var(--text-secondary);">${p.read}</td>
+                                <td style="padding: 10px 8px; text-align: right;">${avgRate > 0 ? renderStars(avgRate) : '-'}</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            `;
+        }
+    }
+
+    const seriesTable = document.getElementById('table-top-series');
+    if (seriesTable) {
+        if (topSeries.length === 0) {
+            seriesTable.innerHTML = `<tr><td style="padding:15px; text-align:center; color:var(--text-secondary);">Keine Seriendaten vorhanden.</td></tr>`;
+        } else {
+            seriesTable.innerHTML = `
+                <thead>
+                    <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-weight: 600; font-size: 0.8rem;">
+                        <th style="padding: 10px 8px;">Serie</th>
+                        <th style="padding: 10px 8px; text-align: center;">Comics</th>
+                        <th style="padding: 10px 8px; text-align: center;">Gelesen</th>
+                        <th style="padding: 10px 8px; text-align: right;">Ø Bewertung</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${topSeries.map(s => {
+                        const avgRate = s.ratedCount > 0 ? (s.ratingSum / s.ratedCount) : 0;
+                        return `
+                            <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: background 0.2s;">
+                                <td style="padding: 10px 8px; font-weight: 600; color: var(--text-primary);">${s.name}</td>
+                                <td style="padding: 10px 8px; text-align: center; font-weight: 600;">${s.total}</td>
+                                <td style="padding: 10px 8px; text-align: center; color: var(--text-secondary);">${s.read}</td>
+                                <td style="padding: 10px 8px; text-align: right;">${avgRate > 0 ? renderStars(avgRate) : '-'}</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            `;
+        }
+    }
+
+    // 5. Diagramme zeichnen / aktualisieren
+    
+    // Timeline Chart: Lesestapel & Aktivität
+    const timelineLabels = displayTimeline.map(d => {
+        const monNames = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+        return `${monNames[d.date.getMonth()]} ${String(d.date.getFullYear()).slice(-2)}`;
+    });
+    
+    initTimelineChart(
+        'chartTimeline', 
+        timelineLabels, 
+        displayTimeline.map(d => d.purchased),
+        displayTimeline.map(d => d.read),
+        displayTimeline.map(d => d.tbr)
+    );
+
+    // Format Verteilung
+    initDoughnutChart('chartFormat', Object.keys(formatData), Object.values(formatData), 'Format');
+
+    // Bestands Verteilung
+    initDoughnutChart('chartBestand', Object.keys(bestandData), Object.values(bestandData), 'Bestand');
+
+    // Bezugsquellen Spendings
     const sortedQuellen = Object.entries(quellenSpend).sort((a, b) => b[1] - a[1]);
-    initChart('chartQuellen', 'bar', sortedQuellen.map(e => e[0]), sortedQuellen.map(e => e[1]), `Ausgaben in ${db.getSettings().currency || '€'}`, true);
+    initHorizontalBarChart('chartQuellen', sortedQuellen.map(e => e[0]), sortedQuellen.map(e => e[1]), `Ausgaben in ${currencySymbol}`);
+
+    // Diagnose-Container befüllen falls ungewöhnlich frühe Daten vorliegen
+    const debugContainer = document.getElementById('stats-debug-container');
+    if (debugContainer) {
+        const earlyComics = filteredComics.filter(c => {
+            if (!c.kaufdatum) return false;
+            const d = parseToDate(c.kaufdatum);
+            return d && d.getFullYear() < 2020;
+        });
+        
+        if (earlyComics.length > 0) {
+            debugContainer.style.display = 'block';
+            debugContainer.innerHTML = `
+                <div style="font-weight: 600; color: var(--warning); margin-bottom: 8px; font-family: var(--font-display);">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Diagnose: Ungewöhnlich frühe Kaufdaten gefunden (vor 2020)
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
+                    Diese Einträge verschieben den Startpunkt deines zeitlichen Diagramms weit nach hinten. 
+                    Wenn dies Eingabefehler sind (z. B. "04.12" vom Browser als April 2012 anstatt 4. Dezember interpretiert), passe das Datum im Comic an:
+                    <ul style="margin-top: 8px; padding-left: 20px; color: var(--text-primary);">
+                        ${earlyComics.map(c => `<li><strong>${c.titel}</strong>: Eingetragenes Kaufdatum: <code>"${c.kaufdatum}"</code> (interpretiert als ${parseToDate(c.kaufdatum).toLocaleDateString('de-DE')})</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        } else {
+            debugContainer.style.display = 'none';
+        }
+    }
 }
 
-function initChart(id, type, labels, data, label, isHorizontal = false) {
+// Chart.js Diagramm Initialisierungshelfer
+
+function initTimelineChart(id, labels, purchasedData, readData, tbrData) {
+    const ctx = document.getElementById(id);
+    if (!ctx) return;
+
+    if (statsCharts[id]) statsCharts[id].destroy();
+
+    statsCharts[id] = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Lesestapel (TBR)',
+                    data: tbrData,
+                    borderColor: 'rgba(139, 92, 246, 1)', // Violet
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)', // Light violet fill
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 2,
+                    pointHoverRadius: 5
+                },
+                {
+                    label: 'Käufe (kumuliert)',
+                    data: purchasedData,
+                    borderColor: 'rgba(6, 182, 212, 1)', // Cyan
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                },
+                {
+                    label: 'Gelesen (kumuliert)',
+                    data: readData,
+                    borderColor: 'rgba(16, 185, 129, 1)', // Emerald/Green
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.3,
+                    pointRadius: 0,
+                    pointHoverRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#94a3b8', font: { size: 11, family: 'Inter' } }
+                },
+                tooltip: {
+                    padding: 12,
+                    cornerRadius: 8,
+                    bodySpacing: 4
+                }
+            },
+            scales: {
+                y: { 
+                    ticks: { color: '#94a3b8', font: { family: 'Inter' } }, 
+                    grid: { color: 'rgba(255,255,255,0.05)' } 
+                },
+                x: { 
+                    ticks: { color: '#94a3b8', font: { size: 10, family: 'Inter' } }, 
+                    grid: { display: false } 
+                }
+            }
+        }
+    });
+}
+
+function initDoughnutChart(id, labels, data, title) {
     const ctx = document.getElementById(id);
     if (!ctx) return;
 
     if (statsCharts[id]) statsCharts[id].destroy();
 
     const colors = [
-        'rgba(6, 182, 212, 0.7)',  // Primary
-        'rgba(139, 92, 246, 0.7)', // Purple
-        'rgba(16, 185, 129, 0.7)', // Success
-        'rgba(245, 158, 11, 0.7)', // Warning
-        'rgba(239, 68, 68, 0.7)',  // Danger
-        'rgba(100, 116, 139, 0.7)', // Slate
-        'rgba(236, 72, 153, 0.7)', // Pink
+        'rgba(6, 182, 212, 0.75)',  // Primary
+        'rgba(139, 92, 246, 0.75)', // Purple/Violet
+        'rgba(16, 185, 129, 0.75)', // Success
+        'rgba(244, 63, 94, 0.75)',  // Accent/Rose
+        'rgba(245, 158, 11, 0.75)', // Warning
+        'rgba(100, 116, 139, 0.75)', // Slate
+        'rgba(236, 72, 153, 0.75)'  // Pink
     ];
 
     statsCharts[id] = new Chart(ctx, {
-        type: type,
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Anzahl',
+                data: data,
+                backgroundColor: colors,
+                borderColor: 'rgba(30, 41, 59, 0.5)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: { 
+                        color: '#94a3b8', 
+                        font: { size: 11, family: 'Inter' },
+                        boxWidth: 12
+                    }
+                }
+            },
+            cutout: '65%'
+        }
+    });
+}
+
+function initHorizontalBarChart(id, labels, data, label) {
+    const ctx = document.getElementById(id);
+    if (!ctx) return;
+
+    if (statsCharts[id]) statsCharts[id].destroy();
+
+    statsCharts[id] = new Chart(ctx, {
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
                 label: label,
                 data: data,
-                backgroundColor: colors,
-                borderColor: 'rgba(255,255,255,0.1)',
-                borderWidth: 2
+                backgroundColor: 'rgba(6, 182, 212, 0.7)',
+                hoverBackgroundColor: 'rgba(6, 182, 212, 0.9)',
+                borderColor: 'rgba(6, 182, 212, 1)',
+                borderWidth: 1,
+                borderRadius: 4
             }]
         },
         options: {
-            indexAxis: isHorizontal ? 'y' : 'x',
+            indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'bottom',
-                    labels: { color: '#94a3b8', font: { size: 11 } }
+                    display: false
                 }
             },
-            scales: type === 'bar' ? {
-                y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-                x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
-            } : {}
+            scales: {
+                x: { 
+                    ticks: { color: '#94a3b8', font: { family: 'Inter' } }, 
+                    grid: { color: 'rgba(255,255,255,0.05)' } 
+                },
+                y: { 
+                    ticks: { color: '#94a3b8', font: { size: 11, family: 'Inter' } }, 
+                    grid: { display: false } 
+                }
+            }
         }
     });
 }
