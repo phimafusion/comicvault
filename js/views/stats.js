@@ -489,7 +489,7 @@ async function updateStats() {
     const totalValue = valueComics.reduce((sum, c) => sum + (Number(c.preis) || 0), 0);
     
     const readCount = kpiComics.filter(c => c.gelesen_am && checkDateInRange(c.gelesen_am, activeStatsFilters.zeitraum)).length;
-    const readPercent = totalComics > 0 ? Math.round((readCount / totalComics) * 100) : 0;
+    const readPercent = totalComics > 0 ? ((readCount / totalComics) * 100).toFixed(2) : '0.00';
     
     // Lesestapel (TBR): ungelockte Comics, die nicht gelesen sind und im Besitz/bestellt sind
     const tbrComics = kpiComics.filter(c => !c.gelesen_am && ['vorhanden', 'vorbestellt', 'verliehen'].includes(String(c.bestand).toLowerCase()));
@@ -543,7 +543,7 @@ async function updateStats() {
                 const valSum = valComics.reduce((sum, c) => sum + (Number(c.preis) || 0), 0);
                 
                 const rCount = typeComics.filter(c => c.gelesen_am && checkDateInRange(c.gelesen_am, activeStatsFilters.zeitraum)).length;
-                const rPercent = tComics > 0 ? Math.round((rCount / tComics) * 100) : 0;
+                const rPercent = tComics > 0 ? ((rCount / tComics) * 100).toFixed(2) : '0.00';
                 
                 const tbrC = typeComics.filter(c => !c.gelesen_am && ['vorhanden', 'vorbestellt', 'verliehen'].includes(String(c.bestand).toLowerCase()));
                 const tbrCCount = tbrC.length;
