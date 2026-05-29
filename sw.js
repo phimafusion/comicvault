@@ -1,4 +1,4 @@
-const CACHE_NAME = 'comicvault-v3';
+const CACHE_NAME = 'comicvault-v9';
 const ASSETS = [
   './',
   './index.html',
@@ -56,6 +56,11 @@ self.addEventListener('activate', (e) => {
 
 // Fetch Event - Network First with Cache Fallback for dynamic, Cache-First for static
 self.addEventListener('fetch', (e) => {
+    // Exclude localhost/development from caching to prevent stale assets during development
+    if (e.request.url.includes('localhost') || e.request.url.includes('127.0.0.1')) {
+        return;
+    }
+
     // Exclude Firebase SDK and API requests from cache
     if (e.request.url.includes('firebase') || e.request.url.includes('firestore') || e.request.url.includes('google')) {
         return;

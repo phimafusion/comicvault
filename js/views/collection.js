@@ -73,7 +73,7 @@ export async function renderCollection(container) {
     const gelesenStatus = ['Ja', 'Nein'];
 
     const html = `
-        <div class="view-controls" style="flex-wrap: wrap; gap: 15px; margin-bottom: 25px; padding-top: 32px;">
+        <div class="view-controls view-controls-sticky" style="flex-wrap: wrap; gap: 15px; position: sticky; top: 0; z-index: 90; background-color: var(--bg-main); min-height: 76px; box-sizing: border-box; display: flex; align-items: center; border-bottom: 1px solid var(--border-color); margin-bottom: 16px;">
             <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap; flex: 1;">
 
                 
@@ -128,6 +128,19 @@ export async function renderCollection(container) {
         </div>
     `;
     container.innerHTML = html;
+
+    // Measure and set sticky height CSS variable dynamically
+    const filterBar = container.querySelector('.view-controls-sticky');
+    if (filterBar) {
+        const updateHeight = () => {
+            const rect = filterBar.getBoundingClientRect();
+            document.documentElement.style.setProperty('--sticky-filter-height', `${rect.height}px`);
+        };
+        updateHeight();
+        const resizeObserver = new ResizeObserver(updateHeight);
+        resizeObserver.observe(filterBar);
+    }
+
     updateGrid();
 }
 
@@ -656,7 +669,7 @@ export async function updateGrid() {
         ` : '';
 
         grid.innerHTML = `
-            <div class="list-header" style="display: grid; grid-template-columns: ${gridTemplateColumns}; padding: 12px 20px; font-weight: bold; border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; background: var(--bg-main); position: sticky; top: 0; z-index: 10; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+            <div class="list-header" style="display: grid; grid-template-columns: ${gridTemplateColumns}; padding: 12px 20px; font-weight: bold; border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; background: var(--bg-main); position: sticky; top: var(--sticky-filter-height, 76px); z-index: 10; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
                 ${selectAllHeader}
                 ${headers}
                 <div style="text-align: right;"><i class="fa-solid fa-trash" style="opacity: 0.3;"></i></div>
