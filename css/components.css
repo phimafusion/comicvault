@@ -808,28 +808,44 @@ body.bulk-select-active .list-delete-btn {
         align-items: center;
     }
 
-    /* List View responsive grid collapse */
+    /* List View responsive flex layout */
     .list-header {
         display: none !important;
     }
 
     .list-item {
-        grid-template-columns: 50px 1fr auto !important;
-        gap: 8px 12px;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 12px !important;
         padding: 10px 12px !important;
         min-width: auto !important;
         width: 100% !important;
     }
     
-    /* Hide publisher/format and price/source columns in list view on mobile */
-    .list-item > *:nth-child(3),
-    .list-item > *:nth-child(4) {
+    .list-item > [data-col] {
         display: none !important;
     }
-    
-    .list-item > *:nth-child(5) {
-        grid-column: 3;
-        justify-self: end;
+
+    .list-item > [data-col="bild"],
+    .list-item > [data-col="titel"],
+    .list-item > [data-col="preis"],
+    .list-item > [data-col="bestand"] {
+        display: block !important;
+    }
+
+    .list-item > [data-col="titel"] {
+        flex: 1 !important;
+        min-width: 0 !important;
+    }
+
+    .list-item > [data-col="preis"] {
+        font-weight: 700 !important;
+        white-space: nowrap !important;
+    }
+
+    .list-item > [data-col="bestand"] {
+        white-space: nowrap !important;
     }
 
     .list-cover {
@@ -987,21 +1003,38 @@ body.mobile-view .list-header {
 }
 
 body.mobile-view .list-item {
-    grid-template-columns: 50px 1fr auto !important;
-    gap: 8px 12px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 12px !important;
     padding: 10px 12px !important;
     min-width: auto !important;
     width: 100% !important;
 }
 
-body.mobile-view .list-item > *:nth-child(3),
-body.mobile-view .list-item > *:nth-child(4) {
+body.mobile-view .list-item > [data-col] {
     display: none !important;
 }
 
-body.mobile-view .list-item > *:nth-child(5) {
-    grid-column: 3 !important;
-    justify-self: end !important;
+body.mobile-view .list-item > [data-col="bild"],
+body.mobile-view .list-item > [data-col="titel"],
+body.mobile-view .list-item > [data-col="preis"],
+body.mobile-view .list-item > [data-col="bestand"] {
+    display: block !important;
+}
+
+body.mobile-view .list-item > [data-col="titel"] {
+    flex: 1 !important;
+    min-width: 0 !important;
+}
+
+body.mobile-view .list-item > [data-col="preis"] {
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+}
+
+body.mobile-view .list-item > [data-col="bestand"] {
+    white-space: nowrap !important;
 }
 
 body.mobile-view .list-cover {
