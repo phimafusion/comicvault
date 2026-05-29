@@ -1,4 +1,4 @@
-import { renderCollection, cleanupCollection, updateGrid } from '../views/collection.js';
+import { renderCollection, cleanupCollection, updateGrid, attachCollectionEvents } from '../views/collection.js';
 import { setupTestEnv, cleanup } from './testHelper.js';
 
 const { expect } = chai;
@@ -67,8 +67,9 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         
         container = testEnv.viewContainer;
 
-        // Render collection
+        // Render collection and attach events
         await renderCollection(container);
+        attachCollectionEvents();
         
         // standardmäßig die bestandsfilter leeren, um alle Comics für die Tests zu betrachten
         // (defaultVisibleFields setzt standardmäßig vorbestellt/vorhanden)
