@@ -70,6 +70,40 @@ export function calculateBudgetStats(comics, budgets, types, selectedYear) {
     return months;
 }
 
+// Reine Berechnungsfunktion für die historische Jahresübersicht (isoliert testbar)
+export function calculateMultiYearStats(comics, budgets, types, sortedYears) {
+    return sortedYears.map(year => {
+        const monthsData = calculateBudgetStats(comics, budgets, types, year);
+        
+        const expensesByType = {};
+        types.forEach(t => { expensesByType[t] = 0; });
+        expensesByType["Sonstige"] = 0;
+        
+        let totalExpenses = 0;
+        let totalBudget = 0;
+        
+        monthsData.forEach(m => {
+            types.forEach(t => {
+                expensesByType[t] += m.expensesByType[t];
+            });
+            expensesByType["Sonstige"] += m.expensesByType["Sonstige"];
+            totalExpenses += m.totalExpenses;
+            totalBudget += m.budget;
+        });
+        
+        // Das Delta am Jahresende entspricht dem Delta des Monats Dezember (Index 11)
+        const delta = monthsData[11].delta;
+        
+        return {
+            year,
+            expensesByType,
+            totalExpenses,
+            totalBudget,
+            delta
+        };
+    });
+}
+
 // Haupt-Renderfunktion der View
 export async function renderBudget(container) {
     const comics = await db.getAllComics();
@@ -99,7 +133,7 @@ export async function renderBudget(container) {
         const monthsData = calculateBudgetStats(comics, settings.budgets, types, selectedYear);
         monthlyExpensesData = monthsData.map(m => m.totalExpenses);
         
-        // Jahressummen berechnen
+        // Jahressummen für das ausgewählte Jahr berechnen
         const totalByType = {};
         types.forEach(t => { totalByType[t] = 0; });
         totalByType["Sonstige"] = 0;
@@ -116,14 +150,20 @@ export async function renderBudget(container) {
             overallBudget += m.budget;
         });
         
+        // Daten für die historische Jahresübersicht berechnen
+        const yearsSummaryData = calculateMultiYearStats(comics, settings.budgets, types, sortedYears);
+        
         const html = `
             <div class="view-controls" style="padding-top: 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
                 <h2 class="view-title" style="margin: 0;">Budgets & Kostenanalyse</h2>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <label for="budget-year-select" style="font-weight: 600; color: var(--text-secondary); font-size: 0.95rem;">Jahr:</label>
-                    <select id="budget-year-select" class="form-control select-styled" style="width: auto; padding: 6px 36px 6px 16px; font-weight: 600;">
-                        ${sortedYears.map(y => `<option value="${y}" ${y === selectedYear ? 'selected' : ''}>${y}</option>`).join('')}
-                    </select>
+                
+                <!-- Tab-Steuerung oben rechts am Tabellenkopf -->
+                <div class="view-toggles" id="budget-years-tabs" style="display: inline-flex;">
+                    ${sortedYears.map(y => `
+                        <button class="view-toggle-btn ${y === selectedYear ? 'active' : ''}" data-year="${y}">
+                            ${y}
+                        </button>
+                    `).join('')}
                 </div>
             </div>
             
@@ -131,13 +171,14 @@ export async function renderBudget(container) {
                 <i class="fa-solid fa-circle-check"></i> Budgets erfolgreich gespeichert!
             </div>
             
-            <div class="details-card" style="flex-direction: column; padding: 24px; background-color: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+            <!-- 1. Card: Monats-Planung des ausgewählten Jahres -->
+            <div class="details-card" style="flex-direction: column; padding: 24px; background-color: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); margin-bottom: 32px;">
                 <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5;">
-                    Hier kannst du deine Ausgaben mit deinen monatlichen Budgets vergleichen. Budgets lassen sich für jeden Monat individuell anpassen und werden automatisch über das Kalenderjahr hinweg kumuliert.
+                    Hier kannst du deine monatlichen Budgets für das ausgewählte Jahr <strong style="color: var(--text-primary);">${selectedYear}</strong> anpassen. Die Deltas werden innerhalb des Jahres fortlaufend kumuliert.
                 </p>
                 
                 <div style="margin-bottom: 24px; display: flex; gap: 16px; align-items: center; background: rgba(var(--primary-rgb), 0.05); padding: 16px 20px; border-radius: var(--radius-md); border: 1px solid var(--border-color); flex-wrap: wrap;">
-                    <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">Standard-Budget für alle Monate festlegen:</span>
+                    <span style="font-weight: 600; font-size: 0.95rem; color: var(--text-primary);">Standard-Budget für alle Monate in ${selectedYear} festlegen:</span>
                     <div style="display: flex; gap: 8px; align-items: center;">
                         <input type="number" id="global-budget-input" class="form-control" value="200" min="0" style="width: 100px; text-align: right; padding: 6px 12px; font-weight: 500;">
                         <span style="font-weight: 600; color: var(--text-secondary);">${currency}</span>
@@ -188,6 +229,44 @@ export async function renderBudget(container) {
                 
                 <div style="display: flex; justify-content: flex-end; gap: 12px; align-items: center;">
                     <button id="btn-save-budgets" class="btn btn-primary" style="font-weight: 600;"><i class="fa-solid fa-floppy-disk"></i> Änderungen speichern</button>
+                </div>
+            </div>
+            
+            <!-- 2. Card: Historische Jahres-Zusammenfassung (Jahresaggregation für alle Jahre auf einmal) -->
+            <div class="view-controls" style="margin-bottom: 16px;">
+                <h3 class="view-subtitle" style="font-family: var(--font-display); font-size: 1.8rem; color: var(--text-primary); margin: 0;">Historische Jahresübersicht</h3>
+            </div>
+            
+            <div class="details-card" style="flex-direction: column; padding: 24px; background-color: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+                <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5;">
+                    Vergleichende Übersicht über deine jährlichen Budgets und Ausgaben. Das Jahresdelta zeigt den Endwert zum 31. Dezember des jeweiligen Jahres.
+                </p>
+                
+                <div style="overflow-x: auto; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                    <table class="budget-table" style="width: 100%; border-collapse: collapse; text-align: left; min-width: 800px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--border-color); background-color: var(--bg-main);">
+                                <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">Jahr</th>
+                                ${types.map(t => `<th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">${t}</th>`).join('')}
+                                <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">Sonstige</th>
+                                <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">Gesamtausgaben</th>
+                                <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">Gesamtbudget</th>
+                                <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">Delta Jahr</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${yearsSummaryData.map(y => `
+                                <tr style="border-bottom: 1px solid var(--border-color); transition: var(--transition);" class="budget-row">
+                                    <td style="padding: 14px 16px; font-weight: 600; color: var(--text-primary);">${y.year}</td>
+                                    ${types.map(t => `<td style="padding: 14px 16px; text-align: right; color: var(--text-secondary);">${formatCurrency(y.expensesByType[t], currency)}</td>`).join('')}
+                                    <td style="padding: 14px 16px; text-align: right; color: var(--text-secondary);">${formatCurrency(y.expensesByType["Sonstige"], currency)}</td>
+                                    <td style="padding: 14px 16px; text-align: right; font-weight: 600; color: var(--text-primary);">${formatCurrency(y.totalExpenses, currency)}</td>
+                                    <td style="padding: 14px 16px; text-align: right; font-weight: 600; color: var(--text-primary);">${formatCurrency(y.totalBudget, currency)}</td>
+                                    <td style="padding: 14px 16px; text-align: right; font-weight: 700; color: ${y.delta < 0 ? 'var(--danger)' : 'var(--success)'}; background-color: ${y.delta < 0 ? 'rgba(239, 68, 68, 0.15)' : 'transparent'};">${formatCurrency(y.delta, currency)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         `;
@@ -248,12 +327,17 @@ export async function renderBudget(container) {
     
     // Bindet Events an UI-Elemente
     function bindUIEvents() {
-        // Jahr wechseln
-        const yearSelect = container.querySelector('#budget-year-select');
-        yearSelect.addEventListener('change', (e) => {
-            selectedYear = parseInt(e.target.value, 10);
-            drawView();
-        });
+        // Jahr wechseln über Reiter (Tabs)
+        const tabsContainer = container.querySelector('#budget-years-tabs');
+        if (tabsContainer) {
+            tabsContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('.view-toggle-btn');
+                if (btn) {
+                    selectedYear = parseInt(btn.dataset.year, 10);
+                    drawView();
+                }
+            });
+        }
         
         // Live-Berechnung bei Tastendruck/Eingabe
         const inputs = container.querySelectorAll('.budget-input');
@@ -294,13 +378,16 @@ export async function renderBudget(container) {
             
             db.saveSettings(currentSettings);
             
+            // Ansicht komplett neu zeichnen, damit sich auch die historische Jahrestabelle unten aktualisiert!
+            drawView();
+            
             // Feedback anzeigen
             const msg = container.querySelector('#budget-success-message');
             msg.style.display = 'flex';
             window.scrollTo({ top: 0, behavior: 'smooth' });
             
             setTimeout(() => {
-                msg.style.display = 'none';
+                if (msg) msg.style.display = 'none';
             }, 3000);
         });
     }
