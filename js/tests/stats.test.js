@@ -103,10 +103,6 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
 
     it('sollte die Statistiken-View korrekt rendern (Filter, KPIs, Canvas-Container)', () => {
         console.log('DEBUG CONTAINER INNERHTML:', container.innerHTML);
-        // Titel prüfen
-        const title = container.querySelector('.view-title');
-        expect(title.textContent).to.equal('Statistiken & Analysen');
-
         // Filter prüfen
         const filters = container.querySelectorAll('.stats-filter-trigger');
         expect(filters.length).to.equal(6); // Verlag, Serie, Format, Bestand, Sprache, Typ

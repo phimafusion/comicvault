@@ -77,30 +77,22 @@ export async function renderStats(container) {
     const currentYear = new Date().getFullYear();
 
     const html = `
-        <div class="view-controls" style="flex-wrap: wrap; gap: 15px; margin-bottom: 25px; padding-top: 32px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 15px;">
-                <h2 class="view-title" style="margin-bottom: 0;">Statistiken & Analysen</h2>
-                <button id="btn-reset-stats-filters" class="btn btn-secondary" style="display: flex; align-items: center; gap: 8px; border-radius: 8px;" title="Alle Filter zurücksetzen">
-                    <i class="fa-solid fa-rotate-left"></i>
-                    <span>Filter zurücksetzen</span>
-                </button>
-            </div>
-        </div>
-        
-        <!-- Filter Panel -->
-        <div class="details-card" style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; padding: 20px;">
-            <h3 style="font-family: var(--font-display); font-size: 1.1rem; color: var(--text-primary); margin: 0; display: flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-filter" style="color: var(--secondary-color);"></i>
-                <span>Filter-Optionen</span>
-            </h3>
-            <div class="direct-filters" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-                ${renderStatsMultiSelect('verlag', 'Verlag', verlage)}
-                ${renderStatsMultiSelect('serie', 'Serie', serien)}
-                ${renderStatsMultiSelect('format', 'Format', formate)}
-                ${renderStatsMultiSelect('bestand', 'Bestand', bestände)}
-                ${renderStatsMultiSelect('sprache', 'Sprache', sprachen)}
-                ${renderStatsMultiSelect('typ', 'Typ', typen)}
-                ${renderTimeframeSelect(sortedYears)}
+        <div class="view-controls view-controls-sticky" style="flex-wrap: wrap; gap: 15px; position: sticky; top: 0; z-index: 90; background-color: var(--bg-main); min-height: 76px; box-sizing: border-box; display: flex; align-items: center; border-bottom: 1px solid var(--border-color); margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap; flex: 1;">
+                <!-- Direkt sichtbare Multi-Filter -->
+                <div class="direct-filters" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                    ${renderStatsMultiSelect('verlag', 'Verlag', verlage)}
+                    ${renderStatsMultiSelect('serie', 'Serie', serien)}
+                    ${renderStatsMultiSelect('format', 'Format', formate)}
+                    ${renderStatsMultiSelect('bestand', 'Bestand', bestände)}
+                    ${renderStatsMultiSelect('sprache', 'Sprache', sprachen)}
+                    ${renderStatsMultiSelect('typ', 'Typ', typen)}
+                    ${renderTimeframeSelect(sortedYears)}
+                    
+                    <button id="btn-reset-stats-filters" class="btn btn-secondary" style="height: 36px; width: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; border-color: transparent;" title="Alle Filter zurücksetzen">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                </div>
             </div>
         </div>
         

@@ -213,6 +213,22 @@ input[type="number"] {
     margin-bottom: 24px;
 }
 
+/* Sticky view controls for collection and stats views */
+.view-controls-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    background-color: var(--bg-main);
+    min-height: 76px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
 .view-title {
     font-family: var(--font-display);
     font-size: 2.5rem;
