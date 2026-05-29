@@ -72,4 +72,26 @@ describe('Responsive Layout & Mobile Menu Tests', () => {
         expect(sidebar.classList.contains('open')).to.be.false;
         expect(overlay.classList.contains('open')).to.be.false;
     });
+
+    it('sollte den Mobile-Layout-Toggle-Button cachen', () => {
+        expect(appInstance.btnMobileToggle).to.not.be.null;
+    });
+
+    it('sollte bei Klick auf den Mobile-Layout-Toggle-Button die Klasse "mobile-view" auf body toggeln und im localStorage speichern', () => {
+        localStorage.removeItem('comicvault_force_mobile');
+        appInstance.checkMobileView();
+        const initialMobileView = document.body.classList.contains('mobile-view');
+
+        const toggleBtn = container.querySelector('#btn-mobile-toggle');
+        
+        // Klick auslösen
+        toggleBtn.click();
+        expect(document.body.classList.contains('mobile-view')).to.equal(!initialMobileView);
+        expect(localStorage.getItem('comicvault_force_mobile')).to.equal('true');
+
+        // Erneut klicken
+        toggleBtn.click();
+        expect(document.body.classList.contains('mobile-view')).to.equal(initialMobileView);
+        expect(localStorage.getItem('comicvault_force_mobile')).to.be.null;
+    });
 });
