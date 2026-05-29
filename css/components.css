@@ -391,7 +391,7 @@ input[type="number"] {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    overflow-x: auto;
+    overflow: visible;
     width: 100%;
 }
 
