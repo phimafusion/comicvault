@@ -40,11 +40,36 @@ if (!visibleFields.columnWidths) visibleFields.columnWidths = {};
 export async function renderCollection(container) {
     needsAutoFit = true;
     const comics = await db.getAllComics();
-    const verlage = [...new Set(comics.map(c => c.verlag).filter(Boolean))].sort();
-    const formate = [...new Set(comics.map(c => c.format).filter(Boolean))].sort();
-    const bestände = [...new Set(comics.map(c => c.bestand).filter(Boolean))].sort();
-    const quellen = [...new Set(comics.map(c => c.bezugsquelle).filter(Boolean))].sort();
-    const serien = [...new Set(comics.map(c => c.serie).filter(Boolean))].sort();
+
+    // Memoize dates once for the list of comics
+    comics.forEach(c => {
+        if (c._kaufdatumDate === undefined) {
+            c._kaufdatumDate = c.kaufdatum ? parseToDate(c.kaufdatum) : null;
+        }
+        if (c._gelesenAmDate === undefined) {
+            c._gelesenAmDate = c.gelesen_am ? parseToDate(c.gelesen_am) : null;
+        }
+    });
+
+    const verlageSet = new Set();
+    const formateSet = new Set();
+    const beständeSet = new Set();
+    const quellenSet = new Set();
+    const serienSet = new Set();
+    
+    comics.forEach(c => {
+        if (c.verlag) verlageSet.add(c.verlag);
+        if (c.format) formateSet.add(c.format);
+        if (c.bestand) beständeSet.add(c.bestand);
+        if (c.bezugsquelle) quellenSet.add(c.bezugsquelle);
+        if (c.serie) serienSet.add(c.serie);
+    });
+    
+    const verlage = [...verlageSet].sort();
+    const formate = [...formateSet].sort();
+    const bestände = [...beständeSet].sort();
+    const quellen = [...quellenSet].sort();
+    const serien = [...serienSet].sort();
     const gelesenStatus = ['Ja', 'Nein'];
 
     const html = `
@@ -355,6 +380,35 @@ const handleCollectionClick = (e) => {
         selectAllComics();
         return;
     }
+
+    // 6. Klick auf Löschen-Button eines Comics
+    const deleteBtn = e.target.closest('.btn-delete-item');
+    if (deleteBtn) {
+        e.stopPropagation();
+        const id = deleteBtn.dataset.id;
+        if (confirm('Comic wirklich löschen?')) {
+            db.deleteComic(id).then(() => {
+                needsAutoFit = true;
+                updateGrid();
+            });
+        }
+        return;
+    }
+
+    // 7. Klick auf ein Comic-Item (Kachel oder Tabellenzeile)
+    const item = e.target.closest('.comic-item');
+    if (item) {
+        const id = item.dataset.id;
+        if (isSelectModeActive) {
+            handleComicClick(id, e.target);
+            return;
+        }
+        db.getAllComics().then(comics => {
+            const comic = comics.find(c => c.id === id);
+            if (comic) openModal(comic);
+        });
+        return;
+    }
 };
 
 // Checkbox Filter Change Handler
@@ -442,6 +496,17 @@ export async function updateGrid() {
     if (!grid) return;
 
     let comics = await db.getAllComics();
+    
+    // Memoize dates once for the list of comics
+    comics.forEach(c => {
+        if (c._kaufdatumDate === undefined) {
+            c._kaufdatumDate = c.kaufdatum ? parseToDate(c.kaufdatum) : null;
+        }
+        if (c._gelesenAmDate === undefined) {
+            c._gelesenAmDate = c.gelesen_am ? parseToDate(c.gelesen_am) : null;
+        }
+    });
+
     const totalCount = comics.length;
     
     // 1. Suche
@@ -481,7 +546,7 @@ export async function updateGrid() {
     if (activeFilters.kaufdatumStart) {
         const start = new Date(activeFilters.kaufdatumStart);
         comics = comics.filter(c => {
-            const d = parseToDate(c.kaufdatum);
+            const d = c._kaufdatumDate;
             return d && d >= start;
         });
     }
@@ -489,14 +554,14 @@ export async function updateGrid() {
         const end = new Date(activeFilters.kaufdatumEnd);
         end.setHours(23, 59, 59, 999);
         comics = comics.filter(c => {
-            const d = parseToDate(c.kaufdatum);
+            const d = c._kaufdatumDate;
             return d && d <= end;
         });
     }
     if (activeFilters.gelesenDatumStart) {
         const start = new Date(activeFilters.gelesenDatumStart);
         comics = comics.filter(c => {
-            const d = parseToDate(c.gelesen_am);
+            const d = c._gelesenAmDate;
             return d && d >= start;
         });
     }
@@ -504,7 +569,7 @@ export async function updateGrid() {
         const end = new Date(activeFilters.gelesenDatumEnd);
         end.setHours(23, 59, 59, 999);
         comics = comics.filter(c => {
-            const d = parseToDate(c.gelesen_am);
+            const d = c._gelesenAmDate;
             return d && d <= end;
         });
     }
@@ -615,31 +680,7 @@ export async function updateGrid() {
         grid.innerHTML = comics.map(comic => renderDetailsItem(comic, visibleFields, isSelectModeActive, selectedComicIds)).join('');
     }
 
-    // Edit Events
-    grid.querySelectorAll('.comic-item').forEach(item => {
-        item.addEventListener('click', async (e) => {
-            if (e.target.closest('.btn-delete-item')) return;
-            const id = item.dataset.id;
-            if (isSelectModeActive) {
-                handleComicClick(id, e.target);
-                return;
-            }
-            const comic = (await db.getAllComics()).find(c => c.id === id);
-            if (comic) openModal(comic);
-        });
-    });
-
-    // Delete Events
-    grid.querySelectorAll('.btn-delete-item').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation();
-            if (confirm('Comic wirklich löschen?')) {
-                await db.deleteComic(btn.dataset.id);
-                needsAutoFit = true;
-                updateGrid();
-            }
-        });
-    });
+    // Events are now handled via delegation in handleCollectionClick
 
     // Update Header Checkbox State
     if (isSelectModeActive && currentViewType === 'list') {

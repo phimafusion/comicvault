@@ -40,13 +40,29 @@ export async function renderStats(container) {
     };
     const comics = await db.getAllComics();
     
-    // Filter-Optionen sammeln
-    const verlage = [...new Set(comics.map(c => c.verlag).filter(Boolean))].sort();
-    const formate = [...new Set(comics.map(c => c.format).filter(Boolean))].sort();
-    const bestände = [...new Set(comics.map(c => c.bestand).filter(Boolean))].sort();
-    const sprachen = [...new Set(comics.map(c => c.sprache).filter(Boolean))].sort();
-    const typen = [...new Set(comics.map(c => c.typ).filter(Boolean))].sort();
-    const serien = [...new Set(comics.map(c => c.serie).filter(Boolean))].sort();
+    // Filter-Optionen sammeln in einem Durchlauf
+    const verlageSet = new Set();
+    const formateSet = new Set();
+    const beständeSet = new Set();
+    const sprachenSet = new Set();
+    const typenSet = new Set();
+    const serienSet = new Set();
+    
+    comics.forEach(c => {
+        if (c.verlag) verlageSet.add(c.verlag);
+        if (c.format) formateSet.add(c.format);
+        if (c.bestand) beständeSet.add(c.bestand);
+        if (c.sprache) sprachenSet.add(c.sprache);
+        if (c.typ) typenSet.add(c.typ);
+        if (c.serie) serienSet.add(c.serie);
+    });
+    
+    const verlage = [...verlageSet].sort();
+    const formate = [...formateSet].sort();
+    const bestände = [...beständeSet].sort();
+    const sprachen = [...sprachenSet].sort();
+    const typen = [...typenSet].sort();
+    const serien = [...serienSet].sort();
 
     // Jahre für Zeitraum-Auswahl finden
     const yearsSet = new Set();

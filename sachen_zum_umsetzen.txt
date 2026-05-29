@@ -28,17 +28,17 @@ Diese Liste dient als Notizzettel für zukünftige Aufgaben und Ideen.
     - Service Worker cached alle App-Dateien (Cache-First) → schnelles Laden, Offline-fähig
     - Firestore-Daten bleiben weiterhin live synchronisiert (Firebase läuft über das Netz)
 
-[12] Performance & Refactoring (kein UI-Change)
-    [12a] collection.js – Event-Delegation statt direkter Listener pro Comic-Item
+[x] [12] Performance & Refactoring (kein UI-Change)
+    [x] [12a] collection.js – Event-Delegation statt direkter Listener pro Comic-Item
           Problem: updateGrid() hängt bei jedem Render 2 Listener × N Comics ans DOM (z.B. 500 Comics = 1.000 Listener, werden nicht aufgeräumt)
           Fix: 1 delegierter Click-Handler am grid-Container statt querySelectorAll().forEach(addEventListener)
-    [12b] collection.js – Filter-Optionen in einem statt 5 Durchläufen berechnen
+    [x] [12b] collection.js – Filter-Optionen in einem statt 5 Durchläufen berechnen
           Problem: renderCollection() iteriert die Comics-Liste 5× separat (je eine .map() für Verlag, Format, Bestand, Quelle, Serie)
           Fix: ein einziges forEach mit 5 Sets
-    [12c] collection.js – Datumsparsen memoizieren
+    [x] [12c] collection.js – Datumsparsen memoizieren
           Problem: parseToDate() wird bei aktiven Datumsfiltern bei JEDEM updateGrid()-Aufruf für jedes Comic neu aufgerufen (mit Regex)
           Fix: _kaufdatumDate und _gelesenAmDate einmalig berechnen und am Comic-Objekt cachen
-    [12d] stats.js – 6 .map()-Iterationen auf 1 forEach reduzieren
+    [x] [12d] stats.js – 6 .map()-Iterationen auf 1 forEach reduzieren
           Problem: renderStats() berechnet Filter-Optionen mit 6 separaten .map()-Aufrufen über die gesamte Comics-Liste
           Fix: ein einziges forEach mit 6 Sets (gleiche Methode wie 12b)
 
