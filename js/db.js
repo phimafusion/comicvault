@@ -6,6 +6,17 @@ const dbFirestore = firebase.firestore();
 const storage = firebase.storage();
 const SETTINGS_KEY = 'comicvault_settings';
 
+// Offline Persistence aktivieren: Daten werden in IndexedDB gecacht.
+// Ab dem 2. App-Start erscheint die Sammlung sofort, Firebase sync läuft im Hintergrund.
+dbFirestore.enablePersistence({ synchronizeTabs: true }).catch(err => {
+    if (err.code === 'failed-precondition') {
+        console.warn('Firestore Offline-Cache: Mehrere Tabs offen, Cache deaktiviert.');
+    } else if (err.code === 'unimplemented') {
+        console.warn('Firestore Offline-Cache: Browser unterstützt IndexedDB nicht.');
+    }
+});
+
+
 class Database {
     constructor() {
         this.comicsCache = null;
