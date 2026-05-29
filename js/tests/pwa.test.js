@@ -85,8 +85,8 @@ describe('PWA (Progressive Web App) Integration Tests', () => {
         const originalMocha = window.mocha;
         
         try {
-            // Delete window.mocha temporär, um die SW-Registrierung zu triggern
-            delete window.mocha;
+            // Set window.mocha to undefined temporarily to trigger SW registration
+            window.mocha = undefined;
             
             // Registrierung aufrufen
             appInstance.registerServiceWorker();
