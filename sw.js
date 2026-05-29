@@ -60,6 +60,11 @@ self.addEventListener('fetch', (e) => {
         return;
     }
     
+    // Exclude test suite files from cache to prevent stale test runner code during development
+    if (e.request.url.includes('tests.html') || e.request.url.includes('/tests/') || e.request.url.includes('.test.js')) {
+        return;
+    }
+    
     e.respondWith(
         caches.match(e.request).then((cachedResponse) => {
             if (cachedResponse) {
