@@ -111,7 +111,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         const items = container.querySelectorAll('.list-item');
         expect(items.length).to.equal(2);
         
-        const titles = Array.from(items).map(item => item.querySelector('.list-cover').nextElementSibling.textContent);
+        const titles = Array.from(items).map(item => item.querySelector('.comic-title').textContent.trim());
         expect(titles).to.include('Spider-Man #1');
         expect(titles).to.include('Saga #1');
     });
@@ -130,7 +130,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         const items = container.querySelectorAll('.list-item');
         expect(items.length).to.equal(2);
         
-        const titles = Array.from(items).map(item => item.querySelector('.list-cover').nextElementSibling.textContent);
+        const titles = Array.from(items).map(item => item.querySelector('.comic-title').textContent.trim());
         expect(titles).to.include('Batman #1');
         expect(titles).to.include('Spawn #1');
     });
@@ -152,7 +152,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         const items = container.querySelectorAll('.list-item');
         expect(items.length).to.equal(2);
         
-        const titles = Array.from(items).map(item => item.querySelector('.list-cover').nextElementSibling.textContent);
+        const titles = Array.from(items).map(item => item.querySelector('.comic-title').textContent.trim());
         expect(titles).to.include('Batman #1');
         expect(titles).to.include('Spider-Man #1');
     });
@@ -174,7 +174,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         const items = container.querySelectorAll('.list-item');
         expect(items.length).to.equal(2);
         
-        const titles = Array.from(items).map(item => item.querySelector('.list-cover').nextElementSibling.textContent);
+        const titles = Array.from(items).map(item => item.querySelector('.comic-title').textContent.trim());
         expect(titles).to.include('Batman #1');
         expect(titles).to.include('Spider-Man #1');
     });
@@ -191,7 +191,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         
         let items = container.querySelectorAll('.list-item');
         expect(items.length).to.equal(1);
-        expect(items[0].querySelector('.list-cover').nextElementSibling.textContent).to.equal('Spawn #1');
+        expect(items[0].querySelector('.comic-title').textContent.trim()).to.equal('Spawn #1');
 
         // Jetzt leeren
         const dropdownKauf2 = container.querySelector('#dropdown-kaufdatum');
