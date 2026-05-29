@@ -244,7 +244,17 @@ export async function renderWishlist(container) {
         }
     });
     
+    window.addEventListener('wishlist-updated-background', handleBackgroundWishlistUpdate);
+
     updateWishlistTable();
+}
+
+const handleBackgroundWishlistUpdate = () => {
+    updateWishlistTable();
+};
+
+export function cleanupWishlist() {
+    window.removeEventListener('wishlist-updated-background', handleBackgroundWishlistUpdate);
 }
 
 async function updateWishlistTable() {

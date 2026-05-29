@@ -3,7 +3,7 @@ import { onAuthStateChanged, loginWithGoogle, logout } from './auth.js';
 import { renderCollection, attachCollectionEvents, cleanupCollection } from './views/collection.js';
 import { renderStats, cleanupStats } from './views/stats.js';
 import { renderBudget } from './views/budget.js';
-import { renderWishlist } from './views/wishlist.js';
+import { renderWishlist, cleanupWishlist } from './views/wishlist.js';
 import { renderImport } from './views/import.js';
 import { renderSettings } from './views/settings.js';
 import { renderChangelog } from './views/changelog.js';
@@ -131,6 +131,8 @@ export class App {
             cleanupCollection();
         } else if (this.currentView === 'stats') {
             cleanupStats();
+        } else if (this.currentView === 'wishlist') {
+            cleanupWishlist();
         }
 
         this.currentView = view;

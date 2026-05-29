@@ -391,7 +391,10 @@ const handleGlobalSearch = (e) => {
     updateGrid();
 };
 
-
+// Background sync update handler
+const handleBackgroundComicsUpdate = () => {
+    updateGrid();
+};
 
 export function attachCollectionEvents() {
     if (eventsAttached) return;
@@ -409,6 +412,8 @@ export function attachCollectionEvents() {
     
     document.addEventListener('mousedown', handleMouseDown);
     document.addEventListener('dblclick', handleDblClick);
+    
+    window.addEventListener('comics-updated-background', handleBackgroundComicsUpdate);
 }
 
 export function cleanupCollection() {
@@ -424,6 +429,8 @@ export function cleanupCollection() {
     
     document.removeEventListener('mousedown', handleMouseDown);
     document.removeEventListener('dblclick', handleDblClick);
+    
+    window.removeEventListener('comics-updated-background', handleBackgroundComicsUpdate);
     
     resetSelectMode();
     

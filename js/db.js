@@ -47,9 +47,36 @@ class Database {
         }
         const col = this.getCollection();
         if (!col) return [];
-        const snapshot = await col.orderBy('serie', 'asc').get();
-        this.comicsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        return [...this.comicsCache];
+
+        try {
+            // Zuerst versuchen, die Daten extrem schnell aus dem lokalen IndexedDB-Cache zu laden
+            const snapshot = await col.orderBy('serie', 'asc').get({ source: 'cache' });
+            this.comicsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Im Hintergrund die neuesten Daten vom Server laden, um den Cache zu aktualisieren
+            col.orderBy('serie', 'asc').get({ source: 'server' }).then(serverSnapshot => {
+                const serverComics = serverSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // Prüfen, ob sich im Vergleich zum Cache etwas geändert hat
+                const hasChanges = this.comicsCache.length !== serverComics.length || 
+                    serverComics.some((c, i) => c.id !== this.comicsCache[i]?.id || c.updated_at !== this.comicsCache[i]?.updated_at);
+                
+                if (hasChanges) {
+                    this.comicsCache = serverComics;
+                    // Event abfeuern, damit Ansichten sich neu rendern können
+                    window.dispatchEvent(new CustomEvent('comics-updated-background'));
+                }
+            }).catch(err => {
+                console.warn('Firestore Offline-Cache Hintergrund-Sync fehlgeschlagen:', err);
+            });
+
+            return [...this.comicsCache];
+        } catch (err) {
+            // Cache leer oder Fehler (z.B. erster Start) -> ganz normal aus dem Netzwerk laden
+            const snapshot = await col.orderBy('serie', 'asc').get();
+            this.comicsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            return [...this.comicsCache];
+        }
     }
 
     async saveComic(comic, options = {}) {
@@ -204,9 +231,34 @@ class Database {
         }
         const col = this.getWishlistCollection();
         if (!col) return [];
-        const snapshot = await col.orderBy('titel', 'asc').get();
-        this.wishlistCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        return [...this.wishlistCache];
+
+        try {
+            // Zuerst versuchen, die Wunschliste schnell aus dem Cache zu holen
+            const snapshot = await col.orderBy('titel', 'asc').get({ source: 'cache' });
+            this.wishlistCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // Im Hintergrund synchronisieren
+            col.orderBy('titel', 'asc').get({ source: 'server' }).then(serverSnapshot => {
+                const serverWish = serverSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                const hasChanges = this.wishlistCache.length !== serverWish.length ||
+                    serverWish.some((w, i) => w.id !== this.wishlistCache[i]?.id || w.updated_at !== this.wishlistCache[i]?.updated_at);
+                
+                if (hasChanges) {
+                    this.wishlistCache = serverWish;
+                    window.dispatchEvent(new CustomEvent('wishlist-updated-background'));
+                }
+            }).catch(err => {
+                console.warn('Firestore Wunschliste-Cache Hintergrund-Sync fehlgeschlagen:', err);
+            });
+
+            return [...this.wishlistCache];
+        } catch (err) {
+            // Fallback auf Netzwerk
+            const snapshot = await col.orderBy('titel', 'asc').get();
+            this.wishlistCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            return [...this.wishlistCache];
+        }
     }
 
     async saveWish(wish) {
