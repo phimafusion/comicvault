@@ -579,10 +579,10 @@ async function updateStats() {
                         <tbody>
                             ${typeStats.map(stat => `
                                 <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.2s;" class="stats-type-row" data-type="${stat.type}">
-                                    <td style="padding: 16px; font-weight: 700; color: var(--text-primary); font-family: var(--font-display); font-size: 0.95rem;">${stat.type}</td>
-                                    <td style="padding: 16px; text-align: center; font-weight: 600; color: var(--primary-color);">${stat.total}</td>
-                                    <td style="padding: 16px; text-align: right; font-weight: 600; color: var(--success);">${stat.value.toFixed(2)} ${currencySymbol}</td>
-                                    <td style="padding: 16px; text-align: center;">
+                                    <td data-label="Typ" style="padding: 16px; font-weight: 700; color: var(--text-primary); font-family: var(--font-display); font-size: 0.95rem;">${stat.type}</td>
+                                    <td data-label="Anzahl" style="padding: 16px; text-align: center; font-weight: 600; color: var(--primary-color);">${stat.total}</td>
+                                    <td data-label="Sammlungswert" style="padding: 16px; text-align: right; font-weight: 600; color: var(--success);">${stat.value.toFixed(2)} ${currencySymbol}</td>
+                                    <td data-label="Gelesen Quote" style="padding: 16px; text-align: center;">
                                         <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
                                             <span style="font-weight: 600; color: var(--secondary-color); min-width: 36px; text-align: right;">${stat.readPercent}%</span>
                                             <div style="width: 60px; height: 6px; background-color: var(--bg-main); border-radius: var(--radius-full); overflow: hidden; border: 1px solid var(--border-color); display: inline-block;">
@@ -590,8 +590,8 @@ async function updateStats() {
                                             </div>
                                         </div>
                                     </td>
-                                    <td style="padding: 16px; text-align: center; font-weight: 600; color: var(--warning);">${stat.tbrCount}</td>
-                                    <td style="padding: 16px; text-align: right; font-weight: 600; color: var(--accent-color);">${stat.tbrValue.toFixed(2)} ${currencySymbol}</td>
+                                    <td data-label="Lesestapel (TBR)" style="padding: 16px; text-align: center; font-weight: 600; color: var(--warning);">${stat.tbrCount}</td>
+                                    <td data-label="Ungelesener Wert" style="padding: 16px; text-align: right; font-weight: 600; color: var(--accent-color);">${stat.tbrValue.toFixed(2)} ${currencySymbol}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -921,10 +921,10 @@ async function updateStats() {
                         const avgRate = p.ratedCount > 0 ? (p.ratingSum / p.ratedCount) : 0;
                         return `
                             <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: background 0.2s;">
-                                <td style="padding: 10px 8px; font-weight: 600; color: var(--text-primary);">${p.name}</td>
-                                <td style="padding: 10px 8px; text-align: center; font-weight: 600;">${p.total}</td>
-                                <td style="padding: 10px 8px; text-align: center; color: var(--text-secondary);">${p.read}</td>
-                                <td style="padding: 10px 8px; text-align: right;">${avgRate > 0 ? renderStars(avgRate) : '-'}</td>
+                                <td data-label="Verlag" style="padding: 10px 8px; font-weight: 600; color: var(--text-primary);">${p.name}</td>
+                                <td data-label="Comics" style="padding: 10px 8px; text-align: center; font-weight: 600;">${p.total}</td>
+                                <td data-label="Gelesen" style="padding: 10px 8px; text-align: center; color: var(--text-secondary);">${p.read}</td>
+                                <td data-label="Ø Bewertung" style="padding: 10px 8px; text-align: right;">${avgRate > 0 ? renderStars(avgRate) : '-'}</td>
                             </tr>
                         `;
                     }).join('')}
@@ -952,10 +952,10 @@ async function updateStats() {
                         const avgRate = s.ratedCount > 0 ? (s.ratingSum / s.ratedCount) : 0;
                         return `
                             <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: background 0.2s;">
-                                <td style="padding: 10px 8px; font-weight: 600; color: var(--text-primary);">${s.name}</td>
-                                <td style="padding: 10px 8px; text-align: center; font-weight: 600;">${s.total}</td>
-                                <td style="padding: 10px 8px; text-align: center; color: var(--text-secondary);">${s.read}</td>
-                                <td style="padding: 10px 8px; text-align: right;">${avgRate > 0 ? renderStars(avgRate) : '-'}</td>
+                                <td data-label="Serie" style="padding: 10px 8px; font-weight: 600; color: var(--text-primary);">${s.name}</td>
+                                <td data-label="Comics" style="padding: 10px 8px; text-align: center; font-weight: 600;">${s.total}</td>
+                                <td data-label="Gelesen" style="padding: 10px 8px; text-align: center; color: var(--text-secondary);">${s.read}</td>
+                                <td data-label="Ø Bewertung" style="padding: 10px 8px; text-align: right;">${avgRate > 0 ? renderStars(avgRate) : '-'}</td>
                             </tr>
                         `;
                     }).join('')}

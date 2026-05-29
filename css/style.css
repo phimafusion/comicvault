@@ -510,3 +510,55 @@ body {
     }
 }
 
+/* Force Mobile View Layout Overrides */
+body.mobile-view .btn-menu-toggle {
+    display: inline-flex !important;
+}
+
+body.mobile-view .sidebar {
+    position: fixed !important;
+    left: -260px !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 260px !important;
+    z-index: 2000 !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+
+body.mobile-view .sidebar.open {
+    left: 0 !important;
+}
+
+body.mobile-view .top-header {
+    height: auto !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 12px 16px !important;
+    gap: 12px !important;
+}
+
+body.mobile-view .btn-menu-toggle {
+    order: 1 !important;
+}
+
+body.mobile-view .header-actions {
+    order: 2 !important;
+    gap: 8px !important;
+}
+
+body.mobile-view .header-search {
+    order: 3 !important;
+    width: 100% !important;
+    max-width: none !important;
+}
+
+body.mobile-view .view-container {
+    padding: 16px 16px 24px 16px !important;
+}
+
+body.mobile-view .sidebar-overlay {
+    z-index: 1500 !important;
+}
+
+

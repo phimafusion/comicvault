@@ -857,6 +857,75 @@ body.bulk-select-active .list-delete-btn {
     .bulk-select-bar .btn {
         width: 100%;
     }
+
+    /* Dashboard & Grid Stacking */
+    .stats-top-grid,
+    #distribution-charts-grid,
+    .stats-tables-grid,
+    .details-grid,
+    .wishlist-stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Table to Card Conversions */
+    .details-card table,
+    .details-card thead,
+    .details-card tbody,
+    .details-card th,
+    .details-card td,
+    .details-card tr {
+        display: block;
+    }
+    .details-card thead {
+        display: none;
+    }
+    .details-card tr {
+        background-color: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 16px;
+        margin-bottom: 16px;
+        box-shadow: var(--shadow-sm);
+    }
+    .details-card td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border: none;
+        border-bottom: 1px dashed var(--border-color);
+        text-align: right !important;
+        width: 100% !important;
+        box-sizing: border-box;
+    }
+    .details-card td:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+        justify-content: flex-end;
+    }
+    .details-card td:first-child {
+        padding-top: 0;
+    }
+    .details-card td[data-label]::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-right: 16px;
+        text-align: left;
+        flex-shrink: 0;
+    }
+    .details-card td:first-child:not([data-label]) {
+        justify-content: flex-start;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 10px;
+        margin-bottom: 10px;
+    }
+    .details-card td:first-child:not([data-label]) input[type="checkbox"] {
+        margin: 0;
+    }
 }
 
 @media (max-width: 600px) {
@@ -893,3 +962,186 @@ body.bulk-select-active .list-delete-btn {
         text-align: center;
     }
 }
+
+/* Force Mobile View Component Overrides */
+body.mobile-view .details-card {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 16px !important;
+    padding: 16px !important;
+}
+
+body.mobile-view .details-cover {
+    width: 150px !important;
+    height: 225px !important;
+}
+
+body.mobile-view .details-info {
+    width: 100% !important;
+    align-items: center !important;
+}
+
+body.mobile-view .list-header {
+    display: none !important;
+}
+
+body.mobile-view .list-item {
+    grid-template-columns: 50px 1fr auto !important;
+    gap: 8px 12px !important;
+    padding: 10px 12px !important;
+    min-width: auto !important;
+    width: 100% !important;
+}
+
+body.mobile-view .list-item > *:nth-child(3),
+body.mobile-view .list-item > *:nth-child(4) {
+    display: none !important;
+}
+
+body.mobile-view .list-item > *:nth-child(5) {
+    grid-column: 3 !important;
+    justify-self: end !important;
+}
+
+body.mobile-view .list-cover {
+    width: 36px !important;
+    height: 54px !important;
+}
+
+body.mobile-view .bulk-select-bar {
+    width: 90% !important;
+    max-width: 480px !important;
+    border-radius: var(--radius-lg) !important;
+    bottom: 16px !important;
+    padding: 12px 16px !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    text-align: center !important;
+    transform: translateX(-50%) translateY(150px) !important;
+}
+
+body.mobile-view .bulk-select-bar.show {
+    transform: translateX(-50%) translateY(0) !important;
+}
+
+body.mobile-view .bulk-select-bar .btn {
+    width: 100% !important;
+}
+
+/* Dashboard & Grid Stacking for force-mobile mode */
+body.mobile-view .stats-top-grid,
+body.mobile-view #distribution-charts-grid,
+body.mobile-view .stats-tables-grid,
+body.mobile-view .details-grid,
+body.mobile-view .wishlist-stats-grid {
+    grid-template-columns: 1fr !important;
+}
+
+/* Table to Card Stack for force-mobile mode */
+body.mobile-view .details-card table,
+body.mobile-view .details-card thead,
+body.mobile-view .details-card tbody,
+body.mobile-view .details-card th,
+body.mobile-view .details-card td,
+body.mobile-view .details-card tr {
+    display: block !important;
+}
+
+body.mobile-view .details-card thead {
+    display: none !important;
+}
+
+body.mobile-view .details-card tr {
+    background-color: var(--bg-surface) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-lg) !important;
+    padding: 16px !important;
+    margin-bottom: 16px !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+body.mobile-view .details-card td {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 10px 0 !important;
+    border: none !important;
+    border-bottom: 1px dashed var(--border-color) !important;
+    text-align: right !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+body.mobile-view .details-card td:last-child {
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+    justify-content: flex-end !important;
+}
+
+body.mobile-view .details-card td:first-child {
+    padding-top: 0 !important;
+}
+
+body.mobile-view .details-card td[data-label]::before {
+    content: attr(data-label) !important;
+    font-weight: 700 !important;
+    color: var(--text-secondary) !important;
+    font-size: 0.75rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    margin-right: 16px !important;
+    text-align: left !important;
+    flex-shrink: 0 !important;
+}
+
+body.mobile-view .details-card td:first-child:not([data-label]) {
+    justify-content: flex-start !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding-bottom: 10px !important;
+    margin-bottom: 10px !important;
+}
+
+body.mobile-view .details-card td:first-child:not([data-label]) input[type="checkbox"] {
+    margin: 0 !important;
+}
+
+/* Form Grid & Dialog Overrides in force-mobile mode */
+body.mobile-view .form-grid {
+    grid-template-columns: 1fr !important;
+}
+
+body.mobile-view .modal-content {
+    width: 95% !important;
+    margin: 10px !important;
+}
+
+body.mobile-view .modal-header h2 {
+    font-size: 1.4rem !important;
+}
+
+body.mobile-view .modal-footer {
+    flex-direction: column-reverse !important;
+    gap: 8px !important;
+}
+
+body.mobile-view .modal-footer .btn {
+    width: 100% !important;
+}
+
+/* View controls stack in force-mobile mode */
+body.mobile-view .view-controls {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+}
+
+body.mobile-view .view-toggles {
+    width: 100% !important;
+}
+
+body.mobile-view .view-toggle-btn {
+    flex: 1 !important;
+    text-align: center !important;
+}
+

@@ -19,6 +19,7 @@ export class App {
         this.cacheDOM();
         this.bindEvents();
         this.applyTheme();
+        this.initMobileView();
         
         // Firebase Auth Listener
         onAuthStateChanged((user) => {
@@ -40,6 +41,7 @@ export class App {
         this.viewContainer = document.getElementById('view-container');
         this.themeToggle = document.getElementById('theme-toggle');
         this.themeSelect = document.getElementById('theme-select');
+        this.btnMobileToggle = document.getElementById('btn-mobile-toggle');
         this.btnAdd = document.getElementById('btn-add-new');
         this.btnLogout = document.getElementById('btn-logout');
         this.searchField = document.getElementById('global-search');
@@ -92,6 +94,10 @@ export class App {
         
         if (this.themeSelect) {
             this.themeSelect.addEventListener('change', (e) => this.setColorScheme(e.target.value));
+        }
+
+        if (this.btnMobileToggle) {
+            this.btnMobileToggle.addEventListener('click', () => this.toggleMobileView());
         }
 
         this.btnAdd.addEventListener('click', () => {
@@ -205,6 +211,49 @@ export class App {
         settings.colorScheme = scheme;
         db.saveSettings(settings);
         this.applyTheme();
+    }
+
+    initMobileView() {
+        this.checkMobileView();
+        
+        // Listen to window resizing to update mobile view class dynamically if not forced
+        window.addEventListener('resize', () => {
+            const isForced = localStorage.getItem('comicvault_force_mobile') === 'true';
+            if (!isForced) {
+                this.checkMobileView();
+            }
+        });
+    }
+
+    checkMobileView() {
+        const isForced = localStorage.getItem('comicvault_force_mobile') === 'true';
+        const isMobileScreen = window.matchMedia('(max-width: 768px)').matches;
+        
+        const isMobileView = isForced || isMobileScreen;
+        document.body.classList.toggle('mobile-view', isMobileView);
+        
+        if (this.btnMobileToggle) {
+            this.btnMobileToggle.classList.toggle('active', isForced);
+            const icon = this.btnMobileToggle.querySelector('i');
+            if (icon) {
+                icon.className = isForced 
+                    ? 'fa-solid fa-desktop' 
+                    : 'fa-solid fa-mobile-screen-button';
+            }
+            this.btnMobileToggle.title = isForced 
+                ? 'Standardansicht erzwingen' 
+                : 'Mobilansicht erzwingen';
+        }
+    }
+
+    toggleMobileView() {
+        const isCurrentlyForced = localStorage.getItem('comicvault_force_mobile') === 'true';
+        if (isCurrentlyForced) {
+            localStorage.removeItem('comicvault_force_mobile');
+        } else {
+            localStorage.setItem('comicvault_force_mobile', 'true');
+        }
+        this.checkMobileView();
     }
 }
 
