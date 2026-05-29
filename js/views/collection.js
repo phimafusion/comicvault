@@ -3,6 +3,7 @@ import { openModal } from './form.js';
 import { FIELD_CONFIG, defaultVisibleFields, renderTile, renderListItem, renderDetailsItem } from './collection/templates.js';
 import { initColumnManager, handleDragStart, handleDragEnd, handleDragOver, handleDragLeave, handleDrop, handleMouseDown, handleDblClick, autoFitColumn } from './collection/columnManager.js';
 import { renderFieldConfigOverlay } from './collection/fieldConfig.js';
+import { parseToDate } from '../services/statsService.js';
 import {
     isSelectModeActive,
     selectedComicIds,
@@ -25,7 +26,11 @@ let activeFilters = {
     bestand: ['vorhanden', 'vorbestellt'],
     gelesen: [],
     bezugsquelle: [],
-    serie: []
+    serie: [],
+    kaufdatumStart: '',
+    kaufdatumEnd: '',
+    gelesenDatumStart: '',
+    gelesenDatumEnd: ''
 };
 let needsAutoFit = true;
 
@@ -55,6 +60,8 @@ export async function renderCollection(container) {
                     ${renderMultiSelect('bestand', 'Bestand', bestände)}
                     ${renderMultiSelect('bezugsquelle', 'Quelle', quellen)}
                     ${renderMultiSelect('gelesen', 'Gelesen', gelesenStatus)}
+                    ${renderDateRangeSelect('kaufdatum', 'Gekauft')}
+                    ${renderDateRangeSelect('gelesenDatum', 'Gelesen (Datum)')}
                     
                     <button id="btn-reset-filters-direct" class="btn btn-secondary" style="height: 36px; width: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; border-color: transparent;" title="Alle Filter zurücksetzen">
                         <i class="fa-solid fa-rotate-left"></i>
@@ -128,6 +135,57 @@ function renderMultiSelect(key, label, options) {
     `;
 }
 
+function displayShortDate(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+        return `${parts[2]}.${parts[1]}.${parts[0].slice(-2)}`;
+    }
+    return dateStr;
+}
+
+function renderDateRangeSelect(key, label) {
+    const startVal = activeFilters[`${key}Start`] || '';
+    const endVal = activeFilters[`${key}End`] || '';
+    const isActive = startVal !== '' || endVal !== '';
+    
+    let displayText = label;
+    if (isActive) {
+        if (startVal && endVal) {
+            displayText = `${label} (${displayShortDate(startVal)} - ${displayShortDate(endVal)})`;
+        } else if (startVal) {
+            displayText = `${label} (Ab ${displayShortDate(startVal)})`;
+        } else if (endVal) {
+            displayText = `${label} (Bis ${displayShortDate(endVal)})`;
+        }
+    }
+    
+    return `
+        <div class="multi-select-container date-range-container" style="position: relative;">
+            <button class="btn btn-secondary multi-select-trigger ${isActive ? 'active-filter' : ''}" 
+                    data-key="${key}" 
+                    style="height: 36px; font-size: 0.85rem; border-radius: 8px; padding: 0 15px; background: ${isActive ? 'rgba(6, 182, 212, 0.1)' : 'var(--bg-card)'}; border: 1px solid ${isActive ? 'var(--primary-color)' : 'var(--border-color)'}; color: ${isActive ? 'var(--primary-color)' : 'inherit'}; min-width: 100px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                <span>${displayText}</span>
+                <i class="fa-solid fa-calendar-days" style="font-size: 0.75rem; opacity: 0.6;"></i>
+            </button>
+            <div class="multi-select-dropdown" id="dropdown-${key}" style="display: none; position: absolute; top: 42px; left: 0; z-index: 1000; background: #1e293b; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5); min-width: 260px; padding: 16px; flex-direction: column; gap: 12px;">
+                <div class="form-group" style="margin-bottom: 10px; display: flex; flex-direction: column; gap: 4px;">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Von:</label>
+                    <input type="date" class="form-control date-filter-input" data-key="${key}" data-bound="Start" value="${startVal}" style="background-color: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 10px; border-radius: 6px; width: 100%;">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px;">
+                    <label class="form-label" style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">Bis:</label>
+                    <input type="date" class="form-control date-filter-input" data-key="${key}" data-bound="End" value="${endVal}" style="background-color: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 10px; border-radius: 6px; width: 100%;">
+                </div>
+                <div style="display: flex; justify-content: space-between; gap: 8px;">
+                    <button class="btn btn-secondary btn-date-filter-reset" data-key="${key}" style="padding: 6px 12px; font-size: 0.8rem; flex: 1; font-weight: 600; border-radius: 6px;">Leeren</button>
+                    <button class="btn btn-primary btn-date-filter-apply" data-key="${key}" style="padding: 6px 12px; font-size: 0.8rem; flex: 1; font-weight: 600; border-radius: 6px;">Anwenden</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 let eventsAttached = false;
 
 initColumnManager({
@@ -158,9 +216,89 @@ const handleCollectionClick = (e) => {
         document.querySelectorAll('.multi-select-dropdown').forEach(d => d.style.display = 'none');
     }
 
+    // Date Filter Apply Click
+    const btnApply = e.target.closest('.btn-date-filter-apply');
+    if (btnApply) {
+        const key = btnApply.dataset.key;
+        const dropdown = document.getElementById(`dropdown-${key}`);
+        const startInput = dropdown.querySelector(`.date-filter-input[data-bound="Start"]`);
+        const endInput = dropdown.querySelector(`.date-filter-input[data-bound="End"]`);
+        
+        activeFilters[`${key}Start`] = startInput.value;
+        activeFilters[`${key}End`] = endInput.value;
+        
+        dropdown.style.display = 'none';
+        
+        // Button-Text aktualisieren
+        const trigger = document.querySelector(`.multi-select-trigger[data-key="${key}"]`);
+        if (trigger) {
+            const label = key === 'kaufdatum' ? 'Gekauft' : 'Gelesen (Datum)';
+            const isActive = startInput.value !== '' || endInput.value !== '';
+            let displayText = label;
+            if (isActive) {
+                if (startInput.value && endInput.value) {
+                    displayText = `${label} (${displayShortDate(startInput.value)} - ${displayShortDate(endInput.value)})`;
+                } else if (startInput.value) {
+                    displayText = `${label} (Ab ${displayShortDate(startInput.value)})`;
+                } else if (endInput.value) {
+                    displayText = `${label} (Bis ${displayShortDate(endInput.value)})`;
+                }
+            }
+            
+            trigger.querySelector('span').textContent = displayText;
+            trigger.style.background = isActive ? 'rgba(6, 182, 212, 0.1)' : 'var(--bg-card)';
+            trigger.style.borderColor = isActive ? 'var(--primary-color)' : 'var(--border-color)';
+            trigger.style.color = isActive ? 'var(--primary-color)' : 'inherit';
+        }
+        
+        updateGrid();
+        return;
+    }
+    
+    // Date Filter Reset Click
+    const btnReset = e.target.closest('.btn-date-filter-reset');
+    if (btnReset) {
+        const key = btnReset.dataset.key;
+        const dropdown = document.getElementById(`dropdown-${key}`);
+        const startInput = dropdown.querySelector(`.date-filter-input[data-bound="Start"]`);
+        const endInput = dropdown.querySelector(`.date-filter-input[data-bound="End"]`);
+        
+        startInput.value = '';
+        endInput.value = '';
+        
+        activeFilters[`${key}Start`] = '';
+        activeFilters[`${key}End`] = '';
+        
+        dropdown.style.display = 'none';
+        
+        // Button-Text aktualisieren
+        const trigger = document.querySelector(`.multi-select-trigger[data-key="${key}"]`);
+        if (trigger) {
+            const label = key === 'kaufdatum' ? 'Gekauft' : 'Gelesen (Datum)';
+            trigger.querySelector('span').textContent = label;
+            trigger.style.background = 'var(--bg-card)';
+            trigger.style.borderColor = 'var(--border-color)';
+            trigger.style.color = 'inherit';
+        }
+        
+        updateGrid();
+        return;
+    }
+
     // 2. Reset Button Click
     if (e.target.closest('#btn-reset-filters-direct')) {
-        activeFilters = { verlag: [], format: [], bestand: ['vorhanden', 'vorbestellt'], gelesen: [], bezugsquelle: [], serie: [] };
+        activeFilters = { 
+            verlag: [], 
+            format: [], 
+            bestand: ['vorhanden', 'vorbestellt'], 
+            gelesen: [], 
+            bezugsquelle: [], 
+            serie: [],
+            kaufdatumStart: '',
+            kaufdatumEnd: '',
+            gelesenDatumStart: '',
+            gelesenDatumEnd: ''
+        };
         const container = document.getElementById('view-container');
         renderCollection(container);
         return;
@@ -329,6 +467,38 @@ export async function updateGrid() {
             const isRead = !!c.gelesen_am;
             const status = isRead ? 'Ja' : 'Nein';
             return activeFilters.gelesen.includes(status);
+        });
+    }
+
+    // Datumsbereichs-Filter
+    if (activeFilters.kaufdatumStart) {
+        const start = new Date(activeFilters.kaufdatumStart);
+        comics = comics.filter(c => {
+            const d = parseToDate(c.kaufdatum);
+            return d && d >= start;
+        });
+    }
+    if (activeFilters.kaufdatumEnd) {
+        const end = new Date(activeFilters.kaufdatumEnd);
+        end.setHours(23, 59, 59, 999);
+        comics = comics.filter(c => {
+            const d = parseToDate(c.kaufdatum);
+            return d && d <= end;
+        });
+    }
+    if (activeFilters.gelesenDatumStart) {
+        const start = new Date(activeFilters.gelesenDatumStart);
+        comics = comics.filter(c => {
+            const d = parseToDate(c.gelesen_am);
+            return d && d >= start;
+        });
+    }
+    if (activeFilters.gelesenDatumEnd) {
+        const end = new Date(activeFilters.gelesenDatumEnd);
+        end.setHours(23, 59, 59, 999);
+        comics = comics.filter(c => {
+            const d = parseToDate(c.gelesen_am);
+            return d && d <= end;
         });
     }
 
