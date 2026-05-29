@@ -234,8 +234,10 @@ describe('ComicVault Database Caching Tests', () => {
                             if (subpath === 'comics') {
                                 return {
                                     orderBy: () => ({
-                                        get: async () => {
-                                            getComicsCount++;
+                                        get: async (options) => {
+                                            if (!options || options.source !== 'server') {
+                                                getComicsCount++;
+                                            }
                                             return {
                                                 docs: mockComicsData.map(c => ({
                                                     id: c.id,
@@ -262,8 +264,10 @@ describe('ComicVault Database Caching Tests', () => {
                             if (subpath === 'wishlist') {
                                 return {
                                     orderBy: () => ({
-                                        get: async () => {
-                                            getWishlistCount++;
+                                        get: async (options) => {
+                                            if (!options || options.source !== 'server') {
+                                                getWishlistCount++;
+                                            }
                                             return {
                                                 docs: mockWishlistData.map(w => ({
                                                     id: w.id,
