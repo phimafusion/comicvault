@@ -12,6 +12,7 @@ const ASSETS = [
   './js/components/autocomplete.js',
   './js/components/star-rating.js',
   './js/services/importExportService.js',
+  './js/services/statsService.js',
   './js/views/budget.js',
   './js/views/changelog.js',
   './js/views/collection.js',

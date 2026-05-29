@@ -1,5 +1,19 @@
 import { db } from '../db.js';
 import { renderStars } from '../utils.js';
+import {
+    parseToDate,
+    checkDateInRange,
+    isComicInTimeframe,
+    filterComicsByDropdowns,
+    calculateKPIs,
+    calculateTypeStats,
+    calculateReadingChallenge,
+    calculateHighlights,
+    calculateTimelineData,
+    calculateDistributionData,
+    calculateTopLists,
+    getEarlyComics
+} from '../services/statsService.js';
 
 let activeStatsFilters = {
     verlag: [],
@@ -13,76 +27,6 @@ let activeStatsFilters = {
 
 let statsCharts = {};
 let statsEventsAttached = false;
-
-// Hilfsfunktion zum Parsen von Datumswerten
-function parseToDate(dateStr) {
-    if (!dateStr) return null;
-    const s = String(dateStr).trim();
-    // 1. ISO-Format checken (YYYY-MM-DD...)
-    const isoMatch = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (isoMatch) {
-        return new Date(parseInt(isoMatch[1], 10), parseInt(isoMatch[2], 10) - 1, parseInt(isoMatch[3], 10));
-    }
-    // 2. Deutsches Format checken (DD.MM.YYYY)
-    const gerMatch = s.match(/^(\d{2})\.(\d{2})\.(\d{4})/);
-    if (gerMatch) {
-        return new Date(parseInt(gerMatch[3], 10), parseInt(gerMatch[2], 10) - 1, parseInt(gerMatch[1], 10));
-    }
-    // 3. Deutsches Format mit 2-stelligem Jahr checken (DD.MM.YY)
-    const gerShortMatch = s.match(/^(\d{2})\.(\d{2})\.(\d{2})$/);
-    if (gerShortMatch) {
-        let yr = parseInt(gerShortMatch[3], 10);
-        yr = (yr >= 50 ? 1900 : 2000) + yr;
-        return new Date(yr, parseInt(gerShortMatch[2], 10) - 1, parseInt(gerShortMatch[1], 10));
-    }
-    // 4. Nur DD.MM checken (ohne Jahr -> aktuelles Jahr annehmen)
-    const dayMonthMatch = s.match(/^(\d{2})\.(\d{2})\.?$/);
-    if (dayMonthMatch) {
-        const now = new Date();
-        return new Date(now.getFullYear(), parseInt(dayMonthMatch[2], 10) - 1, parseInt(dayMonthMatch[1], 10));
-    }
-    // Fallback: Natives JS Parsing
-    const d = new Date(s);
-    return isNaN(d.getTime()) ? null : d;
-}
-
-// Hilfsfunktion zur Überprüfung, ob ein Datum in einem Zeitraum liegt
-function checkDateInRange(dateStr, timeframe) {
-    const d = parseToDate(dateStr);
-    if (!d) return false;
-    if (timeframe === 'all') return true;
-    
-    const now = new Date();
-    let minDate = null;
-    let maxDate = null;
-    
-    if (timeframe === 'last6') {
-        minDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-    } else if (timeframe === 'last12') {
-        minDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
-    } else if (timeframe === 'thisYear') {
-        minDate = new Date(now.getFullYear(), 0, 1);
-        maxDate = new Date(now.getFullYear(), 11, 31);
-    } else if (timeframe === 'lastYear') {
-        minDate = new Date(now.getFullYear() - 1, 0, 1);
-        maxDate = new Date(now.getFullYear() - 1, 11, 31);
-    } else if (timeframe.startsWith('year-')) {
-        const yr = parseInt(timeframe.split('-')[1], 10);
-        minDate = new Date(yr, 0, 1);
-        maxDate = new Date(yr, 11, 31);
-    }
-    
-    if (minDate && d < minDate) return false;
-    if (maxDate && d > maxDate) return false;
-    return true;
-}
-
-// Hilfsfunktion zur Prüfung, ob ein Comic zum ausgewählten Zeitraum gehört
-function isComicInTimeframe(c, timeframe) {
-    if (timeframe === 'all') return true;
-    const buyDateStr = c.kaufdatum || c.created_at;
-    return checkDateInRange(buyDateStr, timeframe) || (c.gelesen_am && checkDateInRange(c.gelesen_am, timeframe));
-}
 
 export async function renderStats(container) {
     activeStatsFilters = {
@@ -442,9 +386,7 @@ async function updateStatsChallengeOnly() {
     const settings = db.getSettings();
     const readingGoal = settings.readingGoal || 50;
     
-    const currentYear = new Date().getFullYear();
-    const readThisYearCount = comics.filter(c => c.gelesen_am && checkDateInRange(c.gelesen_am, 'thisYear')).length;
-    const challengePercent = Math.min(100, Math.round((readThisYearCount / readingGoal) * 100));
+    const { readThisYearCount, challengePercent } = calculateReadingChallenge(comics, readingGoal);
 
     const ratioSpan = document.getElementById('challenge-ratio');
     if (ratioSpan) ratioSpan.textContent = `${readThisYearCount} / ${readingGoal}`;
@@ -460,41 +402,13 @@ async function updateStats() {
     const allComics = await db.getAllComics();
     
     // 1. Dropdown-Filter anwenden
-    let filteredComics = [...allComics];
-    if (activeStatsFilters.verlag.length > 0) {
-        filteredComics = filteredComics.filter(c => activeStatsFilters.verlag.includes(c.verlag));
-    }
-    if (activeStatsFilters.format.length > 0) {
-        filteredComics = filteredComics.filter(c => activeStatsFilters.format.includes(c.format));
-    }
-    if (activeStatsFilters.bestand.length > 0) {
-        filteredComics = filteredComics.filter(c => activeStatsFilters.bestand.includes(c.bestand));
-    }
-    if (activeStatsFilters.sprache.length > 0) {
-        filteredComics = filteredComics.filter(c => activeStatsFilters.sprache.includes(c.sprache));
-    }
-    if (activeStatsFilters.typ.length > 0) {
-        filteredComics = filteredComics.filter(c => activeStatsFilters.typ.includes(c.typ));
-    }
-    if (activeStatsFilters.serie.length > 0) {
-        filteredComics = filteredComics.filter(c => activeStatsFilters.serie.includes(c.serie));
-    }
+    const filteredComics = filterComicsByDropdowns(allComics, activeStatsFilters);
 
     // 2. Zeitraum-Filter für KPIs, Averages und Verteilungs-Charts anwenden
     const kpiComics = filteredComics.filter(c => isComicInTimeframe(c, activeStatsFilters.zeitraum));
 
     // Berechnungen für KPIs
-    const totalComics = kpiComics.length;
-    const valueComics = kpiComics.filter(c => ['vorhanden', 'vorbestellt', 'verliehen'].includes(String(c.bestand).toLowerCase()));
-    const totalValue = valueComics.reduce((sum, c) => sum + (Number(c.preis) || 0), 0);
-    
-    const readCount = kpiComics.filter(c => c.gelesen_am && checkDateInRange(c.gelesen_am, activeStatsFilters.zeitraum)).length;
-    const readPercent = totalComics > 0 ? ((readCount / totalComics) * 100).toFixed(2) : '0.00';
-    
-    // Lesestapel (TBR): ungelockte Comics, die nicht gelesen sind und im Besitz/bestellt sind
-    const tbrComics = kpiComics.filter(c => !c.gelesen_am && ['vorhanden', 'vorbestellt', 'verliehen'].includes(String(c.bestand).toLowerCase()));
-    const tbrCount = tbrComics.length;
-    const tbrValue = tbrComics.reduce((sum, c) => sum + (Number(c.preis) || 0), 0);
+    const { totalComics, totalValue, readCount, readPercent, tbrCount, tbrValue } = calculateKPIs(kpiComics, activeStatsFilters.zeitraum);
 
     const currencySymbol = db.getSettings().currency || '€';
 
@@ -528,37 +442,12 @@ async function updateStats() {
     // 2b. Typ-spezifische KPIs befüllen
     const typeContainer = document.getElementById('stats-by-type-container');
     if (typeContainer) {
-        const uniqueTypes = [...new Set(kpiComics.map(c => c.typ || 'Unbekannt'))].sort();
-        if (uniqueTypes.length === 0) {
+        const typeStats = calculateTypeStats(kpiComics, activeStatsFilters.zeitraum);
+        if (typeStats.length === 0) {
             typeContainer.innerHTML = '';
             typeContainer.style.display = 'none';
         } else {
             typeContainer.style.display = 'block';
-            
-            const typeStats = uniqueTypes.map(type => {
-                const typeComics = kpiComics.filter(c => (c.typ || 'Unbekannt') === type);
-                const tComics = typeComics.length;
-                
-                const valComics = typeComics.filter(c => ['vorhanden', 'vorbestellt', 'verliehen'].includes(String(c.bestand).toLowerCase()));
-                const valSum = valComics.reduce((sum, c) => sum + (Number(c.preis) || 0), 0);
-                
-                const rCount = typeComics.filter(c => c.gelesen_am && checkDateInRange(c.gelesen_am, activeStatsFilters.zeitraum)).length;
-                const rPercent = tComics > 0 ? ((rCount / tComics) * 100).toFixed(2) : '0.00';
-                
-                const tbrC = typeComics.filter(c => !c.gelesen_am && ['vorhanden', 'vorbestellt', 'verliehen'].includes(String(c.bestand).toLowerCase()));
-                const tbrCCount = tbrC.length;
-                const tbrCValue = tbrC.reduce((sum, c) => sum + (Number(c.preis) || 0), 0);
-                
-                return {
-                    type,
-                    total: tComics,
-                    value: valSum,
-                    readPercent: rPercent,
-                    tbrCount: tbrCCount,
-                    tbrValue: tbrCValue
-                };
-            });
-            
             typeContainer.innerHTML = `
                 <div class="details-card" style="flex-direction: column; padding: 24px; overflow-x: auto; border: 1px solid var(--border-color); background: var(--bg-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
                     <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; color: var(--text-primary);">
@@ -604,9 +493,7 @@ async function updateStats() {
     // Lese-Challenge updaten
     const settings = db.getSettings();
     const readingGoal = settings.readingGoal || 50;
-    const currentYear = new Date().getFullYear();
-    const readThisYearCount = allComics.filter(c => c.gelesen_am && checkDateInRange(c.gelesen_am, 'thisYear')).length;
-    const challengePercent = Math.min(100, Math.round((readThisYearCount / readingGoal) * 100));
+    const { readThisYearCount, challengePercent } = calculateReadingChallenge(allComics, readingGoal);
 
     const ratioSpan = document.getElementById('challenge-ratio');
     if (ratioSpan) ratioSpan.textContent = `${readThisYearCount} / ${readingGoal}`;
@@ -618,95 +505,7 @@ async function updateStats() {
     if (goalInput) goalInput.value = readingGoal;
 
     // Highlights befüllen
-    // 1. Aktivste Monate
-    const purchaseMonths = {};
-    const readMonths = {};
-    let maxPriceComic = null;
-    let pricedCount = 0;
-    let priceSum = 0;
-
-    kpiComics.forEach(c => {
-        // Kaufmonat tracken
-        const buyDate = parseToDate(c.kaufdatum || c.created_at);
-        if (buyDate) {
-            const mKey = `${buyDate.getFullYear()}-${String(buyDate.getMonth() + 1).padStart(2, '0')}`;
-            purchaseMonths[mKey] = (purchaseMonths[mKey] || 0) + 1;
-        }
-
-        // Lesemonat tracken
-        if (c.gelesen_am) {
-            const readDate = parseToDate(c.gelesen_am);
-            if (readDate) {
-                const yr = readDate.getFullYear();
-                const mon = readDate.getMonth();
-                // Januar 2023 als Platzhalter ignorieren
-                if (!(yr === 2023 && mon === 0)) {
-                    const mKey = `${yr}-${String(mon + 1).padStart(2, '0')}`;
-                    readMonths[mKey] = (readMonths[mKey] || 0) + 1;
-                }
-            }
-        }
-
-        // Teuerster Comic
-        const price = Number(c.preis);
-        if (!isNaN(price) && c.preis !== null) {
-            pricedCount++;
-            priceSum += price;
-            if (!maxPriceComic || price > Number(maxPriceComic.preis)) {
-                maxPriceComic = c;
-            }
-        }
-    });
-
-    const MONATE_MAP = ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sept.", "Okt.", "Nov.", "Dez."];
-    const formatKeyToDisplay = (key) => {
-        if (!key) return '-';
-        const [y, m] = key.split('-');
-        return `${MONATE_MAP[parseInt(m, 10) - 1]} ${y}`;
-    };
-
-    let topPurchaseMonth = '-';
-    let topPurchaseVal = 0;
-    Object.entries(purchaseMonths).forEach(([key, val]) => {
-        if (val > topPurchaseVal) {
-            topPurchaseVal = val;
-            topPurchaseMonth = formatKeyToDisplay(key);
-        }
-    });
-
-    let topReadMonth = '-';
-    let topReadVal = 0;
-    Object.entries(readMonths).forEach(([key, val]) => {
-        if (val > topReadVal) {
-            topReadVal = val;
-            topReadMonth = formatKeyToDisplay(key);
-        }
-    });
-
-    // Lese-Geschwindigkeit
-    let speedText = '-';
-    if (activeStatsFilters.zeitraum === 'all') {
-        const totalRead = allComics.filter(c => c.gelesen_am).length;
-        // Zeitraum in Monaten berechnen
-        let earliestDate = new Date();
-        allComics.forEach(c => {
-            const d = parseToDate(c.kaufdatum || c.created_at);
-            if (d && d < earliestDate && d.getFullYear() >= 2000) earliestDate = d;
-        });
-        const monthDiff = Math.max(1, (new Date().getFullYear() - earliestDate.getFullYear()) * 12 + (new Date().getMonth() - earliestDate.getMonth()) + 1);
-        speedText = `${(totalRead / monthDiff).toFixed(1)} / Monat`;
-    } else {
-        const readInPeriod = kpiComics.filter(c => c.gelesen_am && checkDateInRange(c.gelesen_am, activeStatsFilters.zeitraum)).length;
-        let months = 1;
-        if (activeStatsFilters.zeitraum === 'last6') months = 6;
-        else if (activeStatsFilters.zeitraum === 'last12') months = 12;
-        else if (activeStatsFilters.zeitraum === 'thisYear') months = new Date().getMonth() + 1;
-        else if (activeStatsFilters.zeitraum === 'lastYear') months = 12;
-        else if (activeStatsFilters.zeitraum.startsWith('year-')) months = 12;
-        speedText = `${(readInPeriod / months).toFixed(1)} / Monat`;
-    }
-
-    const avgPrice = pricedCount > 0 ? (priceSum / pricedCount).toFixed(2) : '0.00';
+    const { avgPrice, speedText, topPurchaseMonth, topPurchaseVal, topReadMonth, topReadVal, maxPriceComic } = calculateHighlights(kpiComics, allComics, activeStatsFilters.zeitraum);
     const teuersterText = maxPriceComic ? `${maxPriceComic.titel} (${Number(maxPriceComic.preis).toFixed(2)} ${currencySymbol})` : '-';
 
     const highlightsEl = document.getElementById('stats-highlights');
@@ -736,170 +535,13 @@ async function updateStats() {
     }
 
     // 3. Timeline-Daten (TBR-Verlauf) vorbereiten
-    // Wir nutzen filteredComics (nur Dropdown-gefiltert, damit Timeline-historische Kumulierung korrekt ist)
-    let earliestDate = new Date();
-    let hasPurchase = false;
-    filteredComics.forEach(c => {
-        if (c.kaufdatum) {
-            const d = parseToDate(c.kaufdatum);
-            if (d && d.getFullYear() >= 2000) {
-                if (!hasPurchase || d < earliestDate) {
-                    earliestDate = d;
-                    hasPurchase = true;
-                }
-            }
-        }
-    });
-    // Fallback falls kein Comic ein Kaufdatum besitzt
-    if (!hasPurchase) {
-        filteredComics.forEach(c => {
-            const d = parseToDate(c.created_at);
-            if (d && d < earliestDate && d.getFullYear() >= 2000) {
-                earliestDate = d;
-            }
-        });
-    }
-
-    const now = new Date();
-    let startDate = new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
-    let endDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    
-    // Falls das Startdatum in der Zukunft liegt oder ungültig ist
-    if (startDate > endDate) startDate = new Date(endDate);
-
-    const months = [];
-    let curr = new Date(startDate);
-    while (curr <= endDate) {
-        months.push(new Date(curr));
-        curr.setMonth(curr.getMonth() + 1);
-    }
-
-    const timelineData = [];
-    months.forEach(m => {
-        const endOfMonth = new Date(m.getFullYear(), m.getMonth() + 1, 0, 23, 59, 59, 999);
-        
-        const purchased = filteredComics.filter(c => {
-            const pDate = parseToDate(c.kaufdatum || c.created_at);
-            return pDate && pDate <= endOfMonth;
-        }).length;
-        
-        const read = filteredComics.filter(c => {
-            const rDate = parseToDate(c.gelesen_am);
-            // Januar 2023 als Platzhalter beim gelesenen Verlauf ignorieren
-            if (rDate && rDate.getFullYear() === 2023 && rDate.getMonth() === 0) {
-                return false;
-            }
-            return rDate && rDate <= endOfMonth;
-        }).length;
-        
-        const tbr = Math.max(0, purchased - read);
-        
-        timelineData.push({
-            date: m,
-            purchased,
-            read,
-            tbr
-        });
-    });
-
-    // Zeitraumfilter auf die Timeline-Anzeige anwenden
-    let displayTimeline = [...timelineData];
-    if (activeStatsFilters.zeitraum !== 'all') {
-        let minDate = null;
-        let maxDate = null;
-        
-        if (activeStatsFilters.zeitraum === 'last6') {
-            minDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-        } else if (activeStatsFilters.zeitraum === 'last12') {
-            minDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
-        } else if (activeStatsFilters.zeitraum === 'thisYear') {
-            minDate = new Date(now.getFullYear(), 0, 1);
-            maxDate = new Date(now.getFullYear(), 11, 31);
-        } else if (activeStatsFilters.zeitraum === 'lastYear') {
-            minDate = new Date(now.getFullYear() - 1, 0, 1);
-            maxDate = new Date(now.getFullYear() - 1, 11, 31);
-        } else if (activeStatsFilters.zeitraum.startsWith('year-')) {
-            const yr = parseInt(activeStatsFilters.zeitraum.split('-')[1], 10);
-            minDate = new Date(yr, 0, 1);
-            maxDate = new Date(yr, 11, 31);
-        }
-        
-        displayTimeline = displayTimeline.filter(d => {
-            if (minDate && d.date < minDate) return false;
-            if (maxDate && d.date > maxDate) return false;
-            return true;
-        });
-    }
-
-    if (displayTimeline.length === 0) {
-        displayTimeline.push({
-            date: new Date(),
-            purchased: 0,
-            read: 0,
-            tbr: 0
-        });
-    }
+    const displayTimeline = calculateTimelineData(filteredComics, activeStatsFilters.zeitraum);
 
     // 4. Verteilungsdaten für Diagramme sammeln (aus kpiComics)
-    const formatData = {};
-    const bestandData = {};
-    const quellenSpend = {};
-
-    kpiComics.forEach(c => {
-        // Format
-        const f = c.format || 'Unbekannt';
-        formatData[f] = (formatData[f] || 0) + 1;
-
-        // Bestand
-        const b = c.bestand || 'Unbekannt';
-        const normalizedBestand = b.charAt(0).toUpperCase() + b.slice(1).toLowerCase();
-        bestandData[normalizedBestand] = (bestandData[normalizedBestand] || 0) + 1;
-
-        // Bezugsquellen Ausgaben
-        if (c.bezugsquelle && c.preis) {
-            quellenSpend[c.bezugsquelle] = (quellenSpend[c.bezugsquelle] || 0) + Number(c.preis);
-        }
-    });
+    const { formatData, bestandData, quellenSpend } = calculateDistributionData(kpiComics);
 
     // Top Listen berechnen
-    const publishersMap = {};
-    const seriesMap = {};
-
-    kpiComics.forEach(c => {
-        // Verlage
-        if (c.verlag) {
-            if (!publishersMap[c.verlag]) {
-                publishersMap[c.verlag] = { name: c.verlag, total: 0, read: 0, ratingSum: 0, ratedCount: 0 };
-            }
-            publishersMap[c.verlag].total++;
-            if (c.gelesen_am) publishersMap[c.verlag].read++;
-            if (c.bewertung) {
-                publishersMap[c.verlag].ratingSum += Number(c.bewertung);
-                publishersMap[c.verlag].ratedCount++;
-            }
-        }
-
-        // Serien
-        if (c.serie) {
-            if (!seriesMap[c.serie]) {
-                seriesMap[c.serie] = { name: c.serie, total: 0, read: 0, ratingSum: 0, ratedCount: 0 };
-            }
-            seriesMap[c.serie].total++;
-            if (c.gelesen_am) seriesMap[c.serie].read++;
-            if (c.bewertung) {
-                seriesMap[c.serie].ratingSum += Number(c.bewertung);
-                seriesMap[c.serie].ratedCount++;
-            }
-        }
-    });
-
-    const topPublishers = Object.values(publishersMap)
-        .sort((a, b) => b.total - a.total)
-        .slice(0, 5);
-
-    const topSeries = Object.values(seriesMap)
-        .sort((a, b) => b.total - a.total)
-        .slice(0, 5);
+    const { topPublishers, topSeries } = calculateTopLists(kpiComics);
 
     // Tabellen rendern
     const publishersTable = document.getElementById('table-top-publishers');
@@ -993,11 +635,7 @@ async function updateStats() {
     // Diagnose-Container befüllen falls ungewöhnlich frühe Daten vorliegen
     const debugContainer = document.getElementById('stats-debug-container');
     if (debugContainer) {
-        const earlyComics = filteredComics.filter(c => {
-            if (!c.kaufdatum) return false;
-            const d = parseToDate(c.kaufdatum);
-            return d && d.getFullYear() < 2020;
-        });
+        const earlyComics = getEarlyComics(filteredComics);
         
         if (earlyComics.length > 0) {
             debugContainer.style.display = 'block';

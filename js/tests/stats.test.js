@@ -1,5 +1,6 @@
 import { renderStats, cleanupStats } from '../views/stats.js';
 import { setupTestEnv, cleanup } from './testHelper.js';
+import * as statsService from '../services/statsService.js';
 
 const { expect } = chai;
 
@@ -302,5 +303,82 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
         expect(filteredGnRow.children[3].textContent).to.contain('0.00%');
         expect(filteredGnRow.children[4].textContent).to.equal('1');
         expect(filteredGnRow.children[5].textContent).to.contain('15.00');
+    });
+});
+
+describe('statsService Unit Tests', () => {
+    describe('parseToDate', () => {
+        it('sollte ISO-Format YYYY-MM-DD korrekt parsen', () => {
+            const date = statsService.parseToDate('2026-05-29');
+            expect(date).to.be.an.instanceOf(Date);
+            expect(date.getFullYear()).to.equal(2026);
+            expect(date.getMonth()).to.equal(4); // 0-indexed
+            expect(date.getDate()).to.equal(29);
+        });
+
+        it('sollte deutsches Format DD.MM.YYYY korrekt parsen', () => {
+            const date = statsService.parseToDate('15.01.2026');
+            expect(date.getFullYear()).to.equal(2026);
+            expect(date.getMonth()).to.equal(0);
+            expect(date.getDate()).to.equal(15);
+        });
+
+        it('sollte deutsches Format mit 2-stelligem Jahr DD.MM.YY korrekt parsen', () => {
+            const date1 = statsService.parseToDate('20.02.26');
+            expect(date1.getFullYear()).to.equal(2026);
+            expect(date1.getMonth()).to.equal(1);
+            expect(date1.getDate()).to.equal(20);
+
+            const date2 = statsService.parseToDate('10.11.99');
+            expect(date2.getFullYear()).to.equal(1999);
+            expect(date2.getMonth()).to.equal(10);
+            expect(date2.getDate()).to.equal(10);
+        });
+
+        it('sollte DD.MM ohne Jahr als aktuelles Jahr parsen', () => {
+            const date = statsService.parseToDate('05.03');
+            expect(date.getFullYear()).to.equal(new Date().getFullYear());
+            expect(date.getMonth()).to.equal(2);
+            expect(date.getDate()).to.equal(5);
+        });
+
+        it('sollte null zurueckgeben bei leeren/ungueltigen Werten', () => {
+            expect(statsService.parseToDate('')).to.be.null;
+            expect(statsService.parseToDate(null)).to.be.null;
+            expect(statsService.parseToDate('ungueltig')).to.be.null;
+        });
+    });
+
+    describe('checkDateInRange', () => {
+        it('sollte true fuer "all" zurueckgeben', () => {
+            expect(statsService.checkDateInRange('2026-05-29', 'all')).to.be.true;
+        });
+
+        it('sollte Daten innerhalb des aktuellen Jahres fuer "thisYear" korrekt pruefen', () => {
+            const currentYear = new Date().getFullYear();
+            expect(statsService.checkDateInRange(`15.01.${currentYear}`, 'thisYear')).to.be.true;
+            expect(statsService.checkDateInRange(`15.01.${currentYear - 1}`, 'thisYear')).to.be.false;
+        });
+    });
+
+    describe('calculateKPIs', () => {
+        it('sollte KPIs korrekt berechnen', () => {
+            const mockData = [
+                { preis: 10, bestand: 'vorhanden', gelesen_am: '15.01.2026' },
+                { preis: 15, bestand: 'vorbestellt', gelesen_am: '' },
+                { preis: 20, bestand: 'verkauft', gelesen_am: '20.02.2026' } // verkauft => nicht im Sammlungswert
+            ];
+            
+            const kpis = statsService.calculateKPIs(mockData, 'all');
+            expect(kpis.totalComics).to.equal(3);
+            // Sammlungswert: vorhanden + vorbestellt = 10 + 15 = 25
+            expect(kpis.totalValue).to.equal(25);
+            // Gelesen: 2 gelesen in mockup (gelesen_am definiert)
+            expect(kpis.readCount).to.equal(2);
+            expect(kpis.readPercent).to.equal('66.67');
+            // TBR (im Besitz und ungelesen): vorhanden/vorbestellt und ungelesen => nur das zweite Item (preis 15) => 1
+            expect(kpis.tbrCount).to.equal(1);
+            expect(kpis.tbrValue).to.equal(15);
+        });
     });
 });
