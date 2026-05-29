@@ -40,8 +40,12 @@ export function calculateBudgetStats(comics, budgets, types, selectedYear) {
     }
     
     // Ausgaben der Comics auf Monate und Typen verteilen
+    // WICHTIG: Nur kaufdatum verwenden, KEIN created_at als Fallback!
+    // created_at ist der Zeitstempel des Datenbankeintrags und hat nichts
+    // mit dem Kaufdatum zu tun – würde sonst alle Comics ohne Kaufdatum
+    // im Monat des Eintrags zählen und die Summe aufblähen.
     comics.forEach(c => {
-        const buyDate = parseToDate(c.kaufdatum || c.created_at);
+        const buyDate = c.kaufdatum ? parseToDate(c.kaufdatum) : null;
         if (buyDate && buyDate.getFullYear() === targetYear) {
             const m = buyDate.getMonth(); // 0 bis 11
             const price = parseCurrency(c.preis) || 0;
@@ -118,9 +122,12 @@ export async function renderBudget(container) {
     yearsSet.add(currentYear - 1);
     
     comics.forEach(c => {
-        const buyDate = parseToDate(c.kaufdatum || c.created_at);
-        if (buyDate) {
-            yearsSet.add(buyDate.getFullYear());
+        // Nur echte Kaufdaten für die Jahres-Tabs verwenden
+        if (c.kaufdatum) {
+            const buyDate = parseToDate(c.kaufdatum);
+            if (buyDate) {
+                yearsSet.add(buyDate.getFullYear());
+            }
         }
     });
     

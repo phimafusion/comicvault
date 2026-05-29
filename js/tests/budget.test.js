@@ -96,6 +96,22 @@ describe('ComicVault Budget & Kostenanalyse Berechnungs-Tests', () => {
             // Dez-Delta = 2047.50 + 150 = 2197.50
             expect(stats[11].delta).to.equal(2197.50);
         });
+
+        it('sollte Comics ohne kaufdatum NICHT in die Ausgaben einrechnen (Regressionstest Bug #created_at-fallback)', () => {
+            // Comics ohne Kaufdatum aber mit created_at – diese dürfen NICHT im Budget erscheinen!
+            const comicsWithCreatedAt = [
+                { id: 'ca1', titel: 'Ohne Kaufdatum 1', typ: 'Comic', preis: '99,00', created_at: '2026-05-01T10:00:00Z' },
+                { id: 'ca2', titel: 'Ohne Kaufdatum 2', typ: 'Manga', preis: 50.00, created_at: '2026-05-15T12:00:00Z' },
+                // Ein Comic MIT Kaufdatum zur Kontrollprüfung
+                { id: 'ca3', titel: 'Mit Kaufdatum', typ: 'Comic', preis: '10,00', kaufdatum: '2026-05-10' }
+            ];
+            const stats = calculateBudgetStats(comicsWithCreatedAt, {}, defaultTypes, 2026);
+            
+            // Mai (Index 4): Nur das Comic MIT kaufdatum soll zählen (10 €), nicht die anderen (149 €)!
+            expect(stats[4].totalExpenses).to.equal(10.00);
+            expect(stats[4].expensesByType['Comic']).to.equal(10.00);
+            expect(stats[4].expensesByType['Manga']).to.equal(0.00);
+        });
     });
 
     describe('Historische Jahres-Statistiken (calculateMultiYearStats)', () => {
