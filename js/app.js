@@ -20,6 +20,7 @@ export class App {
         this.bindEvents();
         this.applyTheme();
         this.initMobileView();
+        this.registerServiceWorker();
         
         // Firebase Auth Listener
         onAuthStateChanged((user) => {
@@ -254,6 +255,22 @@ export class App {
             localStorage.setItem('comicvault_force_mobile', 'true');
         }
         this.checkMobileView();
+    }
+
+    registerServiceWorker() {
+        if ('serviceWorker' in navigator && !window.mocha) {
+            const register = () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('ServiceWorker registered:', reg))
+                    .catch(err => console.warn('ServiceWorker registration failed:', err));
+            };
+
+            if (document.readyState === 'complete') {
+                register();
+            } else {
+                window.addEventListener('load', register);
+            }
+        }
     }
 }
 
