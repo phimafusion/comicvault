@@ -144,6 +144,7 @@ export function setupTestEnv(options = {}) {
                     <button id="btn-menu-toggle"></button>
                     <input type="text" id="global-search">
                     <select id="theme-select"></select>
+                    <button id="btn-mobile-toggle"></button>
                     <button id="btn-add-new"></button>
                 </header>
                 <div id="view-container"></div>
@@ -230,6 +231,7 @@ export function cleanup() {
 
     // 6. Clean up root style properties and body classes
     document.body.classList.remove('bulk-select-active');
+    document.body.classList.remove('mobile-view');
     const fontVars = ['--font-primary', '--font-display', '--font-typewriter', '--font-code'];
     fontVars.forEach(v => document.documentElement.style.removeProperty(v));
 }
