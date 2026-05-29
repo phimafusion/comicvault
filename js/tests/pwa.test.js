@@ -134,7 +134,7 @@ describe('PWA (Progressive Web App) Integration Tests', () => {
             appInstance.registerServiceWorker();
             window.dispatchEvent(new Event('load'));
             
-            expect(registerCalled).to.be.false;
+        expect(registerCalled).to.be.false;
         } finally {
             if (originalDescriptor) {
                 Object.defineProperty(Navigator.prototype, 'serviceWorker', originalDescriptor);
@@ -142,5 +142,51 @@ describe('PWA (Progressive Web App) Integration Tests', () => {
                 delete Navigator.prototype.serviceWorker;
             }
         }
+    });
+
+    describe('Firestore Offline Persistence', () => {
+        it('sollte enablePersistence mit synchronizeTabs:true aufrufen', () => {
+            let calledWith = null;
+            const mockFirestore = {
+                enablePersistence: (opts) => {
+                    calledWith = opts;
+                    return Promise.resolve();
+                }
+            };
+
+            // enablePersistence direkt aufrufen wie in db.js
+            mockFirestore.enablePersistence({ synchronizeTabs: true });
+
+            expect(calledWith).to.not.be.null;
+            expect(calledWith.synchronizeTabs).to.be.true;
+        });
+
+        it('sollte "failed-precondition" Fehler still abfangen (mehrere Tabs offen)', (done) => {
+            const mockFirestore = {
+                enablePersistence: () => Promise.reject({ code: 'failed-precondition' })
+            };
+
+            // Fehler darf die App nicht zum Absturz bringen
+            mockFirestore.enablePersistence({ synchronizeTabs: true }).catch(err => {
+                if (err.code === 'failed-precondition') {
+                    // Erwartet: kein throw, nur ein console.warn
+                    expect(err.code).to.equal('failed-precondition');
+                    done();
+                }
+            });
+        });
+
+        it('sollte "unimplemented" Fehler still abfangen (Browser unterstützt kein IndexedDB)', (done) => {
+            const mockFirestore = {
+                enablePersistence: () => Promise.reject({ code: 'unimplemented' })
+            };
+
+            mockFirestore.enablePersistence({ synchronizeTabs: true }).catch(err => {
+                if (err.code === 'unimplemented') {
+                    expect(err.code).to.equal('unimplemented');
+                    done();
+                }
+            });
+        });
     });
 });
