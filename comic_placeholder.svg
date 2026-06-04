@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600">
+  <defs>
+    <!-- Background Gradient (Deep Indigo to Black) -->
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="75%">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="60%" stop-color="#0f0b29"/>
+      <stop offset="100%" stop-color="#05020a"/>
+    </radialGradient>
+    
+    <!-- Sunburst Ray Gradient -->
+    <linearGradient id="rayGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f43f5e" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#881337" stop-opacity="0.1"/>
+    </linearGradient>
+
+    <!-- Halftone Dot Pattern (Vibrant Yellow Dots) -->
+    <pattern id="halftone" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse">
+      <circle cx="6" cy="6" r="2" fill="#facc15" opacity="0.18"/>
+    </pattern>
+    
+    <!-- 3D Shadow Filter -->
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="6" dy="8" stdDeviation="0" flood-color="#000000" flood-opacity="1"/>
+    </filter>
+    
+    <!-- Comic Text Gradient -->
+    <linearGradient id="textGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="25%" stop-color="#fef08a"/>
+      <stop offset="70%" stop-color="#facc15"/>
+      <stop offset="100%" stop-color="#ca8a04"/>
+    </linearGradient>
+    
+    <!-- Cloud Bubble Gradient -->
+    <radialGradient id="bubbleGrad" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="85%" stop-color="#e0f2fe"/>
+      <stop offset="100%" stop-color="#bae6fd"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="url(#bgGrad)"/>
+  
+  <!-- Sunburst Rays -->
+  <path d="M 200 300 L 876.1 481.2 L 806.2 650.0 Z M 200 300 L 695.0 795.0 L 550.0 906.2 Z M 200 300 L 381.2 976.1 L 200.0 1000.0 Z M 200 300 L 18.8 976.1 L -150.0 906.2 Z M 200 300 L -295.0 795.0 L -406.2 650.0 Z M 200 300 L -476.1 481.2 L -500.0 300.0 Z M 200 300 L -476.1 118.8 L -406.2 -50.0 Z M 200 300 L -295.0 -195.0 L -150.0 -306.2 Z M 200 300 L 18.8 -376.1 L 200.0 -400.0 Z M 200 300 L 381.2 -376.1 L 550.0 -306.2 Z M 200 300 L 695.0 -195.0 L 806.2 -50.0 Z M 200 300 L 876.1 118.8 L 900.0 300.0 Z" fill="url(#rayGrad)"/>
+  
+  <!-- Halftone Overlay -->
+  <rect width="100%" height="100%" fill="url(#halftone)"/>
+  
+  <!-- Pop Art Background Circles -->
+  <circle cx="60" cy="120" r="24" fill="#0ea5e9" stroke="#000000" stroke-width="4.5" filter="url(#shadow)"/>
+  <circle cx="340" cy="160" r="18" fill="#d946ef" stroke="#000000" stroke-width="4" filter="url(#shadow)"/>
+  <circle cx="330" cy="480" r="28" fill="#10b981" stroke="#000000" stroke-width="5" filter="url(#shadow)"/>
+  <circle cx="80" cy="460" r="20" fill="#f97316" stroke="#000000" stroke-width="4" filter="url(#shadow)"/>
+
+  <!-- Action Sparkles / Stars -->
+  <!-- Top Left Star -->
+  <path d="M 90,200 L 95,215 L 110,215 L 98,225 L 102,240 L 90,230 L 78,240 L 82,225 L 70,215 L 85,215 Z" fill="#ffffff" stroke="#000000" stroke-width="3"/>
+  <!-- Bottom Right Star -->
+  <path d="M 300,380 L 304,392 L 316,392 L 306,400 L 310,412 L 300,404 L 290,412 L 294,400 L 284,392 L 296,392 Z" fill="#facc15" stroke="#000000" stroke-width="3"/>
+
+  <!-- 1. Outer Starburst (Shadow) -->
+  <path d="M 200.0,90.0 L 227.3,162.7 L 280.4,106.0 L 277.8,183.6 L 348.5,151.5 L 316.4,222.2 L 394.0,219.6 L 337.3,272.7 L 410.0,300.0 L 337.3,327.3 L 394.0,380.4 L 316.4,377.8 L 348.5,448.5 L 277.8,416.4 L 280.4,494.0 L 227.3,437.3 L 200.0,510.0 L 172.7,437.3 L 119.6,494.0 L 122.2,416.4 L 51.5,448.5 L 83.6,377.8 L 6.0,380.4 L 62.7,327.3 L -10.0,300.0 L 62.7,272.7 L 6.0,219.6 L 83.6,222.2 L 51.5,151.5 L 122.2,183.6 L 119.6,106.0 L 172.7,162.7 Z" fill="#000000" transform="translate(6, 8)"/>
+  <!-- Outer Starburst (Solid Dark Orange-Red) -->
+  <path d="M 200.0,90.0 L 227.3,162.7 L 280.4,106.0 L 277.8,183.6 L 348.5,151.5 L 316.4,222.2 L 394.0,219.6 L 337.3,272.7 L 410.0,300.0 L 337.3,327.3 L 394.0,380.4 L 316.4,377.8 L 348.5,448.5 L 277.8,416.4 L 280.4,494.0 L 227.3,437.3 L 200.0,510.0 L 172.7,437.3 L 119.6,494.0 L 122.2,416.4 L 51.5,448.5 L 83.6,377.8 L 6.0,380.4 L 62.7,327.3 L -10.0,300.0 L 62.7,272.7 L 6.0,219.6 L 83.6,222.2 L 51.5,151.5 L 122.2,183.6 L 119.6,106.0 L 172.7,162.7 Z" fill="#dc2626" stroke="#000000" stroke-width="8" stroke-linejoin="round"/>
+
+  <!-- 2. Middle Starburst (Vibrant Yellow) -->
+  <path d="M 200.0,135.0 L 224.5,192.8 L 271.6,151.3 L 268.6,214.0 L 329.0,197.1 L 299.1,252.3 L 360.9,263.3 L 310.0,300.0 L 360.9,336.7 L 299.1,347.7 L 329.0,402.9 L 268.6,386.0 L 271.6,448.7 L 224.5,407.2 L 200.0,465.0 L 175.5,407.2 L 128.4,448.7 L 131.4,386.0 L 71.0,402.9 L 100.9,347.7 L 39.1,336.7 L 90.0,300.0 L 39.1,263.3 L 100.9,252.3 L 71.0,197.1 L 131.4,214.0 L 128.4,151.3 L 175.5,192.8 Z" fill="#facc15" stroke="#000000" stroke-width="6" stroke-linejoin="round"/>
+
+  <!-- 3. Cloud/Speech Bubble inside explosion to add comic atmosphere -->
+  <path d="M 230,260 
+           C 255,245 285,260 285,280 
+           C 300,280 310,300 300,315 
+           C 310,335 290,355 270,345 
+           C 260,360 230,360 220,345 
+           C 200,355 180,340 185,320 
+           C 170,320 165,295 180,280 
+           C 180,260 210,245 230,260 Z" 
+        fill="url(#bubbleGrad)" stroke="#000000" stroke-width="5" stroke-linejoin="round"
+        filter="url(#shadow)"/>
+
+  <!-- 4. Inner Starburst (Accent Hot Pink / Red Burst) -->
+  <path d="M 200.0,175.0 L 220.7,222.7 L 262.5,191.7 L 256.6,243.4 L 308.3,237.5 L 277.3,279.3 L 325.0,300.0 L 277.3,320.7 L 308.3,362.5 L 256.6,356.6 L 262.5,408.3 L 220.7,377.3 L 200.0,425.0 L 179.3,377.3 L 137.5,408.3 L 143.4,356.6 L 91.7,362.5 L 122.7,320.7 L 75.0,300.0 L 122.7,279.3 L 91.7,237.5 L 143.4,243.4 L 137.5,191.7 L 179.3,222.7 Z" fill="#ec4899" stroke="#000000" stroke-width="4.5" stroke-linejoin="round"/>
+
+  <!-- Comic Text Group with tilt and scale -->
+  <g transform="translate(195, 310) rotate(-8)">
+    <!-- 3D Shadow Layers (stacked for smooth offset shadow) -->
+    <text x="0" y="0" font-family="'Impact', 'Arial Black', sans-serif" font-size="82" font-weight="900" fill="#000000" text-anchor="middle" transform="translate(8, 10)">POW!</text>
+    <text x="0" y="0" font-family="'Impact', 'Arial Black', sans-serif" font-size="82" font-weight="900" fill="#000000" text-anchor="middle" transform="translate(6, 8)">POW!</text>
+    <text x="0" y="0" font-family="'Impact', 'Arial Black', sans-serif" font-size="82" font-weight="900" fill="#000000" text-anchor="middle" transform="translate(4, 6)">POW!</text>
+    <text x="0" y="0" font-family="'Impact', 'Arial Black', sans-serif" font-size="82" font-weight="900" fill="#000000" text-anchor="middle" transform="translate(2, 3)">POW!</text>
+
+    <!-- Thick Outer Black Stroke -->
+    <text x="0" y="0" font-family="'Impact', 'Arial Black', sans-serif" font-size="82" font-weight="900" fill="#000000" stroke="#000000" stroke-width="14" stroke-linejoin="round" text-anchor="middle">POW!</text>
+
+    <!-- Main Gradient Text -->
+    <text x="0" y="0" font-family="'Impact', 'Arial Black', sans-serif" font-size="82" font-weight="900" fill="url(#textGrad)" text-anchor="middle">POW!</text>
+    
+    <!-- Accent Highlight Stroke -->
+    <text x="0" y="0" font-family="'Impact', 'Arial Black', sans-serif" font-size="82" font-weight="900" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round" text-anchor="middle" opacity="0.85"/>
+  </g>
+</svg>
