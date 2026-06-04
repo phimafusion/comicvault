@@ -223,14 +223,14 @@ export class App {
 
         // Clean previous font overrides
         const fontVars = ['--font-primary', '--font-display', '--font-typewriter', '--font-code'];
-        fontVars.forEach(v => document.documentElement.style.removeProperty(v));
+        fontVars.forEach(v => document.body.style.removeProperty(v));
 
         // Apply customized theme fonts
         if (settings.themeFonts && settings.themeFonts[colorScheme]) {
             const fonts = settings.themeFonts[colorScheme];
             for (const [varName, fontVal] of Object.entries(fonts)) {
                 if (fontVal) {
-                    document.documentElement.style.setProperty(varName, fontVal);
+                    document.body.style.setProperty(varName, fontVal);
                 }
             }
         }

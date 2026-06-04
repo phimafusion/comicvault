@@ -156,7 +156,7 @@ export function setupTestEnv(options = {}) {
 
     // 7. Clear root font variables
     const fontVars = ['--font-primary', '--font-display', '--font-typewriter', '--font-code'];
-    fontVars.forEach(v => document.documentElement.style.removeProperty(v));
+    fontVars.forEach(v => document.body.style.removeProperty(v));
 
     // 8. Instantiate App and attach to window
     window.app = new App();
@@ -234,5 +234,5 @@ export function cleanup() {
     document.body.classList.remove('bulk-select-active');
     document.body.classList.remove('mobile-view');
     const fontVars = ['--font-primary', '--font-display', '--font-typewriter', '--font-code'];
-    fontVars.forEach(v => document.documentElement.style.removeProperty(v));
+    fontVars.forEach(v => document.body.style.removeProperty(v));
 }

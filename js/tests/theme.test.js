@@ -39,9 +39,9 @@ describe('Theme Fonts Settings & Application Tests', () => {
         cleanup();
     });
 
-    it('sollte standardmäßig keine Inline-Schriftart-Overrides auf documentElement haben', () => {
-        expect(document.documentElement.style.getPropertyValue('--font-primary')).to.equal('');
-        expect(document.documentElement.style.getPropertyValue('--font-display')).to.equal('');
+    it('sollte standardmäßig keine Inline-Schriftart-Overrides auf body haben', () => {
+        expect(document.body.style.getPropertyValue('--font-primary')).to.equal('');
+        expect(document.body.style.getPropertyValue('--font-display')).to.equal('');
     });
 
     it('sollte benutzerdefinierte Schriftarten anwenden, wenn sie konfiguriert sind', () => {
@@ -56,9 +56,9 @@ describe('Theme Fonts Settings & Application Tests', () => {
 
         appInstance.applyTheme();
 
-        expect(document.documentElement.style.getPropertyValue('--font-primary')).to.equal('Georgia, serif');
-        expect(document.documentElement.style.getPropertyValue('--font-display')).to.equal("'Bangers', cursive");
-        expect(document.documentElement.style.getPropertyValue('--font-typewriter')).to.equal('Courier New, monospace');
+        expect(document.body.style.getPropertyValue('--font-primary')).to.equal('Georgia, serif');
+        expect(document.body.style.getPropertyValue('--font-display')).to.equal("'Bangers', cursive");
+        expect(document.body.style.getPropertyValue('--font-typewriter')).to.equal('Courier New, monospace');
     });
 
     it('sollte alte Schriftarten entfernen, wenn das Farbschema zu einem ohne Einstellungen wechselt', () => {
@@ -71,13 +71,13 @@ describe('Theme Fonts Settings & Application Tests', () => {
             }
         };
         appInstance.applyTheme();
-        expect(document.documentElement.style.getPropertyValue('--font-primary')).to.equal('Georgia, serif');
+        expect(document.body.style.getPropertyValue('--font-primary')).to.equal('Georgia, serif');
 
         // Wechsel zu default ohne custom fonts
         savedSettings.colorScheme = 'default';
         appInstance.applyTheme();
-        expect(document.documentElement.style.getPropertyValue('--font-primary')).to.equal('');
-        expect(document.documentElement.style.getPropertyValue('--font-display')).to.equal('');
+        expect(document.body.style.getPropertyValue('--font-primary')).to.equal('');
+        expect(document.body.style.getPropertyValue('--font-display')).to.equal('');
     });
 
     it('sollte die korrekte Anzahl an Feldern für jedes Design im Einstellungs-UI rendern', () => {
@@ -147,8 +147,8 @@ describe('Theme Fonts Settings & Application Tests', () => {
         // In DB prüfen
         expect(db.getSettings().themeFonts.default['--font-primary']).to.equal('MyCustomFont');
 
-        // Im documentElement prüfen (wurde sofort über window.app.applyTheme() angewendet)
-        expect(document.documentElement.style.getPropertyValue('--font-primary')).to.equal('MyCustomFont');
+        // Im body prüfen (wurde sofort über window.app.applyTheme() angewendet)
+        expect(document.body.style.getPropertyValue('--font-primary')).to.equal('MyCustomFont');
     });
 
     it('sollte die Schriftart-Einstellungen beim Klick auf "Zurücksetzen" zurücksetzen', () => {
@@ -177,8 +177,8 @@ describe('Theme Fonts Settings & Application Tests', () => {
         // In DB prüfen
         expect(db.getSettings().themeFonts.default).to.be.undefined;
         
-        // Im documentElement prüfen
-        expect(document.documentElement.style.getPropertyValue('--font-primary')).to.equal('');
+        // Im body prüfen
+        expect(document.body.style.getPropertyValue('--font-primary')).to.equal('');
     });
 
     it('sollte eine Live-Schriftartenvorschau anzeigen, wenn eine Schriftart ausgewählt oder eingegeben wird', () => {
