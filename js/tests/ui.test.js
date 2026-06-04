@@ -424,5 +424,17 @@ describe('ComicVault Database Caching Tests', () => {
         expect(db.wishlistCache).to.be.null;
         expect(db.cachedUid).to.equal('user2');
     });
+
+    it('sollte den Cache bei clearCache manuell leeren', async () => {
+        await db.getAllComics();
+        await db.getWishlist();
+        expect(db.comicsCache).to.not.be.null;
+        expect(db.wishlistCache).to.not.be.null;
+
+        db.clearCache();
+
+        expect(db.comicsCache).to.be.null;
+        expect(db.wishlistCache).to.be.null;
+    });
 });
 

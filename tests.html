@@ -355,10 +355,37 @@
     <script type="module" src="./js/tests/budget.test.js"></script>
     <script type="module" src="./js/tests/dateFilters.test.js"></script>
     <script type="module" src="./js/tests/db.test.js"></script>
-
     <script type="module">
         // Run tests
         const runner = mocha.run();
+
+        // Headless reporter für automatische Tests
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('headless') === 'true') {
+            const failedTestsDetails = [];
+            runner.on('fail', (test, err) => {
+                failedTestsDetails.push({
+                    title: test.fullTitle(),
+                    error: err.message,
+                    stack: err.stack
+                });
+            });
+            runner.on('end', () => {
+                const stats = runner.stats;
+                fetch('http://localhost:8081/report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        passes: stats.passes,
+                        failures: stats.failures,
+                        pending: stats.pending,
+                        tests: stats.tests,
+                        duration: stats.duration,
+                        failedTests: failedTestsDetails
+                    })
+                }).catch(err => console.error('Fehler beim Senden des Testberichts:', err));
+            });
+        }
 
         // Move mocha-stats to body to bypass the backdrop-filter stacking context on #mocha,
         // which makes fixed elements scroll relative to #mocha instead of the viewport.

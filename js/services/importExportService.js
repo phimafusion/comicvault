@@ -148,34 +148,63 @@ export function mapRowToComic(row) {
 }
 
 // Export formatting helpers
-export function generateXLSX(comics) {
-    const fields = [
+export function generateXLSX(comics, wishes = null) {
+    const workbook = XLSX.utils.book_new();
+
+    const fieldsComics = [
         'id', 'titel', 'typ', 'serie', 'nummer', 'verlag', 'format', 'jahr', 
         'zustand', 'bezugsquelle', 'preis', 'sprache', 'limitierung', 
         'limitiert_auf', 'variant', 'variantname', 'kaufdatum', 'bestand', 
         'gelesen_am', 'bewertung', 'bemerkung'
     ];
-    
-    const data = comics.map(c => {
-        const row = {};
-        fields.forEach(f => {
-            row[f] = c[f] ?? '';
-        });
-        return row;
-    });
 
-    const worksheet = XLSX.utils.json_to_sheet(data, { header: fields });
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Sammlung");
-    
+    const fieldsWishes = [
+        'id', 'titel', 'typ', 'format', 'preis', 'jahr', 'vorbestellt', 
+        'isbn', 'besonderheit', 'bemerkung'
+    ];
+
+    if (comics && comics.length > 0) {
+        const dataComics = comics.map(c => {
+            const row = {};
+            fieldsComics.forEach(f => {
+                row[f] = c[f] ?? '';
+            });
+            return row;
+        });
+        const worksheetComics = XLSX.utils.json_to_sheet(dataComics, { header: fieldsComics });
+        XLSX.utils.book_append_sheet(workbook, worksheetComics, "Sammlung");
+    }
+
+    if (wishes && wishes.length > 0) {
+        const dataWishes = wishes.map(w => {
+            const row = {};
+            fieldsWishes.forEach(f => {
+                row[f] = w[f] ?? '';
+            });
+            return row;
+        });
+        const worksheetWishes = XLSX.utils.json_to_sheet(dataWishes, { header: fieldsWishes });
+        XLSX.utils.book_append_sheet(workbook, worksheetWishes, "Wunschliste");
+    }
+
+    if ((!comics || comics.length === 0) && (!wishes || wishes.length === 0)) {
+        const emptyWorksheet = XLSX.utils.json_to_sheet([]);
+        XLSX.utils.book_append_sheet(workbook, emptyWorksheet, "Leer");
+    }
+
     return XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
 }
 
-export function generateCSV(comics) {
-    const fields = ['id', 'titel', 'typ', 'serie', 'nummer', 'verlag', 'format', 'jahr', 'zustand', 'bezugsquelle', 'preis', 'sprache', 'limitierung', 'limitiert_auf', 'variant', 'variantname', 'kaufdatum', 'bestand', 'gelesen_am', 'bewertung', 'bemerkung'];
+export function generateCSV(items, isWishlist = false) {
+    const fields = isWishlist 
+        ? ['id', 'titel', 'typ', 'format', 'preis', 'jahr', 'vorbestellt', 'isbn', 'besonderheit', 'bemerkung']
+        : ['id', 'titel', 'typ', 'serie', 'nummer', 'verlag', 'format', 'jahr', 'zustand', 'bezugsquelle', 'preis', 'sprache', 'limitierung', 'limitiert_auf', 'variant', 'variantname', 'kaufdatum', 'bestand', 'gelesen_am', 'bewertung', 'bemerkung'];
     const header = fields.join(';');
-    const rows = comics.map(c => fields.map(f => {
-        let v = c[f] ?? '';
+    const rows = items.map(item => fields.map(f => {
+        let v = item[f] ?? '';
+        if (f === 'vorbestellt' && isWishlist) {
+            v = v ? 'Ja' : 'Nein';
+        }
         v = String(v).replace(/"/g, '""');
         return (v.includes(';') || v.includes('\n') || v.includes('"')) ? `"${v}"` : v;
     }).join(';'));
@@ -271,7 +300,7 @@ export async function importCSVData({
 
                 current++;
                 if (onProgress) {
-                    onProgress(current, total, newCount, updatedCount, skipCount);
+                    onProgress(current, total, newCount, updatedCount, skipCount, 'comics');
                 }
             } else {
                 current++;
@@ -389,7 +418,7 @@ export async function importJSONData({
 
             current++;
             if (onProgress) {
-                onProgress(current, total, newCount, updatedCount, skipCount);
+                onProgress(current, total, newCount, updatedCount, skipCount, 'comics');
             }
         }
 
@@ -450,7 +479,7 @@ export async function importJSONData({
 
             current++;
             if (onProgress) {
-                onProgress(current, total, newCount, updatedCount, skipCount);
+                onProgress(current, total, newCount, updatedCount, skipCount, 'wishlist');
             }
         }
 

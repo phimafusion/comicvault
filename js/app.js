@@ -41,6 +41,7 @@ export class App {
         this.navItems = document.querySelectorAll('.nav-item');
         this.viewContainer = document.getElementById('view-container');
         this.themeToggle = document.getElementById('theme-toggle');
+        this.btnReload = document.getElementById('btn-reload-subpage');
         this.themeSelect = document.getElementById('theme-select');
         this.btnMobileToggle = document.getElementById('btn-mobile-toggle');
         this.btnAdd = document.getElementById('btn-add-new');
@@ -93,6 +94,37 @@ export class App {
 
         this.themeToggle.addEventListener('click', () => this.toggleTheme());
         
+        if (this.btnReload) {
+            this.btnReload.addEventListener('click', async () => {
+                const icon = this.btnReload.querySelector('i');
+                if (icon) {
+                    icon.classList.add('fa-spin');
+                }
+                
+                db.clearCache();
+                
+                try {
+                    // Service Worker Caches löschen
+                    if ('caches' in window) {
+                        const keys = await caches.keys();
+                        await Promise.all(keys.map(key => caches.delete(key)));
+                    }
+                    // Service Worker deinstallieren
+                    if ('serviceWorker' in navigator) {
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        await Promise.all(registrations.map(reg => reg.unregister()));
+                    }
+                } catch (err) {
+                    console.warn('Fehler beim Löschen des Caches / Service Workers:', err);
+                }
+                
+                // Kurze Verzögerung für die visuelle Rückmeldung der Drehanimation vor dem Reload
+                setTimeout(() => {
+                    window.location.reload();
+                }, 300);
+            });
+        }
+        
         if (this.themeSelect) {
             this.themeSelect.addEventListener('change', (e) => this.setColorScheme(e.target.value));
         }
@@ -117,7 +149,8 @@ export class App {
     showApp() {
         this.loginScreen.style.display = 'none';
         this.appContainer.style.display = 'flex';
-        this.navigate('collection');
+        const savedView = sessionStorage.getItem('comicvault_current_view') || 'collection';
+        this.navigate(savedView);
     }
 
     showLogin() {
@@ -136,6 +169,7 @@ export class App {
         }
 
         this.currentView = view;
+        sessionStorage.setItem('comicvault_current_view', view);
         
         this.navItems.forEach(item => {
             item.classList.toggle('active', item.dataset.view === view);

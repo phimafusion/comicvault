@@ -79,22 +79,31 @@ describe('ComicVault Budget & Kostenanalyse Berechnungs-Tests', () => {
             expect(stats[2].budget).to.equal(200.00); // Standardwert, da nicht gemockt
         });
 
-        it('sollte das kumulierte Delta über das Kalenderjahr hinweg korrekt berechnen', () => {
+        it('sollte das kumulierte Delta, das monatliche Delta und das kumulierte Budget über das Kalenderjahr hinweg korrekt berechnen', () => {
             const stats = calculateBudgetStats(mockComics, mockBudgets, defaultTypes, 2026);
             
-            // Jan: Budget 200, Ausgaben 25 -> Delta = +175
+            // Jan: Budget 200, Ausgaben 25 -> Delta = +175, Kumuliertes Budget = 200
+            expect(stats[0].monthlyDelta).to.equal(175.00);
             expect(stats[0].delta).to.equal(175.00);
+            expect(stats[0].cumulativeBudget).to.equal(200.00);
             
-            // Feb: Budget 150, Ausgaben 77.50 -> Monatsdelta = +72.50 -> Kumuliert = 175 + 72.50 = 247.50
+            // Feb: Budget 150, Ausgaben 77.50 -> Monatsdelta = +72.50 -> Kumuliert = 175 + 72.50 = 247.50, Kumuliertes Budget = 350
+            expect(stats[1].monthlyDelta).to.equal(72.50);
             expect(stats[1].delta).to.equal(247.50);
+            expect(stats[1].cumulativeBudget).to.equal(350.00);
             
-            // Mär: Budget 200, Ausgaben 0 -> Monatsdelta = +200 -> Kumuliert = 247.50 + 200 = 447.50
+            // Mär: Budget 200, Ausgaben 0 -> Monatsdelta = +200 -> Kumuliert = 247.50 + 200 = 447.50, Kumuliertes Budget = 550
+            expect(stats[2].monthlyDelta).to.equal(200.00);
             expect(stats[2].delta).to.equal(447.50);
+            expect(stats[2].cumulativeBudget).to.equal(550.00);
             
             // Dez: Budget 200, Ausgaben 50 -> Monatsdelta = +150 -> Kumuliert (nach vorangegangenen Monaten)
             // Nov-Delta = 447.50 + 8 * 200 = 2047.50
             // Dez-Delta = 2047.50 + 150 = 2197.50
+            // Kumuliertes Budget = 350 + 10 * 200 = 2350
+            expect(stats[11].monthlyDelta).to.equal(150.00);
             expect(stats[11].delta).to.equal(2197.50);
+            expect(stats[11].cumulativeBudget).to.equal(2350.00);
         });
 
         it('sollte Comics ohne kaufdatum NICHT in die Ausgaben einrechnen (Regressionstest Bug #created_at-fallback)', () => {

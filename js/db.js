@@ -299,6 +299,11 @@ class Database {
         return downloadUrl;
     }
 
+    clearCache() {
+        this.comicsCache = null;
+        this.wishlistCache = null;
+    }
+
     async clearAllData() {
         this.comicsCache = null;
         this.wishlistCache = null;

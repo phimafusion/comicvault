@@ -7,13 +7,28 @@ describe('Responsive Layout & Mobile Menu Tests', () => {
     let container;
     let appInstance;
 
+    let originalMatchMedia;
+
     beforeEach(() => {
+        originalMatchMedia = window.matchMedia;
+        window.matchMedia = (query) => ({
+            matches: false, // Desktop-Modus erzwingen für deterministische Testergebnisse
+            media: query,
+            onchange: null,
+            addListener: () => {},
+            removeListener: () => {},
+            addEventListener: () => {},
+            removeEventListener: () => {},
+            dispatchEvent: () => {}
+        });
+
         testEnv = setupTestEnv();
         container = testEnv.container;
         appInstance = testEnv.appInstance;
     });
 
     afterEach(() => {
+        window.matchMedia = originalMatchMedia;
         cleanup();
     });
 

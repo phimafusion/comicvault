@@ -136,6 +136,7 @@ export function setupTestEnv(options = {}) {
                 <button class="nav-item" data-view="collection">Collection</button>
                 <button class="nav-item" data-view="settings">Settings</button>
                 <button id="theme-toggle"></button>
+                <button id="btn-reload-subpage"></button>
                 <button id="btn-logout"></button>
             </aside>
             <div id="sidebar-overlay"></div>
