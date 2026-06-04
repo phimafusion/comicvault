@@ -56,15 +56,15 @@ export function renderSettings(container) {
         
         <div class="details-grid">
             <!-- Sektion: Design & Themes -->
-            <div class="details-card collapsible" style="flex-direction: column;">
+            <div class="details-card collapsible" style="flex-direction: column; border-color: var(--primary-color);">
                 <div class="settings-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%; user-select: none;">
                     <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
                         <i class="fa-solid fa-palette" style="color: var(--primary-color);"></i> Design & Themes
                     </h3>
-                    <i class="fa-solid fa-chevron-right toggle-icon" style="color: var(--text-secondary); transition: transform 0.2s ease;"></i>
+                    <i class="fa-solid fa-chevron-right toggle-icon" style="color: var(--text-secondary); transition: transform 0.2s ease; transform: rotate(90deg);"></i>
                 </div>
                 
-                <div class="collapsible-content" style="display: none; flex-direction: column; width: 100%; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <div class="collapsible-content" style="display: flex; flex-direction: column; width: 100%; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
                     <p style="color: var(--text-secondary); margin-bottom: 16px; margin-top: 0;">Passe das Aussehen deiner ComicVault an.</p>
                     
                     <div class="form-group" style="margin-bottom: 16px;">
@@ -89,15 +89,15 @@ export function renderSettings(container) {
             </div>
 
             <!-- Sektion: Schriftarten anpassen -->
-            <div class="details-card collapsible" style="flex-direction: column;">
+            <div class="details-card collapsible" style="flex-direction: column; border-color: var(--primary-color);">
                 <div class="settings-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%; user-select: none;">
                     <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
                         <i class="fa-solid fa-font" style="color: var(--primary-color);"></i> Schriftarten anpassen
                     </h3>
-                    <i class="fa-solid fa-chevron-right toggle-icon" style="color: var(--text-secondary); transition: transform 0.2s ease;"></i>
+                    <i class="fa-solid fa-chevron-right toggle-icon" style="color: var(--text-secondary); transition: transform 0.2s ease; transform: rotate(90deg);"></i>
                 </div>
                 
-                <div class="collapsible-content" style="display: none; flex-direction: column; width: 100%; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <div class="collapsible-content" style="display: flex; flex-direction: column; width: 100%; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
                     <p style="color: var(--text-secondary); margin-bottom: 16px; margin-top: 0;">Passe die Schriftarten für jedes Design individuell an.</p>
                     
                     <div class="form-group" style="margin-bottom: 16px;">
@@ -128,15 +128,15 @@ export function renderSettings(container) {
             </div>
 
             <!-- Sektion: Standardwerte -->
-            <div class="details-card collapsible" style="flex-direction: column;">
+            <div class="details-card collapsible" style="flex-direction: column; border-color: var(--primary-color);">
                 <div class="settings-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%; user-select: none;">
                     <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
                         <i class="fa-solid fa-sliders" style="color: var(--primary-color);"></i> Standardwerte
                     </h3>
-                    <i class="fa-solid fa-chevron-right toggle-icon" style="color: var(--text-secondary); transition: transform 0.2s ease;"></i>
+                    <i class="fa-solid fa-chevron-right toggle-icon" style="color: var(--text-secondary); transition: transform 0.2s ease; transform: rotate(90deg);"></i>
                 </div>
                 
-                <div class="collapsible-content" style="display: none; flex-direction: column; width: 100%; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <div class="collapsible-content" style="display: flex; flex-direction: column; width: 100%; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
                     <p style="color: var(--text-secondary); margin-bottom: 20px; margin-top: 0;">Vorausgefüllte Felder für neue Comic-Einträge.</p>
                     
                     <div style="display: flex; flex-direction: column; gap: 16px;">
@@ -169,15 +169,15 @@ export function renderSettings(container) {
             </div>
 
             <!-- Sektion: Vorschlagslisten verwalten -->
-            <div class="details-card collapsible" style="flex-direction: column; grid-column: span 2;">
+            <div class="details-card collapsible" style="flex-direction: column; grid-column: span 2; border-color: var(--primary-color);">
                 <div class="settings-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%; user-select: none;">
                     <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
                         <i class="fa-solid fa-list-check" style="color: var(--primary-color);"></i> Vorschlagslisten verwalten
                     </h3>
-                    <i class="fa-solid fa-chevron-right toggle-icon" style="color: var(--text-secondary); transition: transform 0.2s ease;"></i>
+                    <i class="fa-solid fa-chevron-right toggle-icon" style="color: var(--text-secondary); transition: transform 0.2s ease; transform: rotate(90deg);"></i>
                 </div>
                 
-                <div class="collapsible-content" style="display: none; flex-direction: column; width: 100%; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <div class="collapsible-content" style="display: flex; flex-direction: column; width: 100%; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
                     <p style="color: var(--text-secondary); margin-bottom: 16px; margin-top: 0;">Verwalte die vordefinierten Werte für die Autovervollständigung.</p>
                     
                     <div style="display: grid; grid-template-columns: minmax(180px, 200px) 1fr; gap: 20px; width: 100%;">
@@ -214,15 +214,15 @@ export function renderSettings(container) {
             </div>
 
             <!-- Sektion: KI-Verbindung -->
-            <div class="details-card collapsible" style="flex-direction: column; grid-column: span 2;">
+            <div class="details-card collapsible" style="flex-direction: column; grid-column: span 2; border-color: var(--primary-color);">
                 <div class="settings-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%; user-select: none;">
                     <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
                         <i class="fa-solid fa-brain" style="color: var(--primary-color);"></i> KI-Verbindung (Gemini)
                     </h3>
-                    <i class="fa-solid fa-chevron-right toggle-icon" style="color: var(--text-secondary); transition: transform 0.2s ease;"></i>
+                    <i class="fa-solid fa-chevron-right toggle-icon" style="color: var(--text-secondary); transition: transform 0.2s ease; transform: rotate(90deg);"></i>
                 </div>
                 
-                <div class="collapsible-content" style="display: none; flex-direction: column; width: 100%; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <div class="collapsible-content" style="display: flex; flex-direction: column; width: 100%; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
                     <p style="color: var(--text-secondary); margin-bottom: 20px; margin-top: 0; font-size: 0.95rem; line-height: 1.5;">
                         Hinterlege hier deinen persönlichen **Gemini API-Schlüssel** von Google AI Studio, um vollkommen freie, dynamische Analysen und Experteneinschätzungen deiner Sammlung zu generieren. Der Schlüssel wird lokal in deinem Browser gespeichert.
                     </p>
@@ -249,15 +249,15 @@ export function renderSettings(container) {
             </div>
 
             <!-- Sektion: Datenbank leeren -->
-            <div class="details-card collapsible" style="flex-direction: column; grid-column: span 2;">
+            <div class="details-card collapsible" style="flex-direction: column; grid-column: span 2; border-color: var(--primary-color);">
                 <div class="settings-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%; user-select: none;">
                     <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
                         <i class="fa-solid fa-database" style="color: var(--primary-color);"></i> Datenbank leeren
                     </h3>
-                    <i class="fa-solid fa-chevron-right toggle-icon" style="color: var(--text-secondary); transition: transform 0.2s ease;"></i>
+                    <i class="fa-solid fa-chevron-right toggle-icon" style="color: var(--text-secondary); transition: transform 0.2s ease; transform: rotate(90deg);"></i>
                 </div>
                 
-                <div class="collapsible-content" style="display: none; flex-direction: column; width: 100%; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <div class="collapsible-content" style="display: flex; flex-direction: column; width: 100%; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
                     <p style="color: var(--text-secondary); margin-bottom: 16px; margin-top: 0;">Verwalte deine gespeicherten Daten.</p>
                     
                     <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-color);">
