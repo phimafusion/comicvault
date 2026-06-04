@@ -157,9 +157,9 @@ export function renderStars(rating) {
 }
 
 export function getPlaceholderImage() {
-    // Ein cooles, lokales SVG als Data-URI: Dunkelgrauer Hintergrund mit einem coolen "POW!"-Design.
-    // Das ist 100% offline-fähig, lädt ohne Latenz und kann nicht von AdBlockern blockiert werden.
-    return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600"><rect width="100%" height="100%" fill="%231e293b"/><g transform="translate(200, 300)"><path d="M-80,-50 L-30,-70 L0,-40 L40,-80 L60,-30 L100,-40 L70,10 L90,50 L40,30 L20,70 L-20,40 L-60,70 L-40,20 L-90,10 Z" fill="%2306b6d4" stroke="%230891b2" stroke-width="6"/><text x="0" y="15" font-family="Impact, Arial Black, sans-serif" font-size="48" font-weight="bold" fill="%23ffffff" text-anchor="middle" transform="rotate(-15)">POW!</text></g></svg>`;
+    // Ein cooles, lokales SVG als Base64 Data-URI: Dunkelgrauer Hintergrund mit einem coolen "POW!"-Design.
+    // Base64 wird verwendet, da Firefox rohe SVG Data-URIs mit "<" und ">" sonst als ungültig einstuft und blockiert.
+    return `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNjAwIiB2aWV3Qm94PSIwIDAgNDAwIDYwMCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iIzFlMjkzYiIvPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDIwMCwgMzAwKSI+PHBhdGggZD0iTS04MCwtNTAgTC0zMCwtNzAgTDAsLTQwIEw0MCwtODAgTDYwLC0zMCBMMTAwLC00MCBMNzAsMTAgTDkwLDUwIEw0MCwzMCBMMjAsNzAgTC0yMCw0MCBMLTYwLDcwIEwtNDAsMjAgTC05MCwxMCBaIiBmaWxsPSIjMDZiNmQ0IiBzdHJva2U9IiMwODkxYjIiIHN0cm9rZS13aWR0aD0iNiIvPjx0ZXh0IHg9IjAiIHk9IjE1IiBmb250LWZhbWlseT0iSW1wYWN0LCBBcmlhbCBCbGFjaywgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0OCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiNmZmZmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIHRyYW5zZm9ybT0icm90YXRlKC0xNSkiPlBPVyE8L3RleHQ+PC9nPjwvc3ZnPg==`;
 }
 
 // Comparison Helpers
