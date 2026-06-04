@@ -310,10 +310,14 @@ input[type="number"] {
     cursor: pointer;
     display: flex;
     flex-direction: column;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
 }
 
 .comic-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-5px) translate3d(0, 0, 0);
     box-shadow: var(--shadow-lg), 0 0 20px rgba(var(--secondary-rgb), 0.3);
     border-color: var(--primary-color);
 }
@@ -375,6 +379,10 @@ input[type="number"] {
     color: var(--text-primary);
     margin: 4px 0;
     line-height: 1.2;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
 }
 
 .comic-meta {
@@ -443,6 +451,10 @@ input[type="number"] {
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
 }
 
 .details-cover {
@@ -475,7 +487,10 @@ input[type="number"] {
 
 /* Global Item Hover Effect */
 .comic-item {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .comic-item:hover {
