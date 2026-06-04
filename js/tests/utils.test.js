@@ -163,7 +163,7 @@ describe('ComicVault Utility Module Tests', () => {
     describe('getPlaceholderImage()', () => {
         it('sollte eine gültige Bild-URL zurückgeben', () => {
             expect(getPlaceholderImage()).to.be.a('string');
-            expect(getPlaceholderImage()).to.contain('placehold.co');
+            expect(getPlaceholderImage()).to.contain('data:image/svg+xml');
         });
     });
 });

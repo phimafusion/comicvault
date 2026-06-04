@@ -157,7 +157,9 @@ export function renderStars(rating) {
 }
 
 export function getPlaceholderImage() {
-    return `https://placehold.co/400x600/1e293b/06b6d4?text=POW!&font=impact`;
+    // Ein cooles, lokales SVG als Data-URI: Dunkelgrauer Hintergrund mit einem coolen "POW!"-Design.
+    // Das ist 100% offline-fähig, lädt ohne Latenz und kann nicht von AdBlockern blockiert werden.
+    return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600"><rect width="100%" height="100%" fill="%231e293b"/><g transform="translate(200, 300)"><path d="M-80,-50 L-30,-70 L0,-40 L40,-80 L60,-30 L100,-40 L70,10 L90,50 L40,30 L20,70 L-20,40 L-60,70 L-40,20 L-90,10 Z" fill="%2306b6d4" stroke="%230891b2" stroke-width="6"/><text x="0" y="15" font-family="Impact, Arial Black, sans-serif" font-size="48" font-weight="bold" fill="%23ffffff" text-anchor="middle" transform="rotate(-15)">POW!</text></g></svg>`;
 }
 
 // Comparison Helpers

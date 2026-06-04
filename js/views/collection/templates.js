@@ -36,7 +36,7 @@ export function renderTile(comic, visibleFields, isSelectModeActive, selectedCom
     let imgBlock = '';
     if (visibleFields.tiles.includes('bild')) {
         const imgUrl = comic.bild || getPlaceholderImage();
-        imgBlock = `<img src="${imgUrl}" alt="${comic.titel}" class="comic-cover" onerror="this.src='${getPlaceholderImage()}'">`;
+        imgBlock = `<img src="${imgUrl}" alt="${comic.titel}" class="comic-cover" onerror="this.onerror=null; this.src='${getPlaceholderImage()}';">`;
     }
 
     const stdFields = ['bild', 'serie', 'titel', 'bewertung', 'bestand'];
@@ -167,7 +167,7 @@ export function renderDetailsItem(comic, visibleFields, isSelectModeActive, sele
     let imgBlock = '';
     if (visibleFields.details.includes('bild')) {
         const imgUrl = comic.bild || getPlaceholderImage();
-        imgBlock = `<img src="${imgUrl}" alt="${comic.titel}" class="details-cover" onerror="this.src='${getPlaceholderImage()}'">`;
+        imgBlock = `<img src="${imgUrl}" alt="${comic.titel}" class="details-cover" onerror="this.onerror=null; this.src='${getPlaceholderImage()}';">`;
     }
 
     let headerBlock = `
