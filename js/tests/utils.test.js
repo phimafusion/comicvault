@@ -165,5 +165,17 @@ describe('ComicVault Utility Module Tests', () => {
             expect(getPlaceholderImage()).to.be.a('string');
             expect(getPlaceholderImage()).to.contain('data:image/svg+xml');
         });
+
+        it('sollte als Image-Src erfolgreich laden', (done) => {
+            const img = new Image();
+            img.onload = () => {
+                expect(img.width).to.be.greaterThan(0);
+                done();
+            };
+            img.onerror = () => {
+                done(new Error("SVG placeholder failed to load in browser"));
+            };
+            img.src = getPlaceholderImage();
+        });
     });
 });
