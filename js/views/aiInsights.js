@@ -461,7 +461,11 @@ export async function renderAiInsights(container) {
 
                 } catch (err) {
                     console.error("Fehler bei der Insight-Generierung:", err);
-                    alert("Fehler bei der Generierung: " + err.message);
+                    let displayMsg = err.message;
+                    if (err.name === 'TypeError' || err.message.toLowerCase().includes('fetch') || err.message.toLowerCase().includes('networkerror') || err.message.toLowerCase().includes('failed')) {
+                        displayMsg = "Netzwerkfehler beim Aufruf der Gemini API.\n\nBitte prüfe, ob ein AdBlocker (z. B. uBlock Origin), ein VPN oder der Tracking-Schutz deines Browsers (z. B. Firefox Enhanced Tracking Protection) Anfragen an 'generativelanguage.googleapis.com' blockiert.";
+                    }
+                    alert("Fehler bei der Generierung: " + displayMsg);
                 } finally {
                     if (overlay) {
                         overlay.style.display = 'none';
