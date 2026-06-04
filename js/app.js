@@ -7,6 +7,7 @@ import { renderWishlist, cleanupWishlist } from './views/wishlist.js';
 import { renderImport } from './views/import.js';
 import { renderSettings } from './views/settings.js';
 import { renderChangelog } from './views/changelog.js';
+import { renderAiInsights } from './views/aiInsights.js';
 import { openModal } from './views/form.js';
 
 export class App {
@@ -190,6 +191,9 @@ export class App {
                 break;
             case 'wishlist':
                 renderWishlist(this.viewContainer);
+                break;
+            case 'ai-insights':
+                renderAiInsights(this.viewContainer);
                 break;
             case 'import':
                 renderImport(this.viewContainer);

@@ -14,6 +14,7 @@ const ASSETS = [
   './js/services/importExportService.js',
   './js/services/statsService.js',
   './js/views/budget.js',
+  './js/views/aiInsights.js',
   './js/views/changelog.js',
   './js/views/collection.js',
   './js/views/form.js',

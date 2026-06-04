@@ -213,6 +213,41 @@ export function renderSettings(container) {
                 </div>
             </div>
 
+            <!-- Sektion: KI-Verbindung -->
+            <div class="details-card collapsible" style="flex-direction: column; grid-column: span 2;">
+                <div class="settings-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%; user-select: none;">
+                    <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-brain" style="color: var(--primary-color);"></i> KI-Verbindung (Gemini)
+                    </h3>
+                    <i class="fa-solid fa-chevron-right toggle-icon" style="color: var(--text-secondary); transition: transform 0.2s ease;"></i>
+                </div>
+                
+                <div class="collapsible-content" style="display: none; flex-direction: column; width: 100%; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                    <p style="color: var(--text-secondary); margin-bottom: 20px; margin-top: 0; font-size: 0.95rem; line-height: 1.5;">
+                        Hinterlege hier deinen persönlichen **Gemini API-Schlüssel** von Google AI Studio, um vollkommen freie, dynamische Analysen und Experteneinschätzungen deiner Sammlung zu generieren. Der Schlüssel wird lokal in deinem Browser gespeichert.
+                    </p>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 16px; width: 100%;">
+                        <div class="form-group">
+                            <label class="form-label">Gemini API-Schlüssel</label>
+                            <div style="display: flex; gap: 12px; align-items: center; position: relative;">
+                                <input type="password" id="settings-gemini-api-key" class="form-control" style="flex: 1; padding-right: 40px;" value="${settings.geminiApiKey || ''}" placeholder="AIzaSy...">
+                                <button class="btn btn-secondary" id="btn-toggle-api-key-visibility" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: none; background: transparent; padding: 6px; cursor: pointer; color: var(--text-secondary); font-size: 1.1rem; height: auto; width: auto; box-shadow: none;">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                            <span style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 6px; display: block;">
+                                Du hast noch keinen Schlüssel? Erstelle dir einen kostenlosen Schlüssel unter <a href="https://aistudio.google.com/" target="_blank" style="color: var(--primary-color); text-decoration: underline; font-weight: 500;">Google AI Studio</a>.
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary" id="btn-save-gemini-key" style="margin-top: 24px; align-self: flex-start; width: 100%;">
+                        API-Schlüssel speichern
+                    </button>
+                </div>
+            </div>
+
             <!-- Sektion: Datenbank leeren -->
             <div class="details-card collapsible" style="flex-direction: column; grid-column: span 2;">
                 <div class="settings-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%; user-select: none;">
@@ -564,6 +599,33 @@ export function renderSettings(container) {
         db.saveSettings(current);
         alert('Standardwerte wurden gespeichert.');
     });
+
+    // Save Gemini Key
+    const saveKeyBtn = document.getElementById('btn-save-gemini-key');
+    if (saveKeyBtn) {
+        saveKeyBtn.addEventListener('click', () => {
+            const current = db.getSettings();
+            current.geminiApiKey = document.getElementById('settings-gemini-api-key').value.trim();
+            db.saveSettings(current);
+            alert('Gemini API-Schlüssel wurde erfolgreich gespeichert.');
+        });
+    }
+
+    // Toggle API Key visibility
+    const toggleKeyVisibilityBtn = document.getElementById('btn-toggle-api-key-visibility');
+    if (toggleKeyVisibilityBtn) {
+        toggleKeyVisibilityBtn.addEventListener('click', () => {
+            const input = document.getElementById('settings-gemini-api-key');
+            const icon = toggleKeyVisibilityBtn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-solid fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-solid fa-eye';
+            }
+        });
+    }
 
     // Clear Database
     document.getElementById('btn-clear-database').addEventListener('click', () => {
