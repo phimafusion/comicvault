@@ -115,8 +115,24 @@ export class App {
                         const registrations = await navigator.serviceWorker.getRegistrations();
                         await Promise.all(registrations.map(reg => reg.unregister()));
                     }
+                    
+                    // Browser-HTTP-Cache für Kerndateien explizit umgehen/aktualisieren
+                    const cacheBustingFiles = [
+                        './',
+                        './index.html',
+                        './js/app.js',
+                        './js/views/settings.js',
+                        './css/style.css',
+                        './css/components.css'
+                    ];
+                    await Promise.all(
+                        cacheBustingFiles.map(file => 
+                            fetch(file, { cache: 'reload' })
+                                .catch(err => console.warn(`Cache-Reload fehlgeschlagen für ${file}:`, err))
+                        )
+                    );
                 } catch (err) {
-                    console.warn('Fehler beim Löschen des Caches / Service Workers:', err);
+                    console.warn('Fehler beim Löschen des Caches / Service Workers / HTTP-Caches:', err);
                 }
                 
                 // Kurze Verzögerung für die visuelle Rückmeldung der Drehanimation vor dem Reload
