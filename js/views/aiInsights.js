@@ -380,7 +380,7 @@ export async function renderAiInsights(container) {
             <div class="details-card" id="insights-content-card" style="flex-direction: column; padding: 32px; background-color: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); min-height: 300px; position: relative;">
                 
                 <!-- Lade-Overlay (wird während des Generierens eingeblendet) -->
-                <div id="insights-loading-overlay" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: var(--radius-lg); z-index: 10; flex-direction: column; align-items: center; justify-content: center; gap: 16px; animation: fadeIn 0.2s ease;">
+                <div id="insights-loading-overlay" style="display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: var(--radius-lg); z-index: 10; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 100px; gap: 16px; animation: fadeIn 0.2s ease;">
                     <i class="fa-solid fa-brain fa-spin fa-3x" style="color: var(--primary-color);"></i>
                     <h3 id="insights-loading-status" style="margin: 0; font-family: var(--font-display); color: var(--text-primary);">Analysiere deine Sammlung...</h3>
                     <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Dies kann einen kurzen Moment dauern.</p>
