@@ -44,31 +44,39 @@ Diese Liste dient als Notizzettel für zukünftige Aufgaben und Ideen.
 
 ---
 
-## Zukünftiger Redesign-Plan: Detailansicht & Rasteransicht
+[x] [13] Redesign: Detailansicht & Rasteransicht (Umgesetzt)
 
-Hier sind Best-Practice-Konzepte und konkrete Ideen für die komplette visuelle Überarbeitung der Raster- (Kachel-) und Detailansichten beim nächsten Mal:
+Dieses Konzept wurde für die komplette visuelle Überarbeitung der Kachel-, Detail- und Listenansichten erfolgreich umgesetzt:
 
-### 1. Rasteransicht (Grid / Tiles View)
-- **Cover Art Focus (Seitenverhältnis 2:3)**: 
-  - Die Cover-Bilder müssen der absolute Held sein. Feste Bildhöhen und ein sauberes Porträt-Format verhindern ungleichmäßige Kacheln.
-  - **Glassmorphic Info-Overlays**: Titel, Serie und Nummer können elegant als leicht transparentes, verschwommenes Overlay (`backdrop-filter: blur(10px)`) über dem unteren Teil des Bildes liegen. Das spart wertvollen Platz und wirkt extrem hochwertig.
-  - **Micro-Animations & Hover**: Ein feiner Zoom des Covers (`transform: scale(1.04)`) und ein sanft glühender Rahmen (`box-shadow: 0 10px 25px rgba(109, 40, 217, 0.3)`) bei Hover erzeugen ein lebendiges App-Gefühl.
-  - **Smarte Badges**: Status-Pills (z.B. "Ungelesen" / "Vorhanden") werden direkt semi-transparent in die Ecken des Covers projiziert, anstatt extra Textplatz zu beanspruchen.
-  - **Responsive CSS-Grid**: Dynamische Spaltenaufteilung mittels `grid-template-columns: repeat(auto-fill, minmax(160px, 1fr))` mit luftigem Spacing (`gap: 24px`), damit die Sammlung atmen kann.
+### 1. Rasteransicht (Grid / Tiles View) [Umgesetzt]
+- [x] **Cover Art Focus (Seitenverhältnis 2:3)**: 
+  - Feste Bildhöhen und ein sauberes Porträt-Format.
+- [x] **Glassmorphic Info-Overlays**: 
+  - Titel, Serie und Nummer liegen elegant als leicht transparentes, verschwommenes Overlay über dem unteren Teil des Bildes.
+- [x] **Micro-Animations & Hover**: 
+  - Feiner Zoom des Covers (`transform: scale(1.05)`) und violetter Leuchteffekt bei Hover.
+- [x] **Smarte Badges**: 
+  - Status-Pills (z.B. "Ungelesen" / "Vorhanden") werden direkt semi-transparent in die Ecken des Covers projiziert.
+- [x] **Responsive CSS-Grid**: 
+  - Dynamische Spaltenaufteilung mittels `grid-template-columns: repeat(auto-fill, minmax(160px, 1fr))` bzw. `minmax(520px, 1fr)` für Details.
 
-### 2. Detailansicht (Detail Card / Detail View)
-- **Zweispaltiges Premium-Layout**:
-  - **Links (Das Cover)**: Großes Cover mit einem simulierten 3D-Bücherrücken-Effekt (weicher Schattenwurf nach links und glänzender Verlauf am Falz) und modernem Drop-Shadow.
-  - **Rechts (Die Metadaten)**: Klare typografische Hierarchie. Großer, markanter Titel (Schriftart *Outfit* oder *Rajdhani*), direkt gefolgt von Sub-Infos wie Serie & Verlag.
-- **Zweispaltige Key-Value-Tabelle**:
-  - Technische Daten (Format, Sprache, Zustand, Limitierung, Kaufpreis) werden in ein strukturiertes, zweispaltiges Grid gepackt. Zeilen erhalten dezente, abwechselnde Hintergrundschattierungen.
-- **Zustands- & Bewertungs-Visualisierung**:
-  - Sterne-Bewertungen erhalten eine markante, leuchtende Farbgebung.
-  - Der Zustand (z.B. *Near Mint* oder *Very Fine*) wird über farbcodierte Status-Badges (z.B. frisches Grün für Bestzustand, sanftes Gelb/Orange für stärkere Gebrauchsspuren) direkt visuell erfasst.
-- **Notizblock-Bemerkungsbereich**:
-  - Bemerkungen werden in einer eigenen, visuell abgegrenzten Box dargestellt, die wie ein edler Notizzettel gestaltet ist.
-- **Prominente Aktionsleiste (Action Bar)**:
-  - Buttons für "Bearbeiten", "Löschen" und "Gelesen markieren" (Schnellaktion) werden gebündelt in einer Header- oder Footer-Leiste der Detailkarte platziert, um die Interaktionswege kurz zu halten.
+### 2. Detailansicht (Detail Card / Detail View) [Umgesetzt]
+- [x] **Zweispaltiges Premium-Layout**:
+  - **Links (Das Cover)**: Großes Cover mit 3D-Bücherrücken-Effekt (Falz, Glanzverlauf und Schattenwurf).
+  - **Rechts (Die Metadaten)**: Klare typografische Hierarchie. Großer, markanter Titel in der Schriftart *Outfit*, gefolgt von Sub-Infos.
+- [x] **Zweispaltige Key-Value-Tabelle**:
+  - Technische Daten in ein strukturiertes Grid gepackt mit dezenten, abwechselnden Hintergrundschattierungen.
+- [x] **Zustands- & Bewertungs-Visualisierung**:
+  - Sterne-Bewertungen erhalten eine markante, leuchtende Farbgebung. Farbcodierte Status-Badges für den Zustand (z.B. grün für Mint, rot für Poor).
+- [x] **Notizblock-Bemerkungsbereich**:
+  - Bemerkungen in einer Box im gelblichen Notepad-Stil dargestellt.
+- [x] **Prominente Aktionsleiste (Action Bar)**:
+  - Buttons für "Bearbeiten", "Löschen" und die Schnellaktion "Gelesen" (sofern ungelesen).
+
+### 3. Listenansicht (List View Quick Actions) [Umgesetzt]
+- [x] **Schnellaktionen pro Zeile**:
+  - Hinzufügen eines kreisrunden, smaragdgrünen "Gelesen"-Buttons mit weißem Haken direkt links neben dem Löschen-Button für ungelesene Bände.
+  - Hover-Effekt: Volle Farbausfüllung, Leuchteffekt (`box-shadow`) und Vergrößerung auf `1.15x`.
 
 
 
