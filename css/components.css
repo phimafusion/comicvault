@@ -504,6 +504,47 @@ input[type="number"] {
     object-fit: cover;
 }
 
+.list-read-btn, .list-delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease-in-out;
+}
+
+.list-read-btn {
+    color: #10b981;
+    background-color: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.list-read-btn:hover {
+    color: #ffffff;
+    background-color: #10b981;
+    border-color: #10b981;
+    transform: scale(1.15);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.list-delete-btn {
+    color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.list-delete-btn:hover {
+    color: #ffffff;
+    background-color: #ef4444;
+    border-color: #ef4444;
+    transform: scale(1.15);
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
 /* Details View */
 .details-grid-view {
     display: grid;

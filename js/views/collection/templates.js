@@ -108,7 +108,7 @@ export function renderTile(comic, visibleFields, isSelectModeActive, selectedCom
 export function renderListItem(comic, visibleFields, isSelectModeActive, selectedComicIds) {
     const isSelected = selectedComicIds.has(comic.id);
     const selectColumn = isSelectModeActive ? '40px ' : '';
-    const gridTemplateColumns = selectColumn + visibleFields.list.map(key => `var(--col-width-${key})`).join(' ') + ' 40px';
+    const gridTemplateColumns = selectColumn + visibleFields.list.map(key => `var(--col-width-${key})`).join(' ') + ' 70px';
     const listFields = visibleFields.list.map(key => ({ 
         key, 
         ...FIELD_CONFIG[key]
@@ -156,12 +156,19 @@ export function renderListItem(comic, visibleFields, isSelectModeActive, selecte
         </div>
     ` : '';
 
+    const readBtn = !comic.gelesen_am ? `
+        <button class="btn-mark-read list-read-btn" data-id="${comic.id}" title="Als gelesen markieren">
+            <i class="fa-solid fa-check"></i>
+        </button>
+    ` : '';
+
     return `
         <div class="list-item comic-item ${isSelected ? 'selected' : ''}" data-id="${comic.id}" style="display: grid; grid-template-columns: ${gridTemplateColumns}; padding: 12px 20px; align-items: center; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 10px; cursor: pointer; font-size: 0.82rem; background: var(--bg-surface);">
             ${selectCell}
             ${cells}
-            <div style="display: flex; justify-content: flex-end;">
-                <button class="btn-delete-item list-delete-btn" data-id="${comic.id}" title="Löschen" style="background: none; border: none; color: #ff4444; opacity: 0.7; cursor: pointer; padding: 4px; transition: all 0.2s;">
+            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px;">
+                ${readBtn}
+                <button class="btn-delete-item list-delete-btn" data-id="${comic.id}" title="Löschen">
                     <i class="fa-solid fa-trash"></i>
                 </button>
             </div>
