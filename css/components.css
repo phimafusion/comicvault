@@ -507,7 +507,7 @@ input[type="number"] {
 /* Details View */
 .details-grid-view {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
     gap: 24px;
 }
 
@@ -558,8 +558,8 @@ input[type="number"] {
 }
 
 .details-cover {
-    width: 130px;
-    height: 195px;
+    width: 150px;
+    height: 225px;
     display: block;
     object-fit: cover;
 }
