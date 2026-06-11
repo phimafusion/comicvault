@@ -408,6 +408,41 @@ const handleCollectionClick = (e) => {
         return;
     }
 
+    // Klick auf "Gelesen markieren" Schnellaktion in der Detailkarte
+    const markReadBtn = e.target.closest('.btn-mark-read');
+    if (markReadBtn) {
+        e.stopPropagation();
+        const id = markReadBtn.dataset.id;
+        db.getAllComics().then(comics => {
+            const comic = comics.find(c => c.id === id);
+            if (comic) {
+                const now = new Date();
+                const d = String(now.getDate()).padStart(2, '0');
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const y = now.getFullYear();
+                const germanDate = `${d}.${m}.${y}`;
+                
+                db.saveComic({ ...comic, gelesen_am: germanDate }).then(() => {
+                    needsAutoFit = true;
+                    updateGrid();
+                });
+            }
+        });
+        return;
+    }
+
+    // Klick auf "Bearbeiten" Button in der Detailkarte
+    const editBtn = e.target.closest('.btn-edit-item');
+    if (editBtn) {
+        e.stopPropagation();
+        const id = editBtn.dataset.id;
+        db.getAllComics().then(comics => {
+            const comic = comics.find(c => c.id === id);
+            if (comic) openModal(comic);
+        });
+        return;
+    }
+
     // 7. Klick auf ein Comic-Item (Kachel oder Tabellenzeile)
     const item = e.target.closest('.comic-item');
     if (item) {

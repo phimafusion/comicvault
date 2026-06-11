@@ -36,7 +36,7 @@ export function renderTile(comic, visibleFields, isSelectModeActive, selectedCom
     let imgBlock = '';
     if (visibleFields.tiles.includes('bild')) {
         const imgUrl = comic.bild || getPlaceholderImage();
-        imgBlock = `<img src="${imgUrl}" alt="${comic.titel}" class="comic-cover" onerror="this.onerror=null; this.src='${getPlaceholderImage()}';">`;
+        imgBlock = `<div class="comic-cover-container"><img src="${imgUrl}" alt="${comic.titel}" class="comic-cover" onerror="this.onerror=null; this.src='${getPlaceholderImage()}';"></div>`;
     }
 
     const stdFields = ['bild', 'serie', 'titel', 'bewertung', 'bestand'];
@@ -64,7 +64,7 @@ export function renderTile(comic, visibleFields, isSelectModeActive, selectedCom
             let val = comic[key] || '-';
             if (key === 'preis') val = (comic.preis !== null && comic.preis !== undefined) ? Number(comic.preis).toFixed(2) + ' ' + (db.getSettings().currency || '€') : '-';
             if (key === 'kaufdatum' || key === 'gelesen_am' || key === 'updated_at' || key === 'created_at') val = displayDate(val);
-            extraFields += `<div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;"><strong>${FIELD_CONFIG[key].label}:</strong> ${val}</div>`;
+            extraFields += `<div style="font-size: 0.72rem; color: rgba(255, 255, 255, 0.75); margin-top: 2px;"><strong>${FIELD_CONFIG[key].label}:</strong> ${val}</div>`;
         }
     });
 
@@ -78,12 +78,21 @@ export function renderTile(comic, visibleFields, isSelectModeActive, selectedCom
         `;
     }
 
+    let badgesBlock = '';
+    const unreadBadge = !comic.gelesen_am ? `<span class="comic-card-badge badge-unread">Ungelesen</span>` : '';
+    const bestandLabel = comic.bestand || '';
+    const bestandBadge = bestandLabel ? `<span class="comic-card-badge badge-bestand-${bestandLabel.toLowerCase().replace(/\s+/g, '-')}">${bestandLabel}</span>` : '';
+    if (unreadBadge || bestandBadge) {
+        badgesBlock = `<div class="comic-card-badges">${unreadBadge}${bestandBadge}</div>`;
+    }
+
     return `
         <div class="comic-card comic-item ${isSelected ? 'selected' : ''}" data-id="${comic.id}">
             ${selectBlock}
             <button class="btn-delete-item" data-id="${comic.id}" title="Löschen">
                 <i class="fa-solid fa-trash"></i>
             </button>
+            ${badgesBlock}
             ${imgBlock}
             <div class="comic-info">
                 ${serieBlock}
@@ -160,6 +169,24 @@ export function renderListItem(comic, visibleFields, isSelectModeActive, selecte
     `;
 }
 
+function getConditionBadge(zustand) {
+    if (!zustand) return '-';
+    const z = zustand.toLowerCase().trim();
+    let colorClass = 'badge-condition-default';
+    
+    if (z.includes('mint') || z.includes('nm') || z === 'neu' || z === '0-1' || z === '1' || z === '0.5' || z === '0') {
+        colorClass = 'badge-condition-mint';
+    } else if (z.includes('fine') || z.includes('vf') || z.includes('fn') || z === 'sehr gut' || z === 'sehr-gut' || z === '1-2' || z === '1.5') {
+        colorClass = 'badge-condition-fine';
+    } else if (z.includes('good') || z.includes('vg') || z.includes('gd') || z === 'gut' || z === '2' || z === '2-3') {
+        colorClass = 'badge-condition-good';
+    } else if (z.includes('fair') || z.includes('poor') || z.includes('fr') || z.includes('pr') || z === 'schlecht' || z === '3' || z === '4' || z === '5') {
+        colorClass = 'badge-condition-poor';
+    }
+    
+    return `<span class="badge ${colorClass}">${zustand}</span>`;
+}
+
 export function renderDetailsItem(comic, visibleFields, isSelectModeActive, selectedComicIds) {
     const isSelected = selectedComicIds.has(comic.id);
     const bestandClass = `badge-${String(comic.bestand || '').toLowerCase().replace(/\s+/g, '-')}`;
@@ -167,37 +194,73 @@ export function renderDetailsItem(comic, visibleFields, isSelectModeActive, sele
     let imgBlock = '';
     if (visibleFields.details.includes('bild')) {
         const imgUrl = comic.bild || getPlaceholderImage();
-        imgBlock = `<img src="${imgUrl}" alt="${comic.titel}" class="details-cover" onerror="this.onerror=null; this.src='${getPlaceholderImage()}';">`;
+        imgBlock = `
+            <div class="details-cover-wrapper">
+                <img src="${imgUrl}" alt="${comic.titel}" class="details-cover" onerror="this.onerror=null; this.src='${getPlaceholderImage()}';">
+            </div>
+        `;
     }
 
-    let headerBlock = `
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            ${visibleFields.details.includes('serie') ? `<span class="comic-series">${comic.serie || comic.verlag || ''} ${comic.nummer ? '#' + comic.nummer : ''}</span>` : '<div></div>'}
-            <button class="btn-delete-item" data-id="${comic.id}" title="Löschen" style="background: none; border: none; color: #ff4444; cursor: pointer; padding: 4px; transition: transform 0.2s;">
-                <i class="fa-solid fa-trash"></i>
-            </button>
-        </div>
-        ${visibleFields.details.includes('titel') ? `<h3 class="comic-title" style="font-size: 1.4rem; margin-bottom: 12px;">${comic.titel || 'Ohne Titel'}</h3>` : ''}
-    `;
+    const serieVal = comic.serie ? `${comic.serie} ${comic.nummer ? '#' + comic.nummer : ''}` : '';
+    const verlagVal = comic.verlag || '';
+    const subVal = [serieVal, verlagVal].filter(Boolean).join(' • ');
 
-    const stdNonGridFields = ['bild', 'serie', 'titel', 'bestand', 'bewertung'];
+    let headerBlock = '';
+    if (visibleFields.details.includes('titel') || visibleFields.details.includes('serie')) {
+        headerBlock = `
+            ${visibleFields.details.includes('serie') && subVal ? `<span class="comic-series">${subVal}</span>` : ''}
+            ${visibleFields.details.includes('titel') ? `<h3 class="comic-title">${comic.titel || 'Ohne Titel'}</h3>` : ''}
+        `;
+    }
+
+    const stdNonGridFields = ['bild', 'serie', 'titel', 'bestand', 'bewertung', 'bemerkung'];
     let gridFieldsHtml = '';
     visibleFields.details.forEach(key => {
         if (!stdNonGridFields.includes(key)) {
-            let val = comic[key] || '-';
-            if (key === 'preis') val = (comic.preis !== null && comic.preis !== undefined) ? Number(comic.preis).toFixed(2) + ' ' + (db.getSettings().currency || '€') : '-';
-            if (key === 'kaufdatum' || key === 'gelesen_am' || key === 'updated_at' || key === 'created_at') val = displayDate(val);
-            gridFieldsHtml += `<div><strong>${FIELD_CONFIG[key].label}:</strong> <span style="color: var(--text-primary);">${val}</span></div>`;
+            let val = comic[key];
+            if (val === undefined || val === null || val === '') {
+                val = '-';
+            } else {
+                if (key === 'preis') {
+                    val = Number(comic.preis).toFixed(2) + ' ' + (db.getSettings().currency || '€');
+                } else if (key === 'kaufdatum' || key === 'gelesen_am' || key === 'updated_at' || key === 'created_at') {
+                    val = displayDate(val);
+                } else if (key === 'zustand') {
+                    val = getConditionBadge(val);
+                }
+            }
+            gridFieldsHtml += `
+                <div class="spec-item">
+                    <span class="spec-label">${FIELD_CONFIG[key].label}</span>
+                    <span class="spec-value">${val}</span>
+                </div>
+            `;
         }
     });
     
-    let footerBlock = '';
-    if (visibleFields.details.includes('bestand') || visibleFields.details.includes('bewertung')) {
-        let bestand = visibleFields.details.includes('bestand') ? `<span class="badge ${bestandClass}">${comic.bestand || '-'}</span>` : '';
-        let bewertung = visibleFields.details.includes('bewertung') ? `<span style="font-size: 1.1rem; color: var(--warning)">${renderStars(comic.bewertung)}</span>` : '';
-        footerBlock = `
-            <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center;">
-                ${bestand}${bewertung}
+    let starsBlock = '';
+    if (visibleFields.details.includes('bewertung') && comic.bewertung) {
+        starsBlock = `<div style="margin-top: 8px;">${renderStars(comic.bewertung)}</div>`;
+    }
+
+    let statusBlock = '';
+    if (visibleFields.details.includes('bestand')) {
+        statusBlock = `
+            <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
+                <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700; text-transform: uppercase;">Status:</span>
+                <span class="badge ${bestandClass}">${comic.bestand || '-'}</span>
+            </div>
+        `;
+    }
+
+    let remarksHtml = '';
+    if (comic.bemerkung) {
+        remarksHtml = `
+            <div class="remarks-notepad">
+                <div class="notepad-header">
+                    <i class="fa-solid fa-note-sticky"></i> Bemerkungen
+                </div>
+                <div class="notepad-body">${comic.bemerkung}</div>
             </div>
         `;
     }
@@ -211,16 +274,36 @@ export function renderDetailsItem(comic, visibleFields, isSelectModeActive, sele
         `;
     }
 
+    // Details Action Bar
+    const actionButtons = `
+        <div class="details-action-bar">
+            <button class="btn btn-secondary btn-edit-item" data-id="${comic.id}" title="Bearbeiten">
+                <i class="fa-solid fa-pen-to-square"></i> Bearbeiten
+            </button>
+            ${!comic.gelesen_am ? `
+            <button class="btn btn-primary btn-mark-read" data-id="${comic.id}" title="Als gelesen markieren">
+                <i class="fa-solid fa-check"></i> Gelesen
+            </button>
+            ` : ''}
+            <button class="btn btn-danger btn-delete-item" data-id="${comic.id}" title="Löschen">
+                <i class="fa-solid fa-trash"></i> Löschen
+            </button>
+        </div>
+    `;
+
     return `
         <div class="details-card comic-item ${isSelected ? 'selected' : ''}" data-id="${comic.id}">
             ${selectBlock}
             ${imgBlock}
             <div class="details-info">
                 ${headerBlock}
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: auto;">
+                ${starsBlock}
+                <div class="details-specs-grid">
                     ${gridFieldsHtml}
                 </div>
-                ${footerBlock}
+                ${statusBlock}
+                ${remarksHtml}
+                ${actionButtons}
             </div>
         </div>
     `;
