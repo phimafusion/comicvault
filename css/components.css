@@ -473,6 +473,19 @@ input[type="number"] {
 }
 
 .list-header {
+    display: grid;
+    padding: 12px 20px;
+    font-weight: bold;
+    border-bottom: 2px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background-color: var(--bg-main);
+    position: sticky;
+    top: var(--sticky-filter-height, 76px);
+    z-index: 10;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
     min-width: fit-content;
     width: 100%;
 }
@@ -481,12 +494,14 @@ input[type="number"] {
     display: grid;
     grid-template-columns: 60px 2fr 1fr 1fr 100px;
     align-items: center;
-    padding: 12px 16px;
+    padding: 12px 20px;
     background-color: var(--bg-surface);
     border-radius: var(--radius-md);
     border: 1px solid var(--border-color);
+    margin-bottom: 10px;
     transition: var(--transition);
     cursor: pointer;
+    font-size: 0.82rem;
     min-width: fit-content;
     width: 100%;
 }
@@ -1127,42 +1142,42 @@ body.bulk-select-active .list-delete-btn {
 
     /* List View responsive flex layout */
     .list-header {
-        display: none !important;
+        display: none;
     }
 
     .list-item {
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        gap: 12px !important;
-        padding: 10px 12px !important;
-        min-width: auto !important;
-        width: 100% !important;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        min-width: auto;
+        width: 100%;
     }
     
     .list-item > [data-col] {
-        display: none !important;
+        display: none;
     }
 
     .list-item > [data-col="bild"],
     .list-item > [data-col="titel"],
     .list-item > [data-col="preis"],
     .list-item > [data-col="bestand"] {
-        display: block !important;
+        display: block;
     }
 
     .list-item > [data-col="titel"] {
-        flex: 1 !important;
-        min-width: 0 !important;
+        flex: 1;
+        min-width: 0;
     }
 
     .list-item > [data-col="preis"] {
-        font-weight: 700 !important;
-        white-space: nowrap !important;
+        font-weight: 700;
+        white-space: nowrap;
     }
 
     .list-item > [data-col="bestand"] {
-        white-space: nowrap !important;
+        white-space: nowrap;
     }
 
     .list-cover {
@@ -1321,42 +1336,42 @@ body.mobile-view .details-info {
 }
 
 body.mobile-view .list-header {
-    display: none !important;
+    display: none;
 }
 
 body.mobile-view .list-item {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 12px !important;
-    padding: 10px 12px !important;
-    min-width: auto !important;
-    width: 100% !important;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    min-width: auto;
+    width: 100%;
 }
 
 body.mobile-view .list-item > [data-col] {
-    display: none !important;
+    display: none;
 }
 
 body.mobile-view .list-item > [data-col="bild"],
 body.mobile-view .list-item > [data-col="titel"],
 body.mobile-view .list-item > [data-col="preis"],
 body.mobile-view .list-item > [data-col="bestand"] {
-    display: block !important;
+    display: block;
 }
 
 body.mobile-view .list-item > [data-col="titel"] {
-    flex: 1 !important;
-    min-width: 0 !important;
+    flex: 1;
+    min-width: 0;
 }
 
 body.mobile-view .list-item > [data-col="preis"] {
-    font-weight: 700 !important;
-    white-space: nowrap !important;
+    font-weight: 700;
+    white-space: nowrap;
 }
 
 body.mobile-view .list-item > [data-col="bestand"] {
-    white-space: nowrap !important;
+    white-space: nowrap;
 }
 
 body.mobile-view .list-cover {

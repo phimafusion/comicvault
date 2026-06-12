@@ -704,7 +704,7 @@ export async function updateGrid() {
         ` : '';
 
         grid.innerHTML = `
-            <div class="list-header" style="display: grid; grid-template-columns: ${gridTemplateColumns}; padding: 12px 20px; font-weight: bold; border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; background: var(--bg-main); position: sticky; top: var(--sticky-filter-height, 76px); z-index: 10; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+            <div class="list-header" style="grid-template-columns: ${gridTemplateColumns};">
                 ${selectAllHeader}
                 ${headers}
                 <div style="display: flex; justify-content: flex-end; align-items: center; opacity: 0.3; padding-right: 4px;"><i class="fa-solid fa-gear"></i></div>

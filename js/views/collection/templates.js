@@ -163,7 +163,7 @@ export function renderListItem(comic, visibleFields, isSelectModeActive, selecte
     ` : '';
 
     return `
-        <div class="list-item comic-item ${isSelected ? 'selected' : ''}" data-id="${comic.id}" style="display: grid; grid-template-columns: ${gridTemplateColumns}; padding: 12px 20px; align-items: center; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 10px; cursor: pointer; font-size: 0.82rem; background: var(--bg-surface);">
+        <div class="list-item comic-item ${isSelected ? 'selected' : ''}" data-id="${comic.id}" style="grid-template-columns: ${gridTemplateColumns};">
             ${selectCell}
             ${cells}
             <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px;">
