@@ -28,7 +28,7 @@ Diese Liste dient als Notizzettel für zukünftige Aufgaben und Ideen.
     - Service Worker cached alle App-Dateien (Cache-First) → schnelles Laden, Offline-fähig
     - Firestore-Daten bleiben weiterhin live synchronisiert (Firebase läuft über das Netz)
 
-[ ] [12] Performance & Refactoring (kein UI-Change)
+[x] [12] Performance & Refactoring (kein UI-Change)
     [x] [12a] collection.js – Event-Delegation statt direkter Listener pro Comic-Item
           Problem: updateGrid() hängt bei jedem Render 2 Listener × N Comics ans DOM (z.B. 500 Comics = 1.000 Listener, werden nicht aufgeräumt)
           Fix: 1 delegierter Click-Handler am grid-Container statt querySelectorAll().forEach(addEventListener)
@@ -41,7 +41,7 @@ Diese Liste dient als Notizzettel für zukünftige Aufgaben und Ideen.
     [x] [12d] stats.js – 6 .map()-Iterationen auf 1 forEach reduzieren
           Problem: renderStats() berechnet Filter-Optionen mit 6 separaten .map()-Aufrufen über die gesamte Comics-Liste
           Fix: ein einziges forEach mit 6 Sets (gleiche Methode wie 12b)
-    [ ] [12e] CSS & Templates – Auslagern von Inline-Styles in components.css
+    [x] [12e] CSS & Templates – Auslagern von Inline-Styles in components.css
           Problem: templates.js (.list-item) und collection.js (.list-header) enthalten lange Inline-Styles (führt zu CSS-Redundanz und '!important' in Media Queries)
           Fix: Nur dynamische Grid-Spalten inline belassen, restliche Styles in CSS-Klassen überführen und die '!important'-Regeln in den Media Queries bereinigen
 
