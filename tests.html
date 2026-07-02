@@ -178,18 +178,20 @@
             font-weight: 400 !important;
             color: #e2e8f0 !important;
             margin: 0 !important;
-            display: inline-block !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            flex-wrap: wrap !important;
+            line-height: 1.4 !important;
+        }
+        
+        #mocha .test .replay {
+            display: none !important;
         }
         
         #mocha .test.pass h2 {
             border-left: 3px solid #10b981 !important;
             padding-left: 10px !important;
-        }
-        #mocha .test.pass::after {
-            color: #10b981 !important;
-            font-size: 16px !important;
-            content: ' ✓' !important;
-            font-weight: bold !important;
         }
         
         #mocha .test.fail h2 {
@@ -197,22 +199,26 @@
             padding-left: 10px !important;
             font-weight: 500 !important;
         }
-        #mocha .test.fail::after {
-            color: #ef4444 !important;
-            font-size: 16px !important;
-            content: ' ✗' !important;
-            font-weight: bold !important;
+        
+        #mocha .test pre {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 8px !important;
+            padding: 12px !important;
+            font-family: monospace !important;
+            font-size: 13px !important;
+            margin-top: 10px !important;
+            white-space: pre-wrap !important;
+            word-wrap: break-word !important;
+            overflow-x: auto !important;
+            box-sizing: border-box !important;
+            width: 100% !important;
         }
         
         #mocha .test.fail pre {
             background: rgba(239, 68, 68, 0.08) !important;
-            border: 1px solid rgba(239, 68, 68, 0.2) !important;
-            border-radius: 8px !important;
-            padding: 12px !important;
+            border-color: rgba(239, 68, 68, 0.2) !important;
             color: #fca5a5 !important;
-            font-family: monospace !important;
-            font-size: 13px !important;
-            margin-top: 8px !important;
         }
         
         #mocha .test.fail .error {
