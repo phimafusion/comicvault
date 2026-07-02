@@ -143,6 +143,12 @@ export function renderListItem(comic, visibleFields, isSelectModeActive, selecte
             case 'bild':
                 const imgUrl = comic.bild || getPlaceholderImage();
                 return `<div data-col="${field.key}"><img src="${imgUrl}" style="height: 30px; border-radius: 4px; object-fit: cover;"></div>`;
+            case 'variant':
+            case 'limitierung':
+                let boolText = '-';
+                if (val === true || String(val).toLowerCase() === 'true') boolText = 'Ja';
+                else if (val === false || String(val).toLowerCase() === 'false') boolText = 'Nein';
+                return `<div data-col="${field.key}" style="color: var(--text-secondary); ${align}">${boolText}</div>`;
             default:
                 return `<div data-col="${field.key}" style="color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; ${align}">${val || '-'}</div>`;
         }
@@ -234,6 +240,9 @@ export function renderDetailsItem(comic, visibleFields, isSelectModeActive, sele
                     val = displayDate(val);
                 } else if (key === 'zustand') {
                     val = getConditionBadge(val);
+                } else if (key === 'variant' || key === 'limitierung') {
+                    if (val === true || String(val).toLowerCase() === 'true') val = 'Ja';
+                    else if (val === false || String(val).toLowerCase() === 'false') val = 'Nein';
                 }
             }
             gridFieldsHtml += `

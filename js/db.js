@@ -21,6 +21,7 @@ class Database {
     constructor() {
         this.comicsCache = null;
         this.wishlistCache = null;
+        this.subscriptionsCache = null;
         this.cachedUid = null;
     }
 
@@ -29,12 +30,14 @@ class Database {
         if (!user) {
             this.comicsCache = null;
             this.wishlistCache = null;
+            this.subscriptionsCache = null;
             this.cachedUid = null;
             return null;
         }
         if (this.cachedUid !== user.uid) {
             this.comicsCache = null;
             this.wishlistCache = null;
+            this.subscriptionsCache = null;
             this.cachedUid = user.uid;
         }
         // Wir speichern Comics in einer Unter-Kollektion pro User
@@ -214,12 +217,14 @@ class Database {
         if (!user) {
             this.comicsCache = null;
             this.wishlistCache = null;
+            this.subscriptionsCache = null;
             this.cachedUid = null;
             return null;
         }
         if (this.cachedUid !== user.uid) {
             this.comicsCache = null;
             this.wishlistCache = null;
+            this.subscriptionsCache = null;
             this.cachedUid = user.uid;
         }
         return dbFirestore.collection('users').doc(user.uid).collection('wishlist');
@@ -285,6 +290,82 @@ class Database {
         if (col) await col.doc(id).delete();
     }
 
+    // Abos (Subscriptions)
+    getSubscriptionsCollection() {
+        const user = getCurrentUser();
+        if (!user) {
+            this.comicsCache = null;
+            this.wishlistCache = null;
+            this.subscriptionsCache = null;
+            this.cachedUid = null;
+            return null;
+        }
+        if (this.cachedUid !== user.uid) {
+            this.comicsCache = null;
+            this.wishlistCache = null;
+            this.subscriptionsCache = null;
+            this.cachedUid = user.uid;
+        }
+        return dbFirestore.collection('users').doc(user.uid).collection('subscriptions');
+    }
+
+    async getSubscriptions() {
+        if (this.subscriptionsCache) {
+            return [...this.subscriptionsCache];
+        }
+        const col = this.getSubscriptionsCollection();
+        if (!col) return [];
+
+        try {
+            const snapshot = await col.orderBy('titel', 'asc').get({ source: 'cache' });
+            this.subscriptionsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            col.orderBy('titel', 'asc').get({ source: 'server' }).then(serverSnapshot => {
+                const serverSubs = serverSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                const hasChanges = this.subscriptionsCache.length !== serverSubs.length ||
+                    serverSubs.some((s, i) => s.id !== this.subscriptionsCache[i]?.id || s.updated_at !== this.subscriptionsCache[i]?.updated_at);
+                
+                if (hasChanges) {
+                    this.subscriptionsCache = serverSubs;
+                    window.dispatchEvent(new CustomEvent('subscriptions-updated-background'));
+                }
+            }).catch(err => {
+                console.warn('Firestore Subscriptions-Cache Hintergrund-Sync fehlgeschlagen:', err);
+            });
+
+            return [...this.subscriptionsCache];
+        } catch (err) {
+            const snapshot = await col.orderBy('titel', 'asc').get();
+            this.subscriptionsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            return [...this.subscriptionsCache];
+        }
+    }
+
+    async saveSubscription(sub) {
+        this.subscriptionsCache = null;
+        const col = this.getSubscriptionsCollection();
+        if (!col) return;
+        const data = { ...sub };
+        const id = data.id;
+        delete data.id;
+        const now = new Date().toISOString();
+        data.updated_at = now;
+
+        if (id) {
+            await col.doc(id).set(data, { merge: true });
+        } else {
+            data.created_at = now;
+            await col.add(data);
+        }
+    }
+
+    async deleteSubscription(id) {
+        this.subscriptionsCache = null;
+        const col = this.getSubscriptionsCollection();
+        if (col) await col.doc(id).delete();
+    }
+
     async uploadImage(file) {
         const user = getCurrentUser();
         if (!user || !file) return null;
@@ -302,15 +383,17 @@ class Database {
     clearCache() {
         this.comicsCache = null;
         this.wishlistCache = null;
+        this.subscriptionsCache = null;
     }
 
     async clearAllData() {
         this.comicsCache = null;
         this.wishlistCache = null;
+        this.subscriptionsCache = null;
         const user = getCurrentUser();
         if (!user) return;
 
-        const collections = [this.getCollection(), this.getWishlistCollection()];
+        const collections = [this.getCollection(), this.getWishlistCollection(), this.getSubscriptionsCollection()];
         for (const col of collections) {
             if (!col) continue;
             const snapshot = await col.get();

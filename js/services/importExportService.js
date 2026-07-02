@@ -167,7 +167,11 @@ export function generateXLSX(comics, wishes = null) {
         const dataComics = comics.map(c => {
             const row = {};
             fieldsComics.forEach(f => {
-                row[f] = c[f] ?? '';
+                let v = c[f] ?? '';
+                if (f === 'variant' || f === 'limitierung') {
+                    v = v ? 'Ja' : 'Nein';
+                }
+                row[f] = v;
             });
             return row;
         });
@@ -179,7 +183,11 @@ export function generateXLSX(comics, wishes = null) {
         const dataWishes = wishes.map(w => {
             const row = {};
             fieldsWishes.forEach(f => {
-                row[f] = w[f] ?? '';
+                let v = w[f] ?? '';
+                if (f === 'vorbestellt') {
+                    v = v ? 'Ja' : 'Nein';
+                }
+                row[f] = v;
             });
             return row;
         });
@@ -203,6 +211,8 @@ export function generateCSV(items, isWishlist = false) {
     const rows = items.map(item => fields.map(f => {
         let v = item[f] ?? '';
         if (f === 'vorbestellt' && isWishlist) {
+            v = v ? 'Ja' : 'Nein';
+        } else if ((f === 'variant' || f === 'limitierung') && !isWishlist) {
             v = v ? 'Ja' : 'Nein';
         }
         v = String(v).replace(/"/g, '""');

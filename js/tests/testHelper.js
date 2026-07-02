@@ -6,6 +6,7 @@ let container = null;
 let savedSettings = null;
 let mockWishes = [];
 let mockComics = [];
+let mockSubscriptions = [];
 
 const defaultSettings = {
     theme: 'dark',
@@ -41,6 +42,9 @@ export function setupTestEnv(options = {}) {
     if (!backups.saveComic) backups.saveComic = db.saveComic;
     if (!backups.updateComics) backups.updateComics = db.updateComics;
     if (!backups.deleteComics) backups.deleteComics = db.deleteComics;
+    if (!backups.getSubscriptions) backups.getSubscriptions = db.getSubscriptions;
+    if (!backups.saveSubscription) backups.saveSubscription = db.saveSubscription;
+    if (!backups.deleteSubscription) backups.deleteSubscription = db.deleteSubscription;
     if (!backups.clearDatabase) backups.clearDatabase = db.clearDatabase;
     if (!backups.clearAllData) backups.clearAllData = db.clearAllData;
     if (!backups.navigate) backups.navigate = App.prototype.navigate;
@@ -63,6 +67,7 @@ export function setupTestEnv(options = {}) {
     // 4. Mock DB data fetching/mutating
     mockWishes = options.mockWishes || [];
     mockComics = options.mockComics || [];
+    mockSubscriptions = options.mockSubscriptions || [];
     
     let lastUpdateComicsCall = null;
     let lastDeleteComicsCall = null;
@@ -70,6 +75,7 @@ export function setupTestEnv(options = {}) {
 
     db.getWishlist = async () => [...mockWishes];
     db.getAllComics = async () => [...mockComics];
+    db.getSubscriptions = async () => [...mockSubscriptions];
 
     db.saveWish = async (wish) => {
         const index = mockWishes.findIndex(w => w.id === wish.id);
@@ -107,10 +113,25 @@ export function setupTestEnv(options = {}) {
             }
         });
     };
+    db.saveSubscription = async (sub) => {
+        const index = mockSubscriptions.findIndex(s => s.id === sub.id);
+        if (index !== -1) {
+            mockSubscriptions[index] = { ...mockSubscriptions[index], ...sub };
+        } else {
+            mockSubscriptions.push({ id: sub.id || 'mock-sub-' + Math.random(), ...sub });
+        }
+    };
+    db.deleteSubscription = async (id) => {
+        const index = mockSubscriptions.findIndex(s => s.id === id);
+        if (index !== -1) {
+            mockSubscriptions.splice(index, 1);
+        }
+    };
     db.clearDatabase = async () => {
         lastClearDatabaseCall = true;
         mockComics.splice(0, mockComics.length);
         mockWishes.splice(0, mockWishes.length);
+        mockSubscriptions.splice(0, mockSubscriptions.length);
     };
     db.clearAllData = async () => {
         return db.clearDatabase();
@@ -197,6 +218,9 @@ export function cleanup() {
     if (backups.saveComic) db.saveComic = backups.saveComic;
     if (backups.updateComics) db.updateComics = backups.updateComics;
     if (backups.deleteComics) db.deleteComics = backups.deleteComics;
+    if (backups.getSubscriptions) db.getSubscriptions = backups.getSubscriptions;
+    if (backups.saveSubscription) db.saveSubscription = backups.saveSubscription;
+    if (backups.deleteSubscription) db.deleteSubscription = backups.deleteSubscription;
     if (backups.clearDatabase) db.clearDatabase = backups.clearDatabase;
     if (backups.clearAllData) db.clearAllData = backups.clearAllData;
     if (backups.navigate) App.prototype.navigate = backups.navigate;

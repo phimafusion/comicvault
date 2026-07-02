@@ -4,6 +4,7 @@ import { renderCollection, attachCollectionEvents, cleanupCollection } from './v
 import { renderStats, cleanupStats } from './views/stats.js';
 import { renderBudget } from './views/budget.js';
 import { renderWishlist, cleanupWishlist } from './views/wishlist.js';
+import { renderSubscriptions, cleanupSubscriptions } from './views/subscriptions.js';
 import { renderImport } from './views/import.js';
 import { renderSettings } from './views/settings.js';
 import { renderChangelog } from './views/changelog.js';
@@ -183,6 +184,8 @@ export class App {
             cleanupStats();
         } else if (this.currentView === 'wishlist') {
             cleanupWishlist();
+        } else if (this.currentView === 'subscriptions') {
+            cleanupSubscriptions();
         }
 
         this.currentView = view;
@@ -207,6 +210,9 @@ export class App {
                 break;
             case 'wishlist':
                 renderWishlist(this.viewContainer);
+                break;
+            case 'subscriptions':
+                renderSubscriptions(this.viewContainer);
                 break;
             case 'ai-insights':
                 renderAiInsights(this.viewContainer);
