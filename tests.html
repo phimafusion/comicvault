@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
+    <script>
+        // Service Worker deinstallieren und Caches löschen, um stale/cached Assets bei den Tests zu vermeiden
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                for (const reg of registrations) {
+                    reg.unregister();
+                }
+            });
+        }
+        if ('caches' in window) {
+            caches.keys().then(keys => {
+                for (const key of keys) {
+                    caches.delete(key);
+                }
+            });
+        }
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ComicVault - Test Suite</title>

@@ -1,6 +1,6 @@
 import { db } from '../db.js';
 import { parseToDate } from '../services/stats/statsUtils.js';
-import { parseCurrency } from '../utils.js';
+import { parseCurrency, escapeHTML } from '../utils.js';
 
 // Hilfsfunktion zum Formatieren von Währungen im deutschen Format
 function formatCurrency(amount, currencySymbol) {
@@ -226,7 +226,7 @@ export async function renderBudget(container) {
                             <tr style="border-bottom: 2px solid var(--border-color); background-color: var(--bg-main);">
                                 <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">Jahr</th>
                                 <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">Monat</th>
-                                ${types.map(t => `<th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">${t}</th>`).join('')}
+                                ${types.map(t => `<th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">${escapeHTML(t)}</th>`).join('')}
                                 <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">Sonstige</th>
                                 <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">Gesamt</th>
                                 <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem; width: 150px;">Budget</th>
@@ -287,7 +287,7 @@ export async function renderBudget(container) {
                         <thead>
                             <tr style="border-bottom: 2px solid var(--border-color); background-color: var(--bg-main);">
                                 <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">Jahr</th>
-                                ${types.map(t => `<th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">${t}</th>`).join('')}
+                                ${types.map(t => `<th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">${escapeHTML(t)}</th>`).join('')}
                                 <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">Sonstige</th>
                                 <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">Gesamtausgaben</th>
                                 <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">Gesamtbudget</th>

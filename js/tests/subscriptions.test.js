@@ -141,4 +141,34 @@ describe('Subscriptions (Abos) Feature', function() {
         
         await tick();
     });
+
+    it('sollte HTML/Script-Tags im Abonnement-Titel und anderen Feldern sicher maskieren (XSS-Schutz)', async () => {
+        // Mock-Abonnement mit XSS Payload
+        const xssSub = {
+            id: 'sub_xss',
+            titel: '<script id="xss-test-script">alert("XSS")</script>XSS-Titel',
+            verlag: '<img src=x onerror=alert("XSS-Verlag")>XSS-Verlag',
+            haendler: '<iframe src="javascript:alert(\'XSS-Dealer\')"></iframe>XSS-Dealer'
+        };
+
+        // db getSubscriptions mocken
+        const originalGetSubscriptions = db.getSubscriptions;
+        db.getSubscriptions = async () => [xssSub];
+
+        await renderSubscriptions(container);
+        await tick();
+
+        // Überprüfen, ob das Element gerendert wurde, aber das Script-Tag nicht ausgeführt wird
+        const scriptElement = document.getElementById('xss-test-script');
+        expect(scriptElement).to.be.null; // Das Script-Tag darf nicht im DOM ausgeführt werden/existieren
+
+        // Der Text muss stattdessen als Textinhalt maskiert existieren
+        const tbody = container.querySelector('#subscriptions-body');
+        expect(tbody.innerHTML).to.include('&lt;script id="xss-test-script"&gt;alert("XSS")&lt;/script&gt;XSS-Titel');
+        expect(tbody.innerHTML).to.include('&lt;img src=x onerror=alert("XSS-Verlag")&gt;XSS-Verlag');
+        expect(tbody.innerHTML).to.include('&lt;iframe src="javascript:alert(\'XSS-Dealer\')"&gt;&lt;/iframe&gt;XSS-Dealer');
+
+        // Aufräumen
+        db.getSubscriptions = originalGetSubscriptions;
+    });
 });

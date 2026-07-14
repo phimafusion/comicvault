@@ -1,5 +1,5 @@
 import { db } from '../db.js';
-import { parseCurrency } from '../utils.js';
+import { parseCurrency, escapeHTML } from '../utils.js';
 
 // Aggregiert statistische Daten über die Comicsammlung für das KI-Prompt
 export function compileCollectionStatsPromptData(comics = [], wishes = []) {
@@ -154,13 +154,13 @@ export function generateLocalMockInsights(stats) {
         title = `Die Chroniken von ComicVault: Analyse deiner ${stats.totalComics} Schätze`;
         intro = `Deine Sammlung umfasst aktuell **${stats.totalComics} Comics** mit einem Gesamtwert von **${stats.totalValue.toFixed(2)} €**. Ein Blick auf deine Regale verrät eine sorgfältig kuratierte Auswahl mit klaren Schwerpunkten!`;
         
-        const topPub = stats.publishers[0] ? `${stats.publishers[0].name} (${stats.publishers[0].count} Titel)` : "unbekannten Verlagen";
-        const secondPub = stats.publishers[1] ? ` gefolgt von ${stats.publishers[1].name} (${stats.publishers[1].count} Titel)` : "";
+        const topPub = stats.publishers[0] ? `${escapeHTML(stats.publishers[0].name)} (${stats.publishers[0].count} Titel)` : "unbekannten Verlagen";
+        const secondPub = stats.publishers[1] ? ` gefolgt von ${escapeHTML(stats.publishers[1].name)} (${stats.publishers[1].count} Titel)` : "";
         
         // Kleine Verlagstabelle erzeugen
         let tableRows = "| Verlag | Anzahl Titel |\n|---|---|\n";
         stats.publishers.slice(0, 5).forEach(p => {
-            tableRows += `| ${p.name} | ${p.count} |\n`;
+            tableRows += `| ${escapeHTML(p.name)} | ${p.count} |\n`;
         });
 
         strengthSection = `
@@ -168,8 +168,8 @@ export function generateLocalMockInsights(stats) {
 * **Verlagsschwerpunkt**: Deine stärkste Säule bildet **${topPub}**${secondPub}. Das zeigt eine klare Verbundenheit zu diesen Universen!
 * **Verlagsverteilung**:
 ${tableRows}
-* **Lieblingsformate**: Du bevorzugst vor allem **${stats.formats[0] ? stats.formats[0].name : 'kein bestimmtes'}** für das perfekte Leseerlebnis.
-* **Deine Kronjuwelen**: Titel wie ${stats.topRated.slice(0, 3).map(c => `*${c.titel}* (Bewertung: ${c.bewertung}/10)`).join(', ') || 'noch keine bewerteten Comics'} stechen als absolute Highlights deiner Sammlung hervor.
+* **Lieblingsformate**: Du bevorzugst vor allem **${stats.formats[0] ? escapeHTML(stats.formats[0].name) : 'kein bestimmtes'}** für das perfekte Leseerlebnis.
+* **Deine Kronjuwelen**: Titel wie ${stats.topRated.slice(0, 3).map(c => `*${escapeHTML(c.titel)}* (Bewertung: ${c.bewertung}/10)`).join(', ') || 'noch keine bewerteten Comics'} stechen als absolute Highlights deiner Sammlung hervor.
 `;
         
         const unreadPercent = ((stats.unreadCount / stats.totalComics) * 100).toFixed(1);
@@ -184,7 +184,7 @@ ${tableRows}
 `;
         
         const wishText = stats.wishlistCount > 0
-            ? `Auf deiner Wunschliste stehen aktuell **${stats.wishlistCount} Bände** (z. B. ${stats.wishlistItems.slice(0, 3).map(w => `*${w.titel}*`).join(', ')}). Es gibt also reichlich Nachschub, auf den du dich freuen kannst!`
+            ? `Auf deiner Wunschliste stehen aktuell **${stats.wishlistCount} Bände** (z. B. ${stats.wishlistItems.slice(0, 3).map(w => `*${escapeHTML(w.titel)}*`).join(', ')}). Es gibt also reichlich Nachschub, auf den du dich freuen kannst!`
             : "Deine Wunschliste ist aktuell leer. Zeit, neue Comics zu entdecken!";
         
         wishlistSection = `

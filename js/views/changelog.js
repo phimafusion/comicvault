@@ -1,4 +1,5 @@
 import { db } from '../db.js';
+import { escapeHTML } from '../utils.js';
 
 const FIELD_LABELS = {
     titel: 'Titel',
@@ -236,7 +237,7 @@ async function loadEntries(limit) {
                         <span class="badge" style="background-color: ${badgeBg}; color: ${badgeColor}; font-weight: bold; font-size: 0.75rem; padding: 4px 10px; border-radius: var(--radius-full); text-transform: uppercase; letter-spacing: 0.5px;">
                             <i class="${actionIcon}"></i> ${actionLabel}
                         </span>
-                        ${entry.verlag ? `<span style="font-size: 0.8rem; color: var(--text-secondary);"><i class="fa-solid fa-building" style="opacity:0.6; margin-right:4px;"></i>${entry.verlag}</span>` : ''}
+                        ${entry.verlag ? `<span style="font-size: 0.8rem; color: var(--text-secondary);"><i class="fa-solid fa-building" style="opacity:0.6; margin-right:4px;"></i>${escapeHTML(entry.verlag)}</span>` : ''}
                         <span style="font-size: 0.8rem; color: var(--text-secondary); opacity: 0.7;">ID: ${entry.comicId}</span>
                     </div>
                     ${diffHtml ? `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color); font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">${diffHtml}</div>` : ''}
@@ -295,9 +296,9 @@ function formatDiff(changes) {
             newVal = newVal ? 'Ja' : 'Nein';
         }
 
-        const oldDisplay = oldVal !== '' && oldVal !== null && oldVal !== undefined ? oldVal : 'leer';
-        const newDisplay = newVal !== '' && newVal !== null && newVal !== undefined ? newVal : 'leer';
-        return `<div style="padding-left: 10px; margin-top: 4px;">• ${label}: <span style="text-decoration: line-through; opacity: 0.6;">${oldDisplay}</span> ➔ <span style="color: var(--success); font-weight: bold;">${newDisplay}</span></div>`;
+        const oldDisplay = oldVal !== '' && oldVal !== null && oldVal !== undefined ? escapeHTML(oldVal) : 'leer';
+        const newDisplay = newVal !== '' && newVal !== null && newVal !== undefined ? escapeHTML(newVal) : 'leer';
+        return `<div style="padding-left: 10px; margin-top: 4px;">• ${escapeHTML(label)}: <span style="text-decoration: line-through; opacity: 0.6;">${oldDisplay}</span> ➔ <span style="color: var(--success); font-weight: bold;">${newDisplay}</span></div>`;
     }).join('');
 }
 

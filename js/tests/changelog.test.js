@@ -456,4 +456,33 @@ describe('Changelog Feature Tests', () => {
         // Der 6. Eintrag (log-5) sollte noch da sein
         expect(mockChangelog.find(l => l.id === 'log-5')).to.not.be.undefined;
     });
+
+    it('sollte HTML/Script-Tags in den geänderten Werten des Changelogs sicher maskieren (XSS-Schutz)', async () => {
+        mockChangelog = [];
+        mockChangelog.push({
+            id: 'log-xss',
+            timestamp: new Date().toISOString(),
+            action: 'update',
+            comicId: 'comic-xss',
+            titel: 'XSS Test',
+            verlag: '<script id="xss-verlag-script">alert("verlag")</script>Verlag',
+            changes: [
+                { field: 'titel', old: '<script id="xss-old-script">alert("old")</script>Old', new: '<script id="xss-new-script">alert("new")</script>New' }
+            ]
+        });
+
+        await renderChangelog(container);
+        await tick();
+
+        // Verifizieren, dass keine der Script-Tags ausgeführt/in den DOM geladen werden
+        expect(document.getElementById('xss-verlag-script')).to.be.null;
+        expect(document.getElementById('xss-old-script')).to.be.null;
+        expect(document.getElementById('xss-new-script')).to.be.null;
+
+        // Verifizieren, dass die Inhalte als Text maskiert gerendert werden
+        const list = container.querySelector('#changelog-list');
+        expect(list.innerHTML).to.include('&lt;script id="xss-verlag-script"&gt;alert("verlag")&lt;/script&gt;Verlag');
+        expect(list.innerHTML).to.include('&lt;script id="xss-old-script"&gt;alert("old")&lt;/script&gt;Old');
+        expect(list.innerHTML).to.include('&lt;script id="xss-new-script"&gt;alert("new")&lt;/script&gt;New');
+    });
 });

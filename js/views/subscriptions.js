@@ -1,5 +1,6 @@
 import { db } from '../db.js';
 import { initAutocomplete } from '../components/autocomplete.js';
+import { escapeHTML } from '../utils.js';
 
 let selectedSubscriptionIds = new Set();
 let sortBy = 'titel';
@@ -141,9 +142,9 @@ async function updateSubscriptionsTable() {
     tbody.innerHTML = subs.map(sub => {
         return `
             <tr class="subscription-row" data-id="${sub.id}" style="border-bottom: 1px solid var(--border-color); font-size: 0.95rem; transition: background-color 0.2s;">
-                <td data-label="Titel" style="padding: 12px; font-weight: 600; vertical-align: middle;">${sub.titel || '-'}</td>
-                <td data-label="Verlag" style="padding: 12px; vertical-align: middle;">${sub.verlag || '-'}</td>
-                <td data-label="Händler" style="padding: 12px; vertical-align: middle;">${sub.haendler || '-'}</td>
+                <td data-label="Titel" style="padding: 12px; font-weight: 600; vertical-align: middle;">${sub.titel ? escapeHTML(sub.titel) : '-'}</td>
+                <td data-label="Verlag" style="padding: 12px; vertical-align: middle;">${sub.verlag ? escapeHTML(sub.verlag) : '-'}</td>
+                <td data-label="Händler" style="padding: 12px; vertical-align: middle;">${sub.haendler ? escapeHTML(sub.haendler) : '-'}</td>
                 <td data-label="Aktionen" style="padding: 12px; text-align: right; vertical-align: middle; white-space: nowrap;">
                     <button class="btn-edit-sub" data-id="${sub.id}" title="Bearbeiten" style="background:none; border:none; color:var(--secondary-color); cursor:pointer; margin-right:12px; font-size: 1rem;">
                         <i class="fa-solid fa-pen"></i>
