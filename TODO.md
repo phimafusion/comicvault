@@ -93,12 +93,13 @@ Diese Liste dient als Notizzettel für zukünftige Aufgaben, Ideen und Refactori
   - Behebe einen PWA/UI-Bug in `wishlist.js`, indem nicht-abgelaufene Timeouts gelöscht werden (`clearTimeout`), was Race Conditions in schnellen Tests und realer Nutzung verhindert.
 - [x] **Verifikation**: Die Tests in `tests.html` laufen weiterhin fehlerfrei durch, und die Gesamtausführungszeit sank drastisch von 6,5s auf unter 3s.
 
-### [15] Phase 4: XSS-Sicherheitslücken beheben [Geplant]
-- [ ] **Problem**: Mehrere Views (`subscriptions.js`, `changelog.js`, `aiInsights.js`, `budget.js`) rendern benutzereigene Daten ungesichert in das DOM (mittels `${var}` in innerHTML), was zu Cross-Site Scripting (XSS) führen kann.
-- [ ] **Lösung (escapeHTML-Integration)**:
+### [15] Phase 4: XSS-Sicherheitslücken beheben [Umgesetzt]
+- [x] **Problem**: Mehrere Views (`subscriptions.js`, `changelog.js`, `aiInsights.js`, `budget.js`) rendern benutzereigene Daten ungesichert in das DOM (mittels `${var}` in innerHTML), was zu Cross-Site Scripting (XSS) führen kann.
+- [x] **Lösung (escapeHTML-Integration)**:
   - Importiere `escapeHTML` aus `../utils.js` (bzw. entsprechendem relativen Pfad) in den vier betroffenen Modulen.
   - Verwende `escapeHTML` für alle potenziell benutzergesteuerten Datenfelder bei der String-Interpolation für das DOM.
-- [ ] **Verifikation**:
+- [x] **Verifikation**:
   - Füge automatisierte Tests hinzu, die überprüfen, ob Script-Tags in diesen Ansichten sicher escaped werden.
-  - Manuelle Stichprobe über die Test-Suite.
+  - Test-Caching Problem in `tests.html` gelöst.
+  - Manuelle Stichprobe über die Test-Suite (erfolgreich).
 
