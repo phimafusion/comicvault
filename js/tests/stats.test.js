@@ -377,4 +377,64 @@ describe('statsService Unit Tests', () => {
             expect(kpis.tbrValue).to.equal(15);
         });
     });
+
+    describe('calculateInventoryTBRDevelopment', () => {
+        it('sollte Lesestapel-Entwicklung nur für vorhandene Comics berechnen und Kosten erfassen', () => {
+            const currentYear = new Date().getFullYear();
+            const currentMonth = new Date().getMonth();
+            const mockData = [
+                { bestand: 'vorhanden', kaufdatum: `10.${String(currentMonth + 1).padStart(2, '0')}.${currentYear}`, gelesen_am: '', preis: 15.50 }, // Gekauft diesen Monat, ungelesen
+                { bestand: 'vorbestellt', kaufdatum: `12.${String(currentMonth + 1).padStart(2, '0')}.${currentYear}`, gelesen_am: '', preis: 20 }, // Ignoriert wegen "vorbestellt"
+                { bestand: 'vorhanden', kaufdatum: `15.${String(currentMonth + 1).padStart(2, '0')}.${currentYear - 1}`, gelesen_am: `20.${String(currentMonth + 1).padStart(2, '0')}.${currentYear}`, preis: 10 } // Gekauft letztes Jahr, gelesen diesen Monat
+            ];
+            
+            const timeline = statsService.calculateInventoryTBRDevelopment(mockData);
+            
+            // Neuester Monat steht zuerst (Index 0)
+            const currentMonthData = timeline[0];
+            
+            expect(currentMonthData).to.exist;
+            expect(currentMonthData.date.getFullYear()).to.equal(currentYear);
+            expect(currentMonthData.date.getMonth()).to.equal(currentMonth);
+            
+            // Gekauft diesen Monat: 1 Comic (das erste)
+            expect(currentMonthData.purchasedThisMonth).to.equal(1);
+            // Ausgaben diesen Monat: 15.50
+            expect(currentMonthData.spentThisMonth).to.equal(15.50);
+            
+            // Gelesen diesen Monat: 1 Comic (das letzte)
+            expect(currentMonthData.readThisMonth).to.equal(1);
+            
+            // TBR am Ende: Gekauft bis Ende diesen Monats (2 "vorhandene") - Gelesen bis Ende diesen Monats (1) = 1
+            expect(currentMonthData.tbrAtEnd).to.equal(1);
+        });
+    });
+
+    describe('groupTBRDataByYear', () => {
+        it('sollte TBR-Daten nach Jahren gruppieren und Summen korrekt bilden', () => {
+            const mockTimeline = [
+                { date: new Date(2025, 11, 1), purchasedThisMonth: 5, spentThisMonth: 50, readThisMonth: 2, tbrAtEnd: 10 },
+                { date: new Date(2025, 10, 1), purchasedThisMonth: 2, spentThisMonth: 20, readThisMonth: 4, tbrAtEnd: 7 },
+                { date: new Date(2024, 11, 1), purchasedThisMonth: 10, spentThisMonth: 100, readThisMonth: 5, tbrAtEnd: 9 }
+            ];
+
+            const grouped = statsService.groupTBRDataByYear(mockTimeline);
+            
+            expect(grouped).to.be.an('array').that.has.lengthOf(2);
+            
+            // 2025 (Absteigend sortiert, also Index 0)
+            expect(grouped[0].year).to.equal(2025);
+            expect(grouped[0].months).to.have.lengthOf(2);
+            expect(grouped[0].totalPurchased).to.equal(7);
+            expect(grouped[0].totalSpent).to.equal(70);
+            expect(grouped[0].totalRead).to.equal(6);
+            expect(grouped[0].endTBR).to.equal(10); // TBR aus letztem Monat des Jahres
+            expect(grouped[0].startTBR).to.equal(10 - 7 + 6); // 9
+            expect(grouped[0].trend).to.equal(1);
+            
+            // 2024
+            expect(grouped[1].year).to.equal(2024);
+            expect(grouped[1].months).to.have.lengthOf(1);
+        });
+    });
 });

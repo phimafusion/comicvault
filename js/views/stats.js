@@ -12,7 +12,9 @@ import {
     calculateTimelineData,
     calculateDistributionData,
     calculateTopLists,
-    getEarlyComics
+    getEarlyComics,
+    calculateInventoryTBRDevelopment,
+    groupTBRDataByYear
 } from '../services/statsService.js';
 
 let activeStatsFilters = {
@@ -144,6 +146,27 @@ export async function renderStats(container) {
                 </h3>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1;" id="stats-highlights">
                     <!-- Wird dynamisch befüllt -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Inventory TBR Table -->
+        <div class="stats-grid" style="display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 24px;">
+            <div class="details-card" style="flex-direction: column; padding: 24px;">
+                <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 8px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-list-ol" style="color: var(--secondary-color);"></i>
+                    <span>Entwicklung des Lesestapels (Bestand)</span>
+                </h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">
+                    Diese Tabelle zeigt die Entwicklung der gelesenen Comics und des Lesestapels (TBR) über die Zeit. Klicke auf ein Jahr, um die Monate auf- oder zuzuklappen.<br>
+                    <strong>Hinweis:</strong> Dies umfasst ausschließlich Comics, die aktuell den Status "vorhanden" haben und wird von den oben gewählten Filtern nicht beeinflusst. <br>
+                    <span style="display: inline-block; margin-top: 8px;"><strong>Trend-Spalte:</strong> Zeigt die absolute und prozentuale Zu- oder Abnahme des Lesestapels im Vergleich zum Vormonat an. <span style="color: var(--success);">Grün (Negativ)</span> = Stapel schrumpft (mehr gelesen als gekauft). <span style="color: var(--danger);">Rot (Positiv)</span> = Stapel wächst (mehr gekauft als gelesen).</span><br>
+                    <span style="display: inline-block; margin-top: 4px;"><strong>Symbole:</strong> 🏆 Lesestärkster Monat &nbsp;&nbsp; 💸 Kaufstärkster Monat</span>
+                </p>
+                <div style="overflow-x: auto; width: 100%; max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;" id="table-inventory-tbr">
+                        <!-- Wird dynamisch befüllt -->
+                    </table>
                 </div>
             </div>
         </div>
@@ -611,6 +634,124 @@ async function updateStats() {
                     }).join('')}
                 </tbody>
             `;
+        }
+    }
+
+    // TBR Table füllen (aus allComics, unbeeinflusst von Filtern)
+    const inventoryTbrTable = document.getElementById('table-inventory-tbr');
+    if (inventoryTbrTable) {
+        const tbrData = calculateInventoryTBRDevelopment(allComics);
+        if (tbrData.length === 0) {
+            inventoryTbrTable.innerHTML = `<tr><td style="padding:15px; text-align:center; color:var(--text-secondary);">Keine Daten vorhanden.</td></tr>`;
+        } else {
+            const yearlyData = groupTBRDataByYear(tbrData);
+            const currentYear = new Date().getFullYear();
+            const monNames = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+            
+            inventoryTbrTable.innerHTML = `
+                <thead style="position: sticky; top: 0; background: var(--bg-card); z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-weight: 600; font-size: 0.8rem;">
+                        <th style="padding: 10px 16px;">Monat / Jahr</th>
+                        <th style="padding: 10px 16px; text-align: center;">Gekauft</th>
+                        <th style="padding: 10px 16px; text-align: center;">Ausgaben</th>
+                        <th style="padding: 10px 16px; text-align: center;">Gelesen</th>
+                        <th style="padding: 10px 16px; text-align: center;">Lesestapel (TBR)</th>
+                        <th style="padding: 10px 16px; text-align: center;">Trend</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${yearlyData.map(y => {
+                        const isCurrentYear = y.year === currentYear;
+                        
+                        // Jahres-Zeile
+                        let yearTrendHtml = '';
+                        if (y.trend > 0) yearTrendHtml = `<span style="color: var(--danger);"><i class="fa-solid fa-arrow-up"></i> +${y.trend}</span>`;
+                        else if (y.trend < 0) yearTrendHtml = `<span style="color: var(--success);"><i class="fa-solid fa-arrow-down"></i> ${y.trend}</span>`;
+                        else yearTrendHtml = `<span style="color: var(--text-secondary);"><i class="fa-solid fa-minus"></i> 0</span>`;
+
+                        let html = `
+                            <tr class="tbr-year-row" data-year="${y.year}" style="cursor: pointer; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border-color); font-weight: 700;">
+                                <td style="padding: 12px 16px; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fa-solid fa-chevron-${isCurrentYear ? 'down' : 'right'} tbr-icon-year-${y.year}" style="width: 12px; font-size: 0.8rem; color: var(--primary-color);"></i>
+                                    ${y.year}
+                                </td>
+                                <td style="padding: 12px 16px; text-align: center; color: var(--text-primary);">${y.totalPurchased}</td>
+                                <td style="padding: 12px 16px; text-align: center; color: var(--text-primary);">${y.totalSpent.toFixed(2)} ${currencySymbol}</td>
+                                <td style="padding: 12px 16px; text-align: center; color: var(--text-primary);">${y.totalRead}</td>
+                                <td style="padding: 12px 16px; text-align: center; color: var(--warning);">${y.endTBR}</td>
+                                <td style="padding: 12px 16px; text-align: center;">${yearTrendHtml}</td>
+                            </tr>
+                        `;
+                        
+                        // Monats-Zeilen
+                        html += y.months.map(d => {
+                            const monthLabel = monNames[d.date.getMonth()];
+                            
+                            let trendHtml = '';
+                            let trendPercentStr = (d.trendPercent !== undefined && d.trend !== 0) ? ` (${d.trendPercent > 0 ? '+' : ''}${d.trendPercent.toFixed(1)}%)` : '';
+                            if (d.trend > 0) {
+                                trendHtml = `<span style="color: var(--danger);" title="Lesestapel wächst"><i class="fa-solid fa-arrow-up"></i> +${d.trend}${trendPercentStr}</span>`;
+                            } else if (d.trend < 0) {
+                                trendHtml = `<span style="color: var(--success);" title="Lesestapel schrumpft"><i class="fa-solid fa-arrow-down"></i> ${d.trend}${trendPercentStr}</span>`;
+                            } else {
+                                trendHtml = `<span style="color: var(--text-secondary);" title="Keine Veränderung"><i class="fa-solid fa-minus"></i> 0 (0.0%)</span>`;
+                            }
+                            
+                            // Sparklines & Icons
+                            const maxSpark = Math.max(d.purchasedThisMonth, d.readThisMonth);
+                            const pWidth = maxSpark > 0 ? (d.purchasedThisMonth/maxSpark)*100 : 0;
+                            const rWidth = maxSpark > 0 ? (d.readThisMonth/maxSpark)*100 : 0;
+                            
+                            const pIcon = d.isMaxPurchased ? ' <span title="Kaufstärkster Monat">💸</span>' : '';
+                            const rIcon = d.isMaxRead ? ' <span title="Lesestärkster Monat">🏆</span>' : '';
+
+                            return `
+                                <tr class="tbr-month-row tbr-year-${y.year}" style="display: ${isCurrentYear ? 'table-row' : 'none'}; border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: background 0.2s; font-size: 0.85rem;">
+                                    <td style="padding: 8px 16px; padding-left: 32px; color: var(--text-secondary);">${monthLabel}</td>
+                                    <td style="padding: 8px 16px; text-align: center; color: var(--text-secondary);">
+                                        <div>${d.purchasedThisMonth}${pIcon}</div>
+                                        <div style="width: 40px; height: 3px; background: rgba(255,255,255,0.05); margin: 4px auto 0; border-radius: 2px;"><div style="width: ${pWidth}%; height: 100%; background: var(--danger); border-radius: 2px;"></div></div>
+                                    </td>
+                                    <td style="padding: 8px 16px; text-align: center; color: var(--text-secondary);">${d.spentThisMonth.toFixed(2)} ${currencySymbol}</td>
+                                    <td style="padding: 8px 16px; text-align: center; color: var(--text-secondary);">
+                                        <div>${d.readThisMonth}${rIcon}</div>
+                                        <div style="width: 40px; height: 3px; background: rgba(255,255,255,0.05); margin: 4px auto 0; border-radius: 2px;"><div style="width: ${rWidth}%; height: 100%; background: var(--success); border-radius: 2px;"></div></div>
+                                    </td>
+                                    <td style="padding: 8px 16px; text-align: center; font-weight: 600; color: var(--warning);">${d.tbrAtEnd}</td>
+                                    <td style="padding: 8px 16px; text-align: center;">${trendHtml}</td>
+                                </tr>
+                            `;
+                        }).join('');
+                        
+                        return html;
+                    }).join('')}
+                </tbody>
+            `;
+            
+            // Accordion Logic
+            const yearRows = inventoryTbrTable.querySelectorAll('.tbr-year-row');
+            yearRows.forEach(row => {
+                row.addEventListener('click', () => {
+                    const year = row.dataset.year;
+                    const monthRows = inventoryTbrTable.querySelectorAll(`.tbr-year-${year}`);
+                    const icon = inventoryTbrTable.querySelector(`.tbr-icon-year-${year}`);
+                    
+                    let isVisible = false;
+                    monthRows.forEach(mr => {
+                        if (mr.style.display !== 'none') isVisible = true;
+                    });
+                    
+                    if (isVisible) {
+                        monthRows.forEach(mr => mr.style.display = 'none');
+                        icon.classList.remove('fa-chevron-down');
+                        icon.classList.add('fa-chevron-right');
+                    } else {
+                        monthRows.forEach(mr => mr.style.display = 'table-row');
+                        icon.classList.remove('fa-chevron-right');
+                        icon.classList.add('fa-chevron-down');
+                    }
+                });
+            });
         }
     }
 

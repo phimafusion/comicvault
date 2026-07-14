@@ -447,3 +447,178 @@ export function getEarlyComics(filteredComics) {
         return d && d.getFullYear() < 2020;
     });
 }
+
+// Berechnung der Lesestapel-Entwicklung exklusiv für "vorhanden"
+export function calculateInventoryTBRDevelopment(allComics) {
+    // Nur Comics betrachten, die "vorhanden" sind
+    const inventoryComics = allComics.filter(c => c.bestand === 'vorhanden');
+    
+    let earliestDate = new Date();
+    let hasPurchase = false;
+    
+    inventoryComics.forEach(c => {
+        if (c.kaufdatum) {
+            const d = parseToDate(c.kaufdatum);
+            if (d && d.getFullYear() >= 2000) {
+                if (!hasPurchase || d < earliestDate) {
+                    earliestDate = d;
+                    hasPurchase = true;
+                }
+            }
+        }
+    });
+    
+    if (!hasPurchase) {
+        inventoryComics.forEach(c => {
+            const d = parseToDate(c.created_at);
+            if (d && d < earliestDate && d.getFullYear() >= 2000) {
+                earliestDate = d;
+            }
+        });
+    }
+
+    const now = new Date();
+    let startDate = new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
+    let endDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    if (startDate > endDate) startDate = new Date(endDate);
+
+    const months = [];
+    let curr = new Date(startDate);
+    while (curr <= endDate) {
+        months.push(new Date(curr));
+        curr.setMonth(curr.getMonth() + 1);
+    }
+
+    const timelineData = [];
+    months.forEach(m => {
+        const startOfMonth = new Date(m.getFullYear(), m.getMonth(), 1);
+        const endOfMonth = new Date(m.getFullYear(), m.getMonth() + 1, 0, 23, 59, 59, 999);
+        
+        // Gelesen in diesem spezifischen Monat (nur aus dem "vorhanden" Bestand)
+        const readThisMonth = inventoryComics.filter(c => {
+            const rDate = parseToDate(c.gelesen_am);
+            if (rDate && rDate.getFullYear() === 2023 && rDate.getMonth() === 0) return false;
+            return rDate && rDate >= startOfMonth && rDate <= endOfMonth;
+        }).length;
+
+        // Gekauft in diesem spezifischen Monat (nur aus dem "vorhanden" Bestand)
+        let spentThisMonth = 0;
+        const purchasedThisMonth = inventoryComics.filter(c => {
+            const pDate = parseToDate(c.kaufdatum || c.created_at);
+            const isPurchased = pDate && pDate >= startOfMonth && pDate <= endOfMonth;
+            if (isPurchased && c.preis) {
+                spentThisMonth += Number(c.preis);
+            }
+            return isPurchased;
+        }).length;
+
+        // Kumulierte Käufe bis Ende des Monats (nur aus dem "vorhanden" Bestand)
+        const purchasedTotal = inventoryComics.filter(c => {
+            const pDate = parseToDate(c.kaufdatum || c.created_at);
+            return pDate && pDate <= endOfMonth;
+        }).length;
+        
+        // Kumuliert Gelesen bis Ende des Monats (nur aus dem "vorhanden" Bestand)
+        const readTotal = inventoryComics.filter(c => {
+            const rDate = parseToDate(c.gelesen_am);
+            if (rDate && rDate.getFullYear() === 2023 && rDate.getMonth() === 0) return false;
+            return rDate && rDate <= endOfMonth;
+        }).length;
+        
+        const tbrAtEnd = Math.max(0, purchasedTotal - readTotal);
+        
+        // Trend im Vergleich zum Vormonat berechnen (wird im nächsten Schritt gefüllt)
+        timelineData.push({
+            date: m,
+            purchasedThisMonth,
+            spentThisMonth,
+            readThisMonth,
+            tbrAtEnd,
+            trend: 0,
+            trendPercent: 0,
+            isMaxRead: false,
+            isMaxPurchased: false
+        });
+    });
+
+    // Trend berechnen
+    for (let i = 0; i < timelineData.length; i++) {
+        if (i > 0) {
+            timelineData[i].trend = timelineData[i].tbrAtEnd - timelineData[i - 1].tbrAtEnd;
+            if (timelineData[i - 1].tbrAtEnd > 0) {
+                timelineData[i].trendPercent = (timelineData[i].trend / timelineData[i - 1].tbrAtEnd) * 100;
+            } else if (timelineData[i].trend > 0) {
+                timelineData[i].trendPercent = 100;
+            }
+        }
+    }
+    
+    // Für den allerersten Monat ist der Trend gleich dem TBR am Ende
+    if (timelineData.length > 0) {
+        timelineData[0].trend = timelineData[0].tbrAtEnd;
+        timelineData[0].trendPercent = timelineData[0].tbrAtEnd > 0 ? 100 : 0;
+    }
+
+    // Für die Anzeige drehen wir die Reihenfolge um (neuester zuerst)
+    return timelineData.reverse();
+}
+
+// Gruppiert die TBR-Daten nach Jahren
+export function groupTBRDataByYear(timelineData) {
+    const yearsMap = {};
+    
+    timelineData.forEach(monthData => {
+        const year = monthData.date.getFullYear();
+        if (!yearsMap[year]) {
+            yearsMap[year] = {
+                year: year,
+                months: [],
+                totalRead: 0,
+                totalPurchased: 0,
+                totalSpent: 0,
+                startTBR: 0, // Wird später berechnet
+                endTBR: 0    // Wird später berechnet
+            };
+        }
+        
+        yearsMap[year].months.push(monthData);
+        yearsMap[year].totalRead += monthData.readThisMonth;
+        yearsMap[year].totalPurchased += monthData.purchasedThisMonth;
+        yearsMap[year].totalSpent += monthData.spentThisMonth;
+    });
+    
+    // Konvertiere zu Array und sortiere nach Jahr absteigend
+    const yearsArray = Object.values(yearsMap).sort((a, b) => b.year - a.year);
+    
+    // Berechne Jahres-Trend und markiere die Maximums pro Jahr
+    yearsArray.forEach(y => {
+        // Jahres-Trend
+        y.endTBR = y.months[0].tbrAtEnd;
+        y.startTBR = y.endTBR - y.totalPurchased + y.totalRead;
+        y.trend = y.endTBR - y.startTBR;
+        
+        // Maximums für das jeweilige Jahr berechnen
+        let yearMaxRead = -1;
+        let yearMaxPurchased = -1;
+        
+        y.months.forEach(m => {
+            // Zuerst bestehende (globale) Flags zurücksetzen, falls sie noch dran hängen
+            m.isMaxRead = false;
+            m.isMaxPurchased = false;
+            
+            if (m.readThisMonth > yearMaxRead) yearMaxRead = m.readThisMonth;
+            if (m.purchasedThisMonth > yearMaxPurchased) yearMaxPurchased = m.purchasedThisMonth;
+        });
+        
+        // Flags für die Rekordmonate dieses Jahres setzen
+        if (yearMaxRead > 0 || yearMaxPurchased > 0) {
+            y.months.forEach(m => {
+                if (yearMaxRead > 0 && m.readThisMonth === yearMaxRead) m.isMaxRead = true;
+                if (yearMaxPurchased > 0 && m.purchasedThisMonth === yearMaxPurchased) m.isMaxPurchased = true;
+            });
+        }
+    });
+    
+    return yearsArray;
+}
