@@ -291,7 +291,36 @@
             border-radius: 6px !important;
         }
         #mocha-stats .progress {
-            color: #f8fafc !important;
+            display: flex !important;
+            flex-direction: column !important;
+            width: 100% !important;
+            margin-bottom: 15px !important;
+            height: auto !important;
+        }
+        #mocha-stats .progress canvas {
+            display: none !important;
+        }
+        .custom-progress-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 4px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .custom-progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            width: 0%;
+            transition: width 0.2s ease, background 0.3s ease;
+        }
+        .custom-progress-header {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 13px;
+            color: #a5b4fc;
         }
         #mocha-stats .passes em {
             color: #10b981 !important;
@@ -416,8 +445,6 @@
             });
         }
 
-        // Move mocha-stats to body to bypass the backdrop-filter stacking context on #mocha,
-        // which makes fixed elements scroll relative to #mocha instead of the viewport.
         const moveStatsBox = () => {
             const stats = document.getElementById('mocha-stats');
             if (stats && stats.parentElement !== document.body) {
@@ -425,12 +452,53 @@
             }
         };
 
-        runner.on('start', moveStatsBox);
+        runner.on('start', () => {
+            moveStatsBox();
+            
+            const stats = document.getElementById('mocha-stats');
+            if (stats) {
+                const progressLi = stats.querySelector('.progress');
+                if (progressLi && !document.getElementById('custom-progress-wrap')) {
+                    progressLi.insertAdjacentHTML('beforeend', `
+                        <div id="custom-progress-wrap" style="width: 100%;">
+                            <div class="custom-progress-header">
+                                <span>Fortschritt</span>
+                                <span id="custom-progress-text" style="font-family: 'Outfit', sans-serif; font-weight: 700;">0%</span>
+                            </div>
+                            <div class="custom-progress-container">
+                                <div id="custom-progress-bar" class="custom-progress-bar"></div>
+                            </div>
+                        </div>
+                    `);
+                }
+            }
+        });
 
-        // Autoscroll to the latest executed test
+        // Autoscroll to the latest executed test & update custom progress
         let lastScrollTime = 0;
         runner.on('test end', () => {
             moveStatsBox();
+            
+            // Custom progress bar update
+            const total = runner.total || 1;
+            const current = runner.stats.tests || 0;
+            const percent = Math.min(100, Math.round((current / total) * 100));
+            
+            const pb = document.getElementById('custom-progress-bar');
+            const pt = document.getElementById('custom-progress-text');
+            if (pb && pt) {
+                pb.style.width = percent + '%';
+                pt.textContent = percent + '%';
+                
+                if (runner.stats.failures > 0) {
+                    pb.style.background = '#ef4444'; // Red if failed
+                    pt.style.color = '#fca5a5';
+                } else if (percent === 100) {
+                    pb.style.background = '#10b981'; // Green if 100% and no failures
+                    pt.style.color = '#6ee7b7';
+                }
+            }
+            
             const now = Date.now();
             if (now - lastScrollTime > 80) { // Throttle to prevent scroll jitter and improve performance
                 const tests = document.querySelectorAll('#mocha .test');
