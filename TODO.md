@@ -50,6 +50,9 @@ Diese Liste dient als Notizzettel für zukünftige Aufgaben, Ideen und Refactori
 - [x] **[12e] CSS & Templates – Auslagern von Inline-Styles in components.css**
   - *Problem:* `templates.js` (`.list-item`) und `collection.js` (`.list-header`) enthalten lange Inline-Styles (führt zu CSS-Redundanz und `!important` in Media Queries).
   - *Fix:* Nur dynamische Grid-Spalten inline belassen, restliche Styles in CSS-Klassen überführen und die `!important`-Regeln in den Media Queries bereinigen.
+- [x] **[12f] settings.js – HTML-Templates auslagern**
+  - *Problem:* Große HTML-Templates lagen inline in der View-Datei, was Logik und Präsentation vermischte.
+  - *Fix:* Templates in eine eigene `settingsTemplates.js` extrahiert und in `settings.js` importiert.
 
 ---
 
@@ -82,9 +85,10 @@ Diese Liste dient als Notizzettel für zukünftige Aufgaben, Ideen und Refactori
 
 ## ⚡ Aktuelle Phasen & Refactorings
 
-### [14] Phase 3: Test-Performance verbessern (tick() Helper) [Geplant]
-- [ ] **Problem**: Mocha-Tests nutzen über 60-mal `await new Promise(r => setTimeout(r, 50))` (oder höher), was die Gesamttestzeit künstlich um mehrere Sekunden verlängert.
-- [ ] **Lösung (tick() Helper)**: 
+### [14] Phase 3: Test-Performance verbessern (tick() Helper) [Umgesetzt]
+- [x] **Problem**: Mocha-Tests nutzen über 60-mal `await new Promise(r => setTimeout(r, 50))` (oder höher), was die Gesamttestzeit künstlich um mehrere Sekunden verlängert.
+- [x] **Lösung (tick() Helper & PWA Bugfix)**: 
   - Füge `export function tick(ms = 0) { return new Promise(r => setTimeout(r, ms)); }` in die `js/tests/testHelper.js` ein.
   - Ersetze alle manuellen `setTimeout`-Pausen in den Testdateien durch `await tick()`. Dadurch löst die Event-Loop direkt auf, ohne 50ms in "Echtzeit" zu warten.
-- [ ] **Verifikation**: Die Tests in `tests.html` sollen weiterhin durchlaufen, aber die Gesamtausführungszeit soll drastisch (auf ~1 Sekunde) sinken.
+  - Behebe einen PWA/UI-Bug in `wishlist.js`, indem nicht-abgelaufene Timeouts gelöscht werden (`clearTimeout`), was Race Conditions in schnellen Tests und realer Nutzung verhindert.
+- [x] **Verifikation**: Die Tests in `tests.html` laufen weiterhin fehlerfrei durch, und die Gesamtausführungszeit sank drastisch von 6,5s auf unter 3s.
