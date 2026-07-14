@@ -1,5 +1,5 @@
 import { renderCollection, cleanupCollection, updateGrid, attachCollectionEvents } from '../views/collection.js';
-import { setupTestEnv, cleanup } from './testHelper.js';
+import { setupTestEnv, cleanup, tick } from './testHelper.js';
 
 const { expect } = chai;
 
@@ -81,7 +81,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         if (btnReset) {
             btnReset.click();
         }
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
     });
 
     afterEach(() => {
@@ -106,7 +106,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         const btnApply = dropdownKauf.querySelector('.btn-date-filter-apply');
         btnApply.click();
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         const items = container.querySelectorAll('.list-item');
         expect(items.length).to.equal(2);
@@ -125,7 +125,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         const btnApply = dropdownKauf.querySelector('.btn-date-filter-apply');
         btnApply.click();
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         const items = container.querySelectorAll('.list-item');
         expect(items.length).to.equal(2);
@@ -147,7 +147,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         const btnApply = dropdownKauf.querySelector('.btn-date-filter-apply');
         btnApply.click();
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         const items = container.querySelectorAll('.list-item');
         expect(items.length).to.equal(2);
@@ -169,7 +169,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         const btnApply = dropdownGelesen.querySelector('.btn-date-filter-apply');
         btnApply.click();
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         const items = container.querySelectorAll('.list-item');
         expect(items.length).to.equal(2);
@@ -187,7 +187,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         
         const btnApply = dropdownKauf.querySelector('.btn-date-filter-apply');
         btnApply.click();
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
         
         let items = container.querySelectorAll('.list-item');
         expect(items.length).to.equal(1);
@@ -197,7 +197,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         const dropdownKauf2 = container.querySelector('#dropdown-kaufdatum');
         const btnReset = dropdownKauf2.querySelector('.btn-date-filter-reset');
         btnReset.click();
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         items = container.querySelectorAll('.list-item');
         expect(items.length).to.equal(4); // Alle wieder da

@@ -46,6 +46,7 @@ Jeder "Tab" in der Navigation (`#collection`, `#stats`, `#wishlist`) hat ein eig
 - **`collection.js`**: Rendert die Hauptliste der Comics. Unterstützt Ansichten als Grid (Karten) oder als Liste. Behandelt auch das Filtern, Sortieren und die Bulk-Edit-Logik.
 - **`stats.js`**: Holt Daten aus dem `statsService.js` und rendert damit Chart.js-Diagramme sowie komplexe Tabellen (z. B. die Lesestapel-Entwicklung mit Accordion-Gruppierung).
 - **`subscriptions.js`**: Eine separierte Ansicht zur reinen Verwaltung von Serien-Abos (wird nicht in die Hauptstatistik oder Sammlungswerte eingerechnet).
+- **`settings.js` & `settingsTemplates.js`**: Handhabt Konfigurationen wie Theme-Auswahlen, Schriftarten, Standardwerte und API-Keys. Die reine HTML-Präsentation wurde zur besseren Wartbarkeit in die `settingsTemplates.js` ausgelagert.
 
 ## Event-System und Globale Zustände
 

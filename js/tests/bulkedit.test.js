@@ -1,6 +1,6 @@
 import { renderCollection, attachCollectionEvents, isSelectModeActive, selectedComicIds, toggleSelectMode } from '../views/collection.js';
 import { openBulkEditModal } from '../views/form.js';
-import { setupTestEnv, cleanup } from './testHelper.js';
+import { setupTestEnv, cleanup, tick } from './testHelper.js';
 import { db } from '../db.js';
 
 const { expect } = chai;
@@ -30,10 +30,10 @@ describe('ComicVault Bulk Edit Tests', () => {
         selectedComicIds.clear();
         if (isSelectModeActive) {
             toggleSelectMode(); // Reset select mode
-            await new Promise(resolve => setTimeout(resolve, 50));
+            await tick();
         }
         await renderCollection(container);
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
     });
 
     afterEach(() => {
@@ -92,7 +92,7 @@ describe('ComicVault Bulk Edit Tests', () => {
         priceInput.dispatchEvent(new Event('input', { bubbles: true }));
         
         // Wait for handlers
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await tick();
 
         // In form.js we have internal Set dirtyFields which gets populated. 
         // We will indirect test this through the save logic which submits these fields
@@ -113,7 +113,7 @@ describe('ComicVault Bulk Edit Tests', () => {
         expect(btnSave).to.not.be.null;
 
         btnSave.click();
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         // Verify update database call
         const call = testEnv.getLastUpdateComicsCall();

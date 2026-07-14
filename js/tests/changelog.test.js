@@ -1,6 +1,6 @@
 import { db } from '../db.js';
 import { renderChangelog } from '../views/changelog.js';
-import { setupTestEnv, cleanup } from './testHelper.js';
+import { setupTestEnv, cleanup, tick } from './testHelper.js';
 
 const { expect } = chai;
 
@@ -296,7 +296,7 @@ describe('Changelog Feature Tests', () => {
         renderChangelog(container);
 
         // Warten auf das asynchrone Laden der Einträge
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         const clearBtn = container.querySelector('#btn-clear-changelog');
         expect(clearBtn).to.not.be.null;
@@ -313,7 +313,7 @@ describe('Changelog Feature Tests', () => {
         confirmBtn.click();
 
         // Kurz warten auf DB-Löschung
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         expect(mockChangelog.length).to.equal(0);
         

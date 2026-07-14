@@ -1,5 +1,5 @@
 import { renderStats, cleanupStats } from '../views/stats.js';
-import { setupTestEnv, cleanup } from './testHelper.js';
+import { setupTestEnv, cleanup, tick } from './testHelper.js';
 import * as statsUtils from '../services/stats/statsUtils.js';
 import * as kpiService from '../services/stats/kpiService.js';
 import * as timelineService from '../services/stats/timelineService.js';
@@ -95,7 +95,7 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
         }
         
         // Kurze Pause, damit DOM und eventuelle Chart-Instanziierungen durchlaufen
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
     });
 
     afterEach(() => {
@@ -158,7 +158,7 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
         // Leseziel ändern auf 10
         goalInput.value = '10';
         goalInput.dispatchEvent(new Event('change', { bubbles: true }));
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         // Neues Ratio prüfen: 1 / 10
         expect(ratioSpan.textContent).to.equal('1 / 10');
@@ -174,7 +174,7 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
         // Zeitraum auf "Dieses Jahr" (2026) stellen
         timeframeSelect.value = 'thisYear';
         timeframeSelect.dispatchEvent(new Event('change', { bubbles: true }));
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         const kpiCards = container.querySelectorAll('#stats-summary .stats-kpi-card');
         
@@ -200,7 +200,7 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
 
         imageCheckbox.checked = true;
         imageCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         const kpiCards = container.querySelectorAll('#stats-summary .stats-kpi-card');
         
@@ -279,7 +279,7 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
 
         imageCheckbox.checked = true;
         imageCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         // Nur c3 (Graphic Novel) und c4 (Comic) sind von Image.
         // Also immer noch 2 Typen-Zeilen

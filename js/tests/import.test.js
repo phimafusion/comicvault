@@ -1,5 +1,5 @@
 import { renderImport } from '../views/import.js';
-import { setupTestEnv, cleanup } from './testHelper.js';
+import { setupTestEnv, cleanup, tick } from './testHelper.js';
 import { db } from '../db.js';
 
 const { expect } = chai;
@@ -128,7 +128,7 @@ describe('JSON Import Feature Tests', () => {
         btnImport.click();
 
         // Wait for async reader and import processing loops
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await tick(100);
 
         const sumNew = document.getElementById('sum-new').textContent;
         const sumUpdated = document.getElementById('sum-updated').textContent;
@@ -196,7 +196,7 @@ describe('JSON Import Feature Tests', () => {
 
         btnImport.click();
 
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await tick(100);
 
         const sumNew = document.getElementById('sum-new').textContent;
         const sumUpdated = document.getElementById('sum-updated').textContent;
@@ -244,7 +244,7 @@ describe('JSON Import Feature Tests', () => {
 
         btnImport.click();
 
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await tick(100);
 
         // existing-1 sollte gelöscht worden sein (clearDatabase wurde aufgerufen)
         expect(testEnv.getLastClearDatabaseCall()).to.be.true;
@@ -266,7 +266,7 @@ describe('JSON Import Feature Tests', () => {
 
         btnImport.click();
 
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await tick(100);
 
         expect(statusDiv.style.display).to.equal('block');
         expect(statusDiv.textContent).to.contain('Fehler');
@@ -346,7 +346,7 @@ describe('Excel (XLSX) Export Feature Tests', () => {
             btnExportXlsx.click();
             
             // Warten auf asynchrone DB/Export-Operationen
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await tick();
             
             expect(createdBlob).to.not.be.null;
             expect(downloadedFilename).to.equal('ComicVault_Backup.xlsx');
@@ -475,7 +475,7 @@ describe('Excel (XLSX) Import Feature Tests', () => {
         btnImport.click();
 
         // Warte auf asynchrone Verarbeitung
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await tick(100);
 
         const sumNew = document.getElementById('sum-new').textContent;
         expect(sumNew).to.equal('1 neu');

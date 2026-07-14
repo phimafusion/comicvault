@@ -1,6 +1,6 @@
 import { initAutocomplete } from '../components/autocomplete.js';
 import { renderSettings } from '../views/settings.js';
-import { setupTestEnv, cleanup } from './testHelper.js';
+import { setupTestEnv, cleanup, tick } from './testHelper.js';
 import { db } from '../db.js';
 
 const { expect } = chai;
@@ -155,7 +155,7 @@ describe('Autocomplete Feature Tests', () => {
         expect(items.length).to.equal(6); // Panini, Carlsen, Marvel, DC, Splitter, Egmont
     });
 
-    it('sollte das Dropdown schließen, wenn der Focus verloren geht (blur)', (done) => {
+    it('sollte das Dropdown schließen, wenn der Focus verloren geht (blur)', async () => {
         input.value = 'Pa';
         input.dispatchEvent(new Event('input', { bubbles: true }));
 
@@ -164,10 +164,8 @@ describe('Autocomplete Feature Tests', () => {
         input.dispatchEvent(new Event('blur', { bubbles: true }));
 
         // Timeout abwarten (200ms in der Implementierung)
-        setTimeout(() => {
-            expect(container.querySelector('.autocomplete-dropdown')).to.be.null;
-            done();
-        }, 250);
+        await tick(250);
+        expect(container.querySelector('.autocomplete-dropdown')).to.be.null;
     });
 });
 
@@ -234,7 +232,7 @@ describe('Configurable Suggestions Settings Tests', () => {
         expect(tags[1].textContent).to.contain('Manga');
 
         // Warten, bis die asynchronen Verlagsdaten geladen und das Autocomplete initialisiert ist
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await tick();
 
         // Autocomplete für Standard-Verlag testen
         const publisherInput = settingsContainer.querySelector('#settings-default-publisher');
@@ -289,7 +287,7 @@ describe('Configurable Suggestions Settings Tests', () => {
         removeBtn.click();
         
         // Kurzer Delay für async DB query
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         const s = db.getSettings();
         expect(s.customSuggestions.typ).to.not.include('Comic');
@@ -310,7 +308,7 @@ describe('Configurable Suggestions Settings Tests', () => {
         const removeBtn = firstTag.querySelector('.suggestion-tag-remove');
         removeBtn.click();
         
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         // Sollte nicht gelöscht sein
         const s = db.getSettings();
@@ -404,7 +402,7 @@ describe('Configurable Suggestions Settings Tests', () => {
         confirmBtn.click();
 
         // Da clearAllData asynchron ist, warten wir kurz
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         expect(clearDataCalled).to.be.true;
 

@@ -11,7 +11,8 @@ ComicVault ist eine moderne, browserbasierte (PWA-fähige) Single-Page-Applicati
 - **KI Insights**: Automatische Generierung von Review-Vorschlägen und Analysen zu deinen gelesenen Werken basierend auf deiner Sammlung.
 - **Import / Export**: Sichere deine Daten als JSON oder Excel (`.xlsx`) und importiere sie bei Bedarf wieder.
 - **Massenbearbeitung (Bulk Edit)**: Selektiere mehrere Comics gleichzeitig, um Status, Verlag oder andere Felder effizient zu aktualisieren oder Einträge massenhaft zu löschen.
-- **Responsive Design**: Für Desktop und Mobile optimiertes, modernes UI-Design (Dark-Mode).
+- **Design & Personalisierung**: Bietet umfangreiche Anpassungsmöglichkeiten durch verschiedene Farbschemata (Themes) und konfigurierbare Schriftarten.
+- **Responsive Design**: Für Desktop und Mobile optimiertes, modernes UI-Design (Dark-Mode Unterstützung).
 
 ## 🚀 Installation & Start
 

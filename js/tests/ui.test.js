@@ -1,5 +1,5 @@
 import { renderCollection, attachCollectionEvents } from '../views/collection.js';
-import { setupTestEnv, cleanup } from './testHelper.js';
+import { setupTestEnv, cleanup, tick } from './testHelper.js';
 import { db } from '../db.js';
 
 const { expect } = chai;
@@ -93,7 +93,7 @@ describe('ComicVault UI Integration Tests (Collection View)', () => {
         checkbox.dispatchEvent(new Event('change', { bubbles: true }));
 
         // Kurz warten, bis der asynchrone DOM-Update-Schritt (updateGrid) ausgeführt wurde
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         const grid = container.querySelector('#collection-grid');
         const html = grid.innerHTML;
@@ -118,7 +118,7 @@ describe('ComicVault UI Integration Tests (Collection View)', () => {
         checkbox.checked = true;
         checkbox.dispatchEvent(new Event('change', { bubbles: true }));
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         // Nach Filter: 1 von 3 Comics sichtbar
         expect(countEl.textContent).to.equal('1 / 3');
@@ -131,7 +131,7 @@ describe('ComicVault UI Integration Tests (Collection View)', () => {
         const listToggle = container.querySelector('.view-toggle-btn[data-type="list"]');
         if (listToggle) {
             listToggle.click();
-            await new Promise(resolve => setTimeout(resolve, 50));
+            await tick();
         }
 
         const titleCells = Array.from(container.querySelectorAll('[data-col="titel"]'));
@@ -147,7 +147,7 @@ describe('ComicVault UI Integration Tests (Collection View)', () => {
         const listToggle = container.querySelector('.view-toggle-btn[data-type="list"]');
         if (listToggle) {
             listToggle.click();
-            await new Promise(resolve => setTimeout(resolve, 50));
+            await tick();
         }
 
         const verlagResizer = container.querySelector('.col-resizer[data-key="verlag"]');
@@ -173,7 +173,7 @@ describe('ComicVault UI Integration Tests (Collection View)', () => {
         const listToggle = container.querySelector('.view-toggle-btn[data-type="list"]');
         if (listToggle) {
             listToggle.click();
-            await new Promise(resolve => setTimeout(resolve, 50));
+            await tick();
         }
 
         // Zuerst Doppelklick auslösen, um eine Breite zu speichern
@@ -191,7 +191,7 @@ describe('ComicVault UI Integration Tests (Collection View)', () => {
         expect(resetWidthsBtn).to.not.be.null;
         resetWidthsBtn.click();
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         // Im LocalStorage sollte columnWidths nun leer sein
         visibleFields = JSON.parse(localStorage.getItem('comicvault_visible_fields') || '{}');

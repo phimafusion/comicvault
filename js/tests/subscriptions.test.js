@@ -1,7 +1,7 @@
 const { expect } = chai;
 import { db } from '../db.js';
 import { renderSubscriptions, cleanupSubscriptions } from '../views/subscriptions.js';
-import { setupTestEnv, cleanup } from './testHelper.js';
+import { setupTestEnv, cleanup, tick } from './testHelper.js';
 
 describe('Subscriptions (Abos) Feature', function() {
     let container;
@@ -67,7 +67,7 @@ describe('Subscriptions (Abos) Feature', function() {
         expect(tbody).to.exist;
         
         // Wait for rendering to complete since it fetches data
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await tick();
         
         expect(tbody.textContent).to.include('Keine Abonnements gefunden');
     });
@@ -82,7 +82,7 @@ describe('Subscriptions (Abos) Feature', function() {
         await renderSubscriptions(container);
         
         // Wait for rendering to complete
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await tick();
 
         const tbody = container.querySelector('#subscriptions-body');
         expect(tbody.textContent).to.include('Batman');
@@ -95,13 +95,13 @@ describe('Subscriptions (Abos) Feature', function() {
         await db.saveSubscription({ titel: 'Spider-Man', verlag: 'Marvel' });
 
         await renderSubscriptions(container);
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await tick();
 
         const searchInput = container.querySelector('#subscriptions-search');
         searchInput.value = 'Bat';
         searchInput.dispatchEvent(new Event('input'));
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await tick();
 
         const tbody = container.querySelector('#subscriptions-body');
         expect(tbody.textContent).to.include('Batman');
@@ -120,7 +120,7 @@ describe('Subscriptions (Abos) Feature', function() {
         addBtn.click();
         
         // Wait for modal to render and async fetch to complete
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await tick();
         
         const modal = document.querySelector('#subscription-modal');
         expect(modal).to.exist;
@@ -139,6 +139,6 @@ describe('Subscriptions (Abos) Feature', function() {
         const closeBtn = document.querySelector('#btn-close-sub-modal');
         if (closeBtn) closeBtn.click();
         
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
     });
 });

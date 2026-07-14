@@ -260,3 +260,14 @@ export function cleanup() {
     const fontVars = ['--font-primary', '--font-display', '--font-typewriter', '--font-code'];
     fontVars.forEach(v => document.body.style.removeProperty(v));
 }
+
+/**
+ * Resolves a promise after a delay (default 0ms), allowing the browser event loop to process micro/macro tasks.
+ * 
+ * @param {number} [ms=0] Delay in milliseconds
+ * @returns {Promise<void>}
+ */
+export function tick(ms = 0) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
