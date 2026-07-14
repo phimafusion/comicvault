@@ -1,4 +1,5 @@
 import { db } from '../db.js';
+import { escapeHTML } from '../utils.js';
 import { openModal } from './form.js';
 
 let selectedWishIds = new Set();
@@ -344,7 +345,7 @@ async function updateWishlistTable() {
                     <input type="checkbox" class="wish-item-checkbox" data-id="${wish.id}" ${isSelected ? 'checked' : ''} style="accent-color: var(--primary-color); width: 16px; height: 16px; cursor: pointer; vertical-align: middle;">
                 </td>
                 <td data-label="Typ" style="padding: 12px; vertical-align: middle;">${wish.typ || '-'}</td>
-                <td data-label="Name" class="wish-title-cell" style="padding: 12px; font-weight: 600; vertical-align: middle;">${wish.titel}</td>
+                <td data-label="Name" class="wish-title-cell" style="padding: 12px; font-weight: 600; vertical-align: middle;">${escapeHTML(wish.titel)}</td>
                 <td data-label="Format" style="padding: 12px; vertical-align: middle;">${wish.format || '-'}</td>
                 <td data-label="Preis" style="padding: 12px; vertical-align: middle;">${wish.preis ? wish.preis.toFixed(2) + ' ' + currency : '-'}</td>
                 <td data-label="Release" style="padding: 12px; vertical-align: middle;">${wish.jahr || '-'}</td>

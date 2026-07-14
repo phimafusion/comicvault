@@ -1,5 +1,5 @@
 import { db } from '../../db.js';
-import { displayDate, renderStars, getPlaceholderImage } from '../../utils.js';
+import { displayDate, renderStars, getPlaceholderImage, escapeHTML } from '../../utils.js';
 
 export const FIELD_CONFIG = {
     titel: { label: 'Titel / Serie', defaultList: true, defaultTiles: true, defaultDetails: true, listWidth: 'minmax(150px, 1.5fr)' },
@@ -36,25 +36,25 @@ export function renderTile(comic, visibleFields, isSelectModeActive, selectedCom
     let imgBlock = '';
     if (visibleFields.tiles.includes('bild')) {
         const imgUrl = comic.bild || getPlaceholderImage();
-        imgBlock = `<div class="comic-cover-container"><img src="${imgUrl}" alt="${comic.titel}" class="comic-cover" onerror="this.onerror=null; this.src='${getPlaceholderImage()}';"></div>`;
+        imgBlock = `<div class="comic-cover-container"><img src="${imgUrl}" alt="${escapeHTML(comic.titel)}" class="comic-cover" onerror="this.onerror=null; this.src='${getPlaceholderImage()}';"></div>`;
     }
 
     const stdFields = ['bild', 'serie', 'titel', 'bewertung', 'bestand'];
     
     let serieBlock = '';
     if (visibleFields.tiles.includes('serie')) {
-        serieBlock = `<span class="comic-series">${comic.serie || comic.verlag || ''} ${comic.nummer ? '#' + comic.nummer : ''}</span>`;
+        serieBlock = `<span class="comic-series">${escapeHTML(comic.serie || comic.verlag || '')} ${escapeHTML(comic.nummer ? '#' + comic.nummer : '')}</span>`;
     }
 
     let titelBlock = '';
     if (visibleFields.tiles.includes('titel')) {
-        titelBlock = `<h3 class="comic-title">${comic.titel || 'Ohne Titel'}</h3>`;
+        titelBlock = `<h3 class="comic-title">${escapeHTML(comic.titel || 'Ohne Titel')}</h3>`;
     }
 
     let metaBlock = '';
     if (visibleFields.tiles.includes('bewertung') || visibleFields.tiles.includes('bestand')) {
         let bewertung = visibleFields.tiles.includes('bewertung') ? `<span>${renderStars(comic.bewertung)}</span>` : '';
-        let bestand = visibleFields.tiles.includes('bestand') ? `<span class="badge ${bestandClass}">${comic.bestand}</span>` : '';
+        let bestand = visibleFields.tiles.includes('bestand') ? `<span class="badge ${bestandClass}">${escapeHTML(comic.bestand)}</span>` : '';
         metaBlock = `<div class="comic-meta">${bewertung}${bestand}</div>`;
     }
 
@@ -123,13 +123,13 @@ export function renderListItem(comic, visibleFields, isSelectModeActive, selecte
             case 'titel':
                 return `
                 <div data-col="${field.key}" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px;">
-                    <h3 class="comic-title" style="margin:0; font-size:0.88rem; display: inline;">${comic.titel || 'Ohne Titel'}</h3>
-                    <div class="comic-series" style="font-size:0.68rem; color: var(--text-secondary);">${comic.serie || ''}</div>
+                    <h3 class="comic-title" style="margin:0; font-size:0.88rem; display: inline;">${escapeHTML(comic.titel || 'Ohne Titel')}</h3>
+                    <div class="comic-series" style="font-size:0.68rem; color: var(--text-secondary);">${escapeHTML(comic.serie || '')}</div>
                 </div>`;
             case 'nummer':
                 return `<div data-col="${field.key}" style="font-weight: bold;">${val !== null && val !== undefined ? '#' + val : '-'}</div>`;
             case 'bestand':
-                return `<div data-col="${field.key}"><span class="badge ${bestandClass}" style="font-size: 0.62rem; padding: 2px 6px;">${comic.bestand || '-'}</span></div>`;
+                return `<div data-col="${field.key}"><span class="badge ${bestandClass}" style="font-size: 0.62rem; padding: 2px 6px;">${escapeHTML(comic.bestand || '-')}</span></div>`;
             case 'preis':
                 return `<div data-col="${field.key}" style="font-weight: bold; ${align}">${(val !== null && val !== undefined) ? Number(val).toFixed(2) + ' ' + (db.getSettings().currency || '€') : '-'}</div>`;
             case 'kaufdatum':
@@ -209,12 +209,12 @@ export function renderDetailsItem(comic, visibleFields, isSelectModeActive, sele
         const imgUrl = comic.bild || getPlaceholderImage();
         imgBlock = `
             <div class="details-cover-wrapper">
-                <img src="${imgUrl}" alt="${comic.titel}" class="details-cover" onerror="this.onerror=null; this.src='${getPlaceholderImage()}';">
+                <img src="${imgUrl}" alt="${escapeHTML(comic.titel)}" class="details-cover" onerror="this.onerror=null; this.src='${getPlaceholderImage()}';">
             </div>
         `;
     }
 
-    const serieVal = comic.serie ? `${comic.serie} ${comic.nummer ? '#' + comic.nummer : ''}` : '';
+    const serieVal = comic.serie ? `${escapeHTML(comic.serie)} ${escapeHTML(comic.nummer ? '#' + comic.nummer : '')}` : '';
     const verlagVal = comic.verlag || '';
     const subVal = [serieVal, verlagVal].filter(Boolean).join(' • ');
 
@@ -222,7 +222,7 @@ export function renderDetailsItem(comic, visibleFields, isSelectModeActive, sele
     if (visibleFields.details.includes('titel') || visibleFields.details.includes('serie')) {
         headerBlock = `
             ${visibleFields.details.includes('serie') && subVal ? `<span class="comic-series">${subVal}</span>` : ''}
-            ${visibleFields.details.includes('titel') ? `<h3 class="comic-title">${comic.titel || 'Ohne Titel'}</h3>` : ''}
+            ${visibleFields.details.includes('titel') ? `<h3 class="comic-title">${escapeHTML(comic.titel || 'Ohne Titel')}</h3>` : ''}
         `;
     }
 
@@ -264,7 +264,7 @@ export function renderDetailsItem(comic, visibleFields, isSelectModeActive, sele
         statusBlock = `
             <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
                 <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 700; text-transform: uppercase;">Status:</span>
-                <span class="badge ${bestandClass}">${comic.bestand || '-'}</span>
+                <span class="badge ${bestandClass}">${escapeHTML(comic.bestand || '-')}</span>
             </div>
         `;
     }
@@ -276,7 +276,7 @@ export function renderDetailsItem(comic, visibleFields, isSelectModeActive, sele
                 <div class="notepad-header">
                     <i class="fa-solid fa-note-sticky"></i> Bemerkungen
                 </div>
-                <div class="notepad-body">${comic.bemerkung}</div>
+                <div class="notepad-body">${escapeHTML(comic.bemerkung)}</div>
             </div>
         `;
     }

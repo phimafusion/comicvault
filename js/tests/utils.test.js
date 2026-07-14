@@ -6,7 +6,8 @@ import {
     parseCurrency,
     parseStars,
     renderStars,
-    getPlaceholderImage
+    getPlaceholderImage,
+    escapeHTML
 } from '../utils.js';
 
 const { expect } = chai;

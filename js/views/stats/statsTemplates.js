@@ -1,3 +1,4 @@
+import { escapeHTML } from '../../utils.js';
 import { renderStars } from '../../utils.js';
 
 export function renderKPICards({ totalComics, totalValue, readPercent, tbrCount, tbrValue }, currencySymbol) {
@@ -47,7 +48,7 @@ export function renderTypeStatsTable(typeStats, currencySymbol) {
                 <tbody>
                     ${typeStats.map(stat => `
                         <tr class="stats-tr" data-type="${stat.type}">
-                            <td data-label="Typ" class="stats-td stats-font-display">${stat.type}</td>
+                            <td data-label="Typ" class="stats-td stats-font-display">${escapeHTML(stat.type)}</td>
                             <td data-label="Anzahl" class="stats-td stats-text-center stats-color-primary">${stat.total}</td>
                             <td data-label="Sammlungswert" class="stats-td stats-text-right stats-color-success">${stat.value.toFixed(2)} ${currencySymbol}</td>
                             <td data-label="Gelesen Quote" class="stats-td stats-text-center">
@@ -69,7 +70,7 @@ export function renderTypeStatsTable(typeStats, currencySymbol) {
 }
 
 export function renderHighlightsCards({ avgPrice, speedText, topPurchaseMonth, topPurchaseVal, topReadMonth, topReadVal, maxPriceComic }, currencySymbol) {
-    const teuersterText = maxPriceComic ? `${maxPriceComic.titel} (${Number(maxPriceComic.preis).toFixed(2)} ${currencySymbol})` : '-';
+    const teuersterText = maxPriceComic ? `${escapeHTML(maxPriceComic.titel)} (${Number(maxPriceComic.preis).toFixed(2)} ${currencySymbol})` : '-';
     return `
         <div class="stats-highlight-item">
             <span class="stats-highlight-label">Ø Preis pro Comic</span>
