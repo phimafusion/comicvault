@@ -113,7 +113,7 @@ export function renderTopPublishersTable(topPublishers) {
                 const avgRate = p.ratedCount > 0 ? (p.ratingSum / p.ratedCount) : 0;
                 return `
                     <tr class="stats-tr">
-                        <td data-label="Verlag" class="stats-td stats-font-weight-600">${p.name}</td>
+                        <td data-label="Verlag" class="stats-td stats-font-weight-600">${escapeHTML(p.name)}</td>
                         <td data-label="Comics" class="stats-td stats-text-center stats-font-weight-600">${p.total}</td>
                         <td data-label="Gelesen" class="stats-td stats-text-center stats-color-secondary">${p.read}</td>
                         <td data-label="Ø Bewertung" class="stats-td stats-text-right">${avgRate > 0 ? renderStars(avgRate) : '-'}</td>
@@ -142,7 +142,7 @@ export function renderTopSeriesTable(topSeries) {
                 const avgRate = s.ratedCount > 0 ? (s.ratingSum / s.ratedCount) : 0;
                 return `
                     <tr class="stats-tr">
-                        <td data-label="Serie" class="stats-td stats-font-weight-600">${s.name}</td>
+                        <td data-label="Serie" class="stats-td stats-font-weight-600">${escapeHTML(s.name)}</td>
                         <td data-label="Comics" class="stats-td stats-text-center stats-font-weight-600">${s.total}</td>
                         <td data-label="Gelesen" class="stats-td stats-text-center stats-color-secondary">${s.read}</td>
                         <td data-label="Ø Bewertung" class="stats-td stats-text-right">${avgRate > 0 ? renderStars(avgRate) : '-'}</td>

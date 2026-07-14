@@ -344,11 +344,11 @@ async function updateWishlistTable() {
                 <td style="padding: 12px; text-align: center; vertical-align: middle;">
                     <input type="checkbox" class="wish-item-checkbox" data-id="${wish.id}" ${isSelected ? 'checked' : ''} style="accent-color: var(--primary-color); width: 16px; height: 16px; cursor: pointer; vertical-align: middle;">
                 </td>
-                <td data-label="Typ" style="padding: 12px; vertical-align: middle;">${wish.typ || '-'}</td>
+                <td data-label="Typ" style="padding: 12px; vertical-align: middle;">${escapeHTML(wish.typ) || '-'}</td>
                 <td data-label="Name" class="wish-title-cell" style="padding: 12px; font-weight: 600; vertical-align: middle;">${escapeHTML(wish.titel)}</td>
-                <td data-label="Format" style="padding: 12px; vertical-align: middle;">${wish.format || '-'}</td>
+                <td data-label="Format" style="padding: 12px; vertical-align: middle;">${escapeHTML(wish.format) || '-'}</td>
                 <td data-label="Preis" style="padding: 12px; vertical-align: middle;">${wish.preis ? wish.preis.toFixed(2) + ' ' + currency : '-'}</td>
-                <td data-label="Release" style="padding: 12px; vertical-align: middle;">${wish.jahr || '-'}</td>
+                <td data-label="Release" style="padding: 12px; vertical-align: middle;">${escapeHTML(wish.jahr) || '-'}</td>
                 <td data-label="Status" style="padding: 12px; vertical-align: middle;">
                     <span class="badge ${wish.vorbestellt ? 'badge-vorbestellt' : 'badge-abgegeben'}" style="font-size: 0.75rem; padding: 4px 8px; border-radius: 6px;">
                         ${wish.vorbestellt ? 'Vorbestellt' : 'Geplant'}

@@ -1,4 +1,5 @@
 import { db } from '../db.js';
+import { escapeHTML } from '../utils.js';
 import { openModal } from './form.js';
 import {
     parseCSV,
@@ -266,16 +267,18 @@ async function handleCSVImport() {
             };
 
             const onLogNew = (comicData) => {
-                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${comicData.titel}</span></div>`;
+                const name = `${comicData.serie || ''} ${comicData.nummer ? '#' + comicData.nummer : ''}`;
+                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${escapeHTML(name)}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${escapeHTML(comicData.titel || '')}</span></div>`;
                 logNew.insertAdjacentHTML('beforeend', logLine);
                 logNew.scrollTop = logNew.scrollHeight;
             };
 
             const onLogUpdated = (comicData, oldData, changedFields) => {
                 const details = formatDiff(comicData, oldData, changedFields);
+                const name = `${comicData.serie || ''} ${comicData.nummer ? '#' + comicData.nummer : ''}`;
                 const logLine = `
                     <div style="margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <strong style="color: var(--primary-color);">${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong>
+                        <strong style="color: var(--primary-color);">${escapeHTML(name)}</strong>
                         <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
                             ${details}
                         </div>
@@ -286,7 +289,8 @@ async function handleCSVImport() {
             };
 
             const onLogSkipped = (comicData) => {
-                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${comicData.serie} ${comicData.nummer ? '#' + comicData.nummer : ''}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${comicData.titel}</span></div>`;
+                const name = `${comicData.serie || ''} ${comicData.nummer ? '#' + comicData.nummer : ''}`;
+                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${escapeHTML(name)}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${escapeHTML(comicData.titel || '')}</span></div>`;
                 logSkipped.insertAdjacentHTML('beforeend', logLine);
                 logSkipped.scrollTop = logSkipped.scrollHeight;
             };
@@ -449,7 +453,9 @@ async function handleJSONImport() {
                 const suffix = isWishlist ? 'Hinzugefügt' : (data.titel || '');
                 const name = isWishlist ? (data.titel || '') : `${data.serie || ''} ${data.nummer ? '#' + data.nummer : ''}`;
                 
-                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${prefix}${name}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${suffix}</span></div>`;
+                const safeName = escapeHTML(name);
+                const safeSuffix = escapeHTML(suffix);
+                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${prefix}${safeName}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${safeSuffix}</span></div>`;
                 logNew.insertAdjacentHTML('beforeend', logLine);
                 logNew.scrollTop = logNew.scrollHeight;
             };
@@ -458,10 +464,11 @@ async function handleJSONImport() {
                 const prefix = isWishlist ? '[Wunsch] ' : '';
                 const name = isWishlist ? (data.titel || '') : `${data.serie || ''} ${data.nummer ? '#' + data.nummer : ''}`;
                 const details = formatDiff(data, oldData, changedFields);
+                const safeName = escapeHTML(name);
                 
                 const logLine = `
                     <div style="margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <strong style="color: var(--primary-color);">${prefix}${name}</strong>
+                        <strong style="color: var(--primary-color);">${prefix}${safeName}</strong>
                         <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
                             ${details}
                         </div>
@@ -476,7 +483,9 @@ async function handleJSONImport() {
                 const suffix = isWishlist ? 'Keine Änderungen' : (data.titel || '');
                 const name = isWishlist ? (data.titel || '') : `${data.serie || ''} ${data.nummer ? '#' + data.nummer : ''}`;
                 
-                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${prefix}${name}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${suffix}</span></div>`;
+                const safeName = escapeHTML(name);
+                const safeSuffix = escapeHTML(suffix);
+                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${prefix}${safeName}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${safeSuffix}</span></div>`;
                 logSkipped.insertAdjacentHTML('beforeend', logLine);
                 logSkipped.scrollTop = logSkipped.scrollHeight;
             };
