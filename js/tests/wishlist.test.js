@@ -1,5 +1,5 @@
 import { renderWishlist } from '../views/wishlist.js';
-import { setupTestEnv, cleanup } from './testHelper.js';
+import { setupTestEnv, cleanup, tick } from './testHelper.js';
 
 const { expect } = chai;
 
@@ -26,7 +26,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
 
         // Render wishlist
         await renderWishlist(container);
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
     });
 
     afterEach(() => {
@@ -54,7 +54,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
         searchInput.value = 'Spider';
         searchInput.dispatchEvent(new Event('input', { bubbles: true }));
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         const rows = container.querySelectorAll('.wishlist-row');
         expect(rows.length).to.equal(1);
@@ -68,7 +68,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
 
         // Klick 1: Sortiert aufsteigend (9.99 -> 19.99 -> 25.00)
         priceHeader.click();
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         let rows = container.querySelectorAll('.wishlist-row');
         expect(rows[0].querySelector('.wish-title-cell').textContent).to.equal('Saga Vol 1');
@@ -76,7 +76,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
 
         // Klick 2: Sortiert absteigend (25.00 -> 19.99 -> 9.99)
         priceHeader.click();
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         rows = container.querySelectorAll('.wishlist-row');
         expect(rows[0].querySelector('.wish-title-cell').textContent).to.equal('Batman: The Long Halloween');
@@ -89,7 +89,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
 
         // Ersten Wunsch transferieren (Batman: The Long Halloween, ID = w1)
         transferBtns[0].click();
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         // Überprüfen, ob das Modal geöffnet wurde
         const modal = document.getElementById('comic-modal');
@@ -118,12 +118,12 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
     it('sollte beim Speichern der Übernahme das Comic in die Sammlung speichern und den Wunsch löschen', async () => {
         const transferBtns = container.querySelectorAll('.btn-transfer-wish');
         transferBtns[0].click();
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         // Formular abspeichern durch Klick auf Save Button
         const btnSave = document.getElementById('btn-save-comic');
         btnSave.click();
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         // Das Comic sollte in die Sammlung gespeichert worden sein
         expect(savedComics.length).to.equal(1);
@@ -147,7 +147,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
         cb3.checked = true;
         cb3.dispatchEvent(new Event('change', { bubbles: true }));
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick(50);
 
         // Überprüfen, ob das Bulk Bar sichtbar ist
         const bulkBar = document.getElementById('wishlist-bulk-bar');
@@ -163,7 +163,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
         const btnDelete = document.getElementById('btn-wishlist-bulk-delete');
         btnDelete.click();
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         // Wiederherstellen
         window.confirm = originalConfirm;
@@ -186,12 +186,12 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
         cb3.checked = true;
         cb3.dispatchEvent(new Event('change', { bubbles: true }));
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick(50);
 
         // Klick auf "Vorbestellt"
         const btnPreorder = document.getElementById('btn-wishlist-bulk-preorder');
         btnPreorder.click();
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         // Nun sollten alle ausgewählten vorbestellt = true sein
         expect(mockWishes.find(w => w.id === 'w1').vorbestellt).to.be.true;
@@ -207,12 +207,12 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
         cb3_new.checked = true;
         cb3_new.dispatchEvent(new Event('change', { bubbles: true }));
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick(50);
 
         // Klick auf "Geplant"
         const btnPlan = document.getElementById('btn-wishlist-bulk-plan');
         btnPlan.click();
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         expect(mockWishes.find(w => w.id === 'w2').vorbestellt).to.be.false;
         expect(mockWishes.find(w => w.id === 'w3').vorbestellt).to.be.false;
@@ -230,7 +230,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
         cb2.checked = true;
         cb2.dispatchEvent(new Event('change', { bubbles: true }));
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick(50);
 
         // Bulk-Transfer auslösen
         const originalConfirm = window.confirm;
@@ -239,7 +239,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
         const btnTransfer = document.getElementById('btn-wishlist-bulk-transfer');
         btnTransfer.click();
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await tick();
 
         window.confirm = originalConfirm;
 
