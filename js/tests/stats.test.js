@@ -1,7 +1,9 @@
 import { renderStats, cleanupStats } from '../views/stats.js';
 import { setupTestEnv, cleanup } from './testHelper.js';
-import * as statsService from '../services/statsService.js';
-
+import * as statsUtils from '../services/stats/statsUtils.js';
+import * as kpiService from '../services/stats/kpiService.js';
+import * as timelineService from '../services/stats/timelineService.js';
+import * as chartDataService from '../services/stats/chartDataService.js';
 const { expect } = chai;
 
 describe('ComicVault Statistiken & Lesestapel Tests', () => {
@@ -111,7 +113,7 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
         expect(timeframeSelect).to.not.be.null;
 
         // KPIs prüfen
-        const kpiCards = container.querySelectorAll('#stats-summary .details-card');
+        const kpiCards = container.querySelectorAll('#stats-summary .stats-kpi-card');
         expect(kpiCards.length).to.equal(5);
 
         // Canvas-Elemente für Charts prüfen
@@ -122,7 +124,7 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
     });
 
     it('sollte die KPI-Werte (Größe, Sammlungswert, Gelesen-Quote, TBR) richtig berechnen', () => {
-        const kpiCards = container.querySelectorAll('#stats-summary .details-card');
+        const kpiCards = container.querySelectorAll('#stats-summary .stats-kpi-card');
         
         // standardmäßig ist Zeitraum = "all" ausgewählt.
         // Alle 4 Comics werden berücksichtigt.
@@ -174,7 +176,7 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
         timeframeSelect.dispatchEvent(new Event('change', { bubbles: true }));
         await new Promise(resolve => setTimeout(resolve, 50));
 
-        const kpiCards = container.querySelectorAll('#stats-summary .details-card');
+        const kpiCards = container.querySelectorAll('#stats-summary .stats-kpi-card');
         
         // In 2026: c1, c2, c3 (Kaufdatum in 2026). c4 ist in 2025 gekauft/gelesen.
         // Comics gefiltert: 3
@@ -200,7 +202,7 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
         imageCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
         await new Promise(resolve => setTimeout(resolve, 50));
 
-        const kpiCards = container.querySelectorAll('#stats-summary .details-card');
+        const kpiCards = container.querySelectorAll('#stats-summary .stats-kpi-card');
         
         // Nur c3 und c4 sind von Image.
         // Comics gefiltert: 2
@@ -240,7 +242,7 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
         // c4 (Comic): Image, kaufdatum 10.11.2025, gelesen_am 12.11.2025, preis 8.00, bestand verkauft
 
         // Typen: "Comic" und "Graphic Novel"
-        const rows = typeContainer.querySelectorAll('.stats-type-row');
+        const rows = typeContainer.querySelectorAll('.stats-tr');
         expect(rows.length).to.equal(2);
 
         // Prüfe Comic Reihe (sortiert: Comic, Graphic Novel)
@@ -281,7 +283,7 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
 
         // Nur c3 (Graphic Novel) und c4 (Comic) sind von Image.
         // Also immer noch 2 Typen-Zeilen
-        const filteredRows = typeContainer.querySelectorAll('.stats-type-row');
+        const filteredRows = typeContainer.querySelectorAll('.stats-tr');
         expect(filteredRows.length).to.equal(2);
 
         // Comic: c4 (Image, Comic, verkauft, gelesen, 8.00)
@@ -305,7 +307,7 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
 describe('statsService Unit Tests', () => {
     describe('parseToDate', () => {
         it('sollte ISO-Format YYYY-MM-DD korrekt parsen', () => {
-            const date = statsService.parseToDate('2026-05-29');
+            const date = statsUtils.parseToDate('2026-05-29');
             expect(date).to.be.an.instanceOf(Date);
             expect(date.getFullYear()).to.equal(2026);
             expect(date.getMonth()).to.equal(4); // 0-indexed
@@ -313,47 +315,47 @@ describe('statsService Unit Tests', () => {
         });
 
         it('sollte deutsches Format DD.MM.YYYY korrekt parsen', () => {
-            const date = statsService.parseToDate('15.01.2026');
+            const date = statsUtils.parseToDate('15.01.2026');
             expect(date.getFullYear()).to.equal(2026);
             expect(date.getMonth()).to.equal(0);
             expect(date.getDate()).to.equal(15);
         });
 
         it('sollte deutsches Format mit 2-stelligem Jahr DD.MM.YY korrekt parsen', () => {
-            const date1 = statsService.parseToDate('20.02.26');
+            const date1 = statsUtils.parseToDate('20.02.26');
             expect(date1.getFullYear()).to.equal(2026);
             expect(date1.getMonth()).to.equal(1);
             expect(date1.getDate()).to.equal(20);
 
-            const date2 = statsService.parseToDate('10.11.99');
+            const date2 = statsUtils.parseToDate('10.11.99');
             expect(date2.getFullYear()).to.equal(1999);
             expect(date2.getMonth()).to.equal(10);
             expect(date2.getDate()).to.equal(10);
         });
 
         it('sollte DD.MM ohne Jahr als aktuelles Jahr parsen', () => {
-            const date = statsService.parseToDate('05.03');
+            const date = statsUtils.parseToDate('05.03');
             expect(date.getFullYear()).to.equal(new Date().getFullYear());
             expect(date.getMonth()).to.equal(2);
             expect(date.getDate()).to.equal(5);
         });
 
         it('sollte null zurueckgeben bei leeren/ungueltigen Werten', () => {
-            expect(statsService.parseToDate('')).to.be.null;
-            expect(statsService.parseToDate(null)).to.be.null;
-            expect(statsService.parseToDate('ungueltig')).to.be.null;
+            expect(statsUtils.parseToDate('')).to.be.null;
+            expect(statsUtils.parseToDate(null)).to.be.null;
+            expect(statsUtils.parseToDate('ungueltig')).to.be.null;
         });
     });
 
     describe('checkDateInRange', () => {
         it('sollte true fuer "all" zurueckgeben', () => {
-            expect(statsService.checkDateInRange('2026-05-29', 'all')).to.be.true;
+            expect(statsUtils.checkDateInRange('2026-05-29', 'all')).to.be.true;
         });
 
         it('sollte Daten innerhalb des aktuellen Jahres fuer "thisYear" korrekt pruefen', () => {
             const currentYear = new Date().getFullYear();
-            expect(statsService.checkDateInRange(`15.01.${currentYear}`, 'thisYear')).to.be.true;
-            expect(statsService.checkDateInRange(`15.01.${currentYear - 1}`, 'thisYear')).to.be.false;
+            expect(statsUtils.checkDateInRange(`15.01.${currentYear}`, 'thisYear')).to.be.true;
+            expect(statsUtils.checkDateInRange(`15.01.${currentYear - 1}`, 'thisYear')).to.be.false;
         });
     });
 
@@ -365,7 +367,7 @@ describe('statsService Unit Tests', () => {
                 { preis: 20, bestand: 'verkauft', gelesen_am: '20.02.2026' } // verkauft => nicht im Sammlungswert
             ];
             
-            const kpis = statsService.calculateKPIs(mockData, 'all');
+            const kpis = kpiService.calculateKPIs(mockData, 'all');
             expect(kpis.totalComics).to.equal(3);
             // Sammlungswert: vorhanden + vorbestellt = 10 + 15 = 25
             expect(kpis.totalValue).to.equal(25);
@@ -388,7 +390,7 @@ describe('statsService Unit Tests', () => {
                 { bestand: 'vorhanden', kaufdatum: `15.${String(currentMonth + 1).padStart(2, '0')}.${currentYear - 1}`, gelesen_am: `20.${String(currentMonth + 1).padStart(2, '0')}.${currentYear}`, preis: 10 } // Gekauft letztes Jahr, gelesen diesen Monat
             ];
             
-            const timeline = statsService.calculateInventoryTBRDevelopment(mockData);
+            const timeline = timelineService.calculateInventoryTBRDevelopment(mockData);
             
             // Neuester Monat steht zuerst (Index 0)
             const currentMonthData = timeline[0];
@@ -418,7 +420,7 @@ describe('statsService Unit Tests', () => {
                 { date: new Date(2024, 11, 1), purchasedThisMonth: 10, spentThisMonth: 100, readThisMonth: 5, tbrAtEnd: 9 }
             ];
 
-            const grouped = statsService.groupTBRDataByYear(mockTimeline);
+            const grouped = timelineService.groupTBRDataByYear(mockTimeline);
             
             expect(grouped).to.be.an('array').that.has.lengthOf(2);
             

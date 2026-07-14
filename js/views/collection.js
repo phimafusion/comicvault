@@ -3,7 +3,7 @@ import { openModal } from './form.js';
 import { FIELD_CONFIG, defaultVisibleFields, renderTile, renderListItem, renderDetailsItem } from './collection/templates.js';
 import { initColumnManager, handleDragStart, handleDragEnd, handleDragOver, handleDragLeave, handleDrop, handleMouseDown, handleDblClick, autoFitColumn } from './collection/columnManager.js';
 import { renderFieldConfigOverlay } from './collection/fieldConfig.js';
-import { parseToDate } from '../services/statsService.js';
+import { parseToDate } from '../services/stats/statsUtils.js';
 import {
     isSelectModeActive,
     selectedComicIds,

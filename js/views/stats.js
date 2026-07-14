@@ -1,21 +1,17 @@
 import { db } from '../db.js';
 import { renderStars } from '../utils.js';
+import { parseToDate, isComicInTimeframe, filterComicsByDropdowns } from '../services/stats/statsUtils.js';
+import { calculateKPIs, calculateTypeStats, calculateReadingChallenge, calculateHighlights } from '../services/stats/kpiService.js';
+import { calculateTimelineData, calculateInventoryTBRDevelopment, groupTBRDataByYear, getEarlyComics } from '../services/stats/timelineService.js';
+import { calculateDistributionData, calculateTopLists } from '../services/stats/chartDataService.js';
 import {
-    parseToDate,
-    checkDateInRange,
-    isComicInTimeframe,
-    filterComicsByDropdowns,
-    calculateKPIs,
-    calculateTypeStats,
-    calculateReadingChallenge,
-    calculateHighlights,
-    calculateTimelineData,
-    calculateDistributionData,
-    calculateTopLists,
-    getEarlyComics,
-    calculateInventoryTBRDevelopment,
-    groupTBRDataByYear
-} from '../services/statsService.js';
+    renderKPICards,
+    renderTypeStatsTable,
+    renderHighlightsCards,
+    renderTopPublishersTable,
+    renderTopSeriesTable,
+    renderInventoryTBRTable
+} from './stats/statsTemplates.js';
 
 let activeStatsFilters = {
     verlag: [],
@@ -446,28 +442,7 @@ async function updateStats() {
     // KPIs befüllen
     const summary = document.getElementById('stats-summary');
     if (summary) {
-        summary.innerHTML = `
-            <div class="details-card" style="flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-left: 4px solid var(--primary-color);">
-                <div style="font-size: 2rem; font-family: var(--font-display); font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">${totalComics}</div>
-                <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 0.7rem; font-weight: 600; letter-spacing: 1px; text-align: center;">Comics (gefiltert)</div>
-            </div>
-            <div class="details-card" style="flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-left: 4px solid var(--success);">
-                <div style="font-size: 2rem; font-family: var(--font-display); font-weight: 800; color: var(--success); margin-bottom: 4px;">${totalValue.toFixed(2)} ${currencySymbol}</div>
-                <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 0.7rem; font-weight: 600; letter-spacing: 1px; text-align: center;">Sammlungswert</div>
-            </div>
-            <div class="details-card" style="flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-left: 4px solid var(--secondary-color);">
-                <div style="font-size: 2rem; font-family: var(--font-display); font-weight: 800; color: var(--secondary-color); margin-bottom: 4px;">${readPercent}%</div>
-                <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 0.7rem; font-weight: 600; letter-spacing: 1px; text-align: center;">Gelesen Quote</div>
-            </div>
-            <div class="details-card" style="flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-left: 4px solid var(--warning);">
-                <div style="font-size: 2rem; font-family: var(--font-display); font-weight: 800; color: var(--warning); margin-bottom: 4px;">${tbrCount}</div>
-                <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 0.7rem; font-weight: 600; letter-spacing: 1px; text-align: center;">Lesestapel (TBR)</div>
-            </div>
-            <div class="details-card" style="flex-direction: column; align-items: center; justify-content: center; padding: 20px; border-left: 4px solid var(--accent-color);">
-                <div style="font-size: 2rem; font-family: var(--font-display); font-weight: 800; color: var(--accent-color); margin-bottom: 4px;">${tbrValue.toFixed(2)} ${currencySymbol}</div>
-                <div style="color: var(--text-secondary); text-transform: uppercase; font-size: 0.7rem; font-weight: 600; letter-spacing: 1px; text-align: center;">Ungelesener Wert</div>
-            </div>
-        `;
+        summary.innerHTML = renderKPICards({ totalComics, totalValue, readPercent, tbrCount, tbrValue }, currencySymbol);
     }
 
     // 2b. Typ-spezifische KPIs befüllen
@@ -479,45 +454,7 @@ async function updateStats() {
             typeContainer.style.display = 'none';
         } else {
             typeContainer.style.display = 'block';
-            typeContainer.innerHTML = `
-                <div class="details-card" style="flex-direction: column; padding: 24px; overflow-x: auto; border: 1px solid var(--border-color); background: var(--bg-surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
-                    <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; color: var(--text-primary);">
-                        <i class="fa-solid fa-layer-group" style="color: var(--primary-color);"></i>
-                        <span>Kennzahlen nach Typ</span>
-                    </h3>
-                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
-                        <thead>
-                            <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
-                                <th style="padding: 12px 16px;">Typ</th>
-                                <th style="padding: 12px 16px; text-align: center;">Anzahl</th>
-                                <th style="padding: 12px 16px; text-align: right;">Sammlungswert</th>
-                                <th style="padding: 12px 16px; text-align: center;">Gelesen Quote</th>
-                                <th style="padding: 12px 16px; text-align: center;">Lesestapel (TBR)</th>
-                                <th style="padding: 12px 16px; text-align: right;">Ungelesener Wert</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${typeStats.map(stat => `
-                                <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.2s;" class="stats-type-row" data-type="${stat.type}">
-                                    <td data-label="Typ" style="padding: 16px; font-weight: 700; color: var(--text-primary); font-family: var(--font-display); font-size: 0.95rem;">${stat.type}</td>
-                                    <td data-label="Anzahl" style="padding: 16px; text-align: center; font-weight: 600; color: var(--primary-color);">${stat.total}</td>
-                                    <td data-label="Sammlungswert" style="padding: 16px; text-align: right; font-weight: 600; color: var(--success);">${stat.value.toFixed(2)} ${currencySymbol}</td>
-                                    <td data-label="Gelesen Quote" style="padding: 16px; text-align: center;">
-                                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                                            <span style="font-weight: 600; color: var(--secondary-color); min-width: 36px; text-align: right;">${stat.readPercent}%</span>
-                                            <div style="width: 60px; height: 6px; background-color: var(--bg-main); border-radius: var(--radius-full); overflow: hidden; border: 1px solid var(--border-color); display: inline-block;">
-                                                <div style="width: ${stat.readPercent}%; height: 100%; background-color: var(--secondary-color); border-radius: var(--radius-full);"></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td data-label="Lesestapel (TBR)" style="padding: 16px; text-align: center; font-weight: 600; color: var(--warning);">${stat.tbrCount}</td>
-                                    <td data-label="Ungelesener Wert" style="padding: 16px; text-align: right; font-weight: 600; color: var(--accent-color);">${stat.tbrValue.toFixed(2)} ${currencySymbol}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
+            typeContainer.innerHTML = renderTypeStatsTable(typeStats, currencySymbol);
         }
     }
 
@@ -541,28 +478,7 @@ async function updateStats() {
 
     const highlightsEl = document.getElementById('stats-highlights');
     if (highlightsEl) {
-        highlightsEl.innerHTML = `
-            <div style="display: flex; flex-direction: column;">
-                <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Ø Preis pro Comic</span>
-                <span style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-top: 2px;">${avgPrice} ${currencySymbol}</span>
-            </div>
-            <div style="display: flex; flex-direction: column;">
-                <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Leseaktivität</span>
-                <span style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-top: 2px;">${speedText}</span>
-            </div>
-            <div style="display: flex; flex-direction: column;">
-                <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Aktivster Kaufmonat</span>
-                <span style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-top: 2px;">${topPurchaseMonth} ${topPurchaseVal > 0 ? `(${topPurchaseVal} Käufe)` : ''}</span>
-            </div>
-            <div style="display: flex; flex-direction: column;">
-                <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Aktivster Lesemonat</span>
-                <span style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-top: 2px;">${topReadMonth} ${topReadVal > 0 ? `(${topReadVal} gelesen)` : ''}</span>
-            </div>
-            <div style="display: flex; flex-direction: column; grid-column: 1 / -1; border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 4px;">
-                <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Teuerster Comic</span>
-                <span style="font-size: 0.95rem; font-weight: 700; color: var(--accent-color); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${teuersterText}">${teuersterText}</span>
-            </div>
-        `;
+        highlightsEl.innerHTML = renderHighlightsCards({ avgPrice, speedText, topPurchaseMonth, topPurchaseVal, topReadMonth, topReadVal, maxPriceComic }, currencySymbol);
     }
 
     // 3. Timeline-Daten (TBR-Verlauf) vorbereiten
@@ -577,156 +493,24 @@ async function updateStats() {
     // Tabellen rendern
     const publishersTable = document.getElementById('table-top-publishers');
     if (publishersTable) {
-        if (topPublishers.length === 0) {
-            publishersTable.innerHTML = `<tr><td style="padding:15px; text-align:center; color:var(--text-secondary);">Keine Verlagsdaten vorhanden.</td></tr>`;
-        } else {
-            publishersTable.innerHTML = `
-                <thead>
-                    <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-weight: 600; font-size: 0.8rem;">
-                        <th style="padding: 10px 8px;">Verlag</th>
-                        <th style="padding: 10px 8px; text-align: center;">Comics</th>
-                        <th style="padding: 10px 8px; text-align: center;">Gelesen</th>
-                        <th style="padding: 10px 8px; text-align: right;">Ø Bewertung</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${topPublishers.map(p => {
-                        const avgRate = p.ratedCount > 0 ? (p.ratingSum / p.ratedCount) : 0;
-                        return `
-                            <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: background 0.2s;">
-                                <td data-label="Verlag" style="padding: 10px 8px; font-weight: 600; color: var(--text-primary);">${p.name}</td>
-                                <td data-label="Comics" style="padding: 10px 8px; text-align: center; font-weight: 600;">${p.total}</td>
-                                <td data-label="Gelesen" style="padding: 10px 8px; text-align: center; color: var(--text-secondary);">${p.read}</td>
-                                <td data-label="Ø Bewertung" style="padding: 10px 8px; text-align: right;">${avgRate > 0 ? renderStars(avgRate) : '-'}</td>
-                            </tr>
-                        `;
-                    }).join('')}
-                </tbody>
-            `;
-        }
+        publishersTable.innerHTML = renderTopPublishersTable(topPublishers);
     }
 
     const seriesTable = document.getElementById('table-top-series');
     if (seriesTable) {
-        if (topSeries.length === 0) {
-            seriesTable.innerHTML = `<tr><td style="padding:15px; text-align:center; color:var(--text-secondary);">Keine Seriendaten vorhanden.</td></tr>`;
-        } else {
-            seriesTable.innerHTML = `
-                <thead>
-                    <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-weight: 600; font-size: 0.8rem;">
-                        <th style="padding: 10px 8px;">Serie</th>
-                        <th style="padding: 10px 8px; text-align: center;">Comics</th>
-                        <th style="padding: 10px 8px; text-align: center;">Gelesen</th>
-                        <th style="padding: 10px 8px; text-align: right;">Ø Bewertung</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${topSeries.map(s => {
-                        const avgRate = s.ratedCount > 0 ? (s.ratingSum / s.ratedCount) : 0;
-                        return `
-                            <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: background 0.2s;">
-                                <td data-label="Serie" style="padding: 10px 8px; font-weight: 600; color: var(--text-primary);">${s.name}</td>
-                                <td data-label="Comics" style="padding: 10px 8px; text-align: center; font-weight: 600;">${s.total}</td>
-                                <td data-label="Gelesen" style="padding: 10px 8px; text-align: center; color: var(--text-secondary);">${s.read}</td>
-                                <td data-label="Ø Bewertung" style="padding: 10px 8px; text-align: right;">${avgRate > 0 ? renderStars(avgRate) : '-'}</td>
-                            </tr>
-                        `;
-                    }).join('')}
-                </tbody>
-            `;
-        }
+        seriesTable.innerHTML = renderTopSeriesTable(topSeries);
     }
 
     // TBR Table füllen (aus allComics, unbeeinflusst von Filtern)
     const inventoryTbrTable = document.getElementById('table-inventory-tbr');
     if (inventoryTbrTable) {
         const tbrData = calculateInventoryTBRDevelopment(allComics);
+        const currentYear = new Date().getFullYear();
         if (tbrData.length === 0) {
-            inventoryTbrTable.innerHTML = `<tr><td style="padding:15px; text-align:center; color:var(--text-secondary);">Keine Daten vorhanden.</td></tr>`;
+            inventoryTbrTable.innerHTML = renderInventoryTBRTable([], currentYear, currencySymbol);
         } else {
             const yearlyData = groupTBRDataByYear(tbrData);
-            const currentYear = new Date().getFullYear();
-            const monNames = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
-            
-            inventoryTbrTable.innerHTML = `
-                <thead style="position: sticky; top: 0; background: var(--bg-card); z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-secondary); font-weight: 600; font-size: 0.8rem;">
-                        <th style="padding: 10px 16px;">Monat / Jahr</th>
-                        <th style="padding: 10px 16px; text-align: center;">Gekauft</th>
-                        <th style="padding: 10px 16px; text-align: center;">Ausgaben</th>
-                        <th style="padding: 10px 16px; text-align: center;">Gelesen</th>
-                        <th style="padding: 10px 16px; text-align: center;">Lesestapel (TBR)</th>
-                        <th style="padding: 10px 16px; text-align: center;">Trend</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${yearlyData.map(y => {
-                        const isCurrentYear = y.year === currentYear;
-                        
-                        // Jahres-Zeile
-                        let yearTrendHtml = '';
-                        if (y.trend > 0) yearTrendHtml = `<span style="color: var(--danger);"><i class="fa-solid fa-arrow-up"></i> +${y.trend}</span>`;
-                        else if (y.trend < 0) yearTrendHtml = `<span style="color: var(--success);"><i class="fa-solid fa-arrow-down"></i> ${y.trend}</span>`;
-                        else yearTrendHtml = `<span style="color: var(--text-secondary);"><i class="fa-solid fa-minus"></i> 0</span>`;
-
-                        let html = `
-                            <tr class="tbr-year-row" data-year="${y.year}" style="cursor: pointer; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--border-color); font-weight: 700;">
-                                <td style="padding: 12px 16px; display: flex; align-items: center; gap: 8px;">
-                                    <i class="fa-solid fa-chevron-${isCurrentYear ? 'down' : 'right'} tbr-icon-year-${y.year}" style="width: 12px; font-size: 0.8rem; color: var(--primary-color);"></i>
-                                    ${y.year}
-                                </td>
-                                <td style="padding: 12px 16px; text-align: center; color: var(--text-primary);">${y.totalPurchased}</td>
-                                <td style="padding: 12px 16px; text-align: center; color: var(--text-primary);">${y.totalSpent.toFixed(2)} ${currencySymbol}</td>
-                                <td style="padding: 12px 16px; text-align: center; color: var(--text-primary);">${y.totalRead}</td>
-                                <td style="padding: 12px 16px; text-align: center; color: var(--warning);">${y.endTBR}</td>
-                                <td style="padding: 12px 16px; text-align: center;">${yearTrendHtml}</td>
-                            </tr>
-                        `;
-                        
-                        // Monats-Zeilen
-                        html += y.months.map(d => {
-                            const monthLabel = monNames[d.date.getMonth()];
-                            
-                            let trendHtml = '';
-                            let trendPercentStr = (d.trendPercent !== undefined && d.trend !== 0) ? ` (${d.trendPercent > 0 ? '+' : ''}${d.trendPercent.toFixed(1)}%)` : '';
-                            if (d.trend > 0) {
-                                trendHtml = `<span style="color: var(--danger);" title="Lesestapel wächst"><i class="fa-solid fa-arrow-up"></i> +${d.trend}${trendPercentStr}</span>`;
-                            } else if (d.trend < 0) {
-                                trendHtml = `<span style="color: var(--success);" title="Lesestapel schrumpft"><i class="fa-solid fa-arrow-down"></i> ${d.trend}${trendPercentStr}</span>`;
-                            } else {
-                                trendHtml = `<span style="color: var(--text-secondary);" title="Keine Veränderung"><i class="fa-solid fa-minus"></i> 0 (0.0%)</span>`;
-                            }
-                            
-                            // Sparklines & Icons
-                            const maxSpark = Math.max(d.purchasedThisMonth, d.readThisMonth);
-                            const pWidth = maxSpark > 0 ? (d.purchasedThisMonth/maxSpark)*100 : 0;
-                            const rWidth = maxSpark > 0 ? (d.readThisMonth/maxSpark)*100 : 0;
-                            
-                            const pIcon = d.isMaxPurchased ? ' <span title="Kaufstärkster Monat">💸</span>' : '';
-                            const rIcon = d.isMaxRead ? ' <span title="Lesestärkster Monat">🏆</span>' : '';
-
-                            return `
-                                <tr class="tbr-month-row tbr-year-${y.year}" style="display: ${isCurrentYear ? 'table-row' : 'none'}; border-bottom: 1px solid rgba(255, 255, 255, 0.05); transition: background 0.2s; font-size: 0.85rem;">
-                                    <td style="padding: 8px 16px; padding-left: 32px; color: var(--text-secondary);">${monthLabel}</td>
-                                    <td style="padding: 8px 16px; text-align: center; color: var(--text-secondary);">
-                                        <div>${d.purchasedThisMonth}${pIcon}</div>
-                                        <div style="width: 40px; height: 3px; background: rgba(255,255,255,0.05); margin: 4px auto 0; border-radius: 2px;"><div style="width: ${pWidth}%; height: 100%; background: var(--danger); border-radius: 2px;"></div></div>
-                                    </td>
-                                    <td style="padding: 8px 16px; text-align: center; color: var(--text-secondary);">${d.spentThisMonth.toFixed(2)} ${currencySymbol}</td>
-                                    <td style="padding: 8px 16px; text-align: center; color: var(--text-secondary);">
-                                        <div>${d.readThisMonth}${rIcon}</div>
-                                        <div style="width: 40px; height: 3px; background: rgba(255,255,255,0.05); margin: 4px auto 0; border-radius: 2px;"><div style="width: ${rWidth}%; height: 100%; background: var(--success); border-radius: 2px;"></div></div>
-                                    </td>
-                                    <td style="padding: 8px 16px; text-align: center; font-weight: 600; color: var(--warning);">${d.tbrAtEnd}</td>
-                                    <td style="padding: 8px 16px; text-align: center;">${trendHtml}</td>
-                                </tr>
-                            `;
-                        }).join('');
-                        
-                        return html;
-                    }).join('')}
-                </tbody>
-            `;
+            inventoryTbrTable.innerHTML = renderInventoryTBRTable(yearlyData, currentYear, currencySymbol);
             
             // Accordion Logic
             const yearRows = inventoryTbrTable.querySelectorAll('.tbr-year-row');

@@ -1,5 +1,5 @@
 import { db } from '../db.js';
-import { parseToDate } from '../services/statsService.js';
+import { parseToDate } from '../services/stats/statsUtils.js';
 import { parseCurrency } from '../utils.js';
 
 // Hilfsfunktion zum Formatieren von Währungen im deutschen Format
