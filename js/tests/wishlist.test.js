@@ -147,7 +147,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
         cb3.checked = true;
         cb3.dispatchEvent(new Event('change', { bubbles: true }));
 
-        await tick(50);
+        await tick();
 
         // Überprüfen, ob das Bulk Bar sichtbar ist
         const bulkBar = document.getElementById('wishlist-bulk-bar');
@@ -186,7 +186,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
         cb3.checked = true;
         cb3.dispatchEvent(new Event('change', { bubbles: true }));
 
-        await tick(50);
+        await tick();
 
         // Klick auf "Vorbestellt"
         const btnPreorder = document.getElementById('btn-wishlist-bulk-preorder');
@@ -207,7 +207,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
         cb3_new.checked = true;
         cb3_new.dispatchEvent(new Event('change', { bubbles: true }));
 
-        await tick(50);
+        await tick();
 
         // Klick auf "Geplant"
         const btnPlan = document.getElementById('btn-wishlist-bulk-plan');
@@ -230,7 +230,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
         cb2.checked = true;
         cb2.dispatchEvent(new Event('change', { bubbles: true }));
 
-        await tick(50);
+        await tick();
 
         // Bulk-Transfer auslösen
         const originalConfirm = window.confirm;

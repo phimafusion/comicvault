@@ -435,14 +435,23 @@ function updateBulkBar() {
     const countSpan = document.getElementById('wishlist-bulk-count');
     if (!bar || !countSpan) return;
 
+    if (bar.timeoutId) {
+        clearTimeout(bar.timeoutId);
+        bar.timeoutId = null;
+    }
+
     if (selectedWishIds.size > 0) {
         countSpan.textContent = `${selectedWishIds.size} ausgewählt`;
         bar.style.display = 'flex';
-        setTimeout(() => bar.classList.add('show'), 10);
+        bar.timeoutId = setTimeout(() => {
+            bar.classList.add('show');
+            bar.timeoutId = null;
+        }, 10);
     } else {
         bar.classList.remove('show');
-        setTimeout(() => {
+        bar.timeoutId = setTimeout(() => {
             if (!bar.classList.contains('show')) bar.style.display = 'none';
+            bar.timeoutId = null;
         }, 300);
     }
 }
