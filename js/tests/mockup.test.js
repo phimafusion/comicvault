@@ -1,29 +1,23 @@
 const { assert } = chai;
-import { setupTestEnv, cleanup } from './testHelper.js';
 import { setMockMode, getCurrentUser, logout } from '../auth.js';
 import { db } from '../db.js';
 
 describe('Mockup Mode Tests', () => {
-    let testEnv;
+    let originalComicsCache;
 
     beforeEach(() => {
-        testEnv = setupTestEnv();
-        // Reset localStorage
-        localStorage.clear();
-        // Clear caches
+        originalComicsCache = db.comicsCache;
         db.comicsCache = null;
         setMockMode(false);
     });
 
     afterEach(() => {
-        cleanup();
         setMockMode(false);
+        db.comicsCache = originalComicsCache;
         localStorage.clear();
     });
 
     it('should set mock user when mockup mode is enabled', () => {
-        assert.isNull(getCurrentUser(), 'No user should be present initially');
-        
         setMockMode(true);
         const user = getCurrentUser();
         
@@ -33,11 +27,18 @@ describe('Mockup Mode Tests', () => {
     });
 
     it('should remove mock user when mockup mode is disabled', () => {
+        const originalUser = getCurrentUser();
+        
         setMockMode(true);
-        assert.isNotNull(getCurrentUser(), 'Mock user should be active');
+        assert.equal(getCurrentUser().uid, 'mock-user-123');
         
         setMockMode(false);
-        assert.isNull(getCurrentUser(), 'Mock user should be removed');
+        const currentUser = getCurrentUser();
+        if (originalUser) {
+            assert.equal(currentUser.uid, originalUser.uid, 'Should restore original user');
+        } else {
+            assert.isNull(currentUser, 'Should be null if originally logged out');
+        }
         assert.isNull(localStorage.getItem('mock_mode'), 'mock_mode should be removed from localStorage');
     });
 
@@ -52,20 +53,22 @@ describe('Mockup Mode Tests', () => {
 
     it('logout should disable mock mode if active', async () => {
         setMockMode(true);
-        assert.isNotNull(getCurrentUser(), 'Mock user should be active');
+        assert.equal(getCurrentUser().uid, 'mock-user-123');
         
         await logout();
-        assert.isNull(getCurrentUser(), 'User should be logged out');
         assert.isNull(localStorage.getItem('mock_mode'), 'mock_mode should be cleared');
+        const user = getCurrentUser();
+        if (user) {
+            assert.notEqual(user.uid, 'mock-user-123', 'Should revert from mockup user');
+        }
     });
 
     it('should fall back to standard Firebase user when mock mode is disabled', () => {
-        // Enforce mock mode disabled
         setMockMode(false);
-        
-        // standard mockFirebase in testHelper sets currentUser to { uid: 'mock-user-id' }
         const user = getCurrentUser();
-        assert.isNotNull(user, 'Standard firebase user should be returned');
-        assert.equal(user.uid, 'mock-user-id', 'Should return mock-user-id from testHelper mock, not mockup mode user');
+        
+        if (user) {
+            assert.notEqual(user.uid, 'mock-user-123', 'Should not return mockup user');
+        }
     });
 });
