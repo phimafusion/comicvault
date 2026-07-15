@@ -1216,65 +1216,7 @@ body.bulk-select-active .list-delete-btn {
         grid-template-columns: 1fr !important;
     }
 
-    /* Table to Card Conversions */
-    .details-card table,
-    .details-card thead,
-    .details-card tbody,
-    .details-card th,
-    .details-card td,
-    .details-card tr {
-        display: block;
-    }
-    .details-card thead {
-        display: none;
-    }
-    .details-card tr {
-        background-color: var(--bg-surface);
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-lg);
-        padding: 16px;
-        margin-bottom: 16px;
-        box-shadow: var(--shadow-sm);
-    }
-    .details-card td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 0;
-        border: none;
-        border-bottom: 1px dashed var(--border-color);
-        text-align: right !important;
-        width: 100% !important;
-        box-sizing: border-box;
-    }
-    .details-card td:last-child {
-        border-bottom: none;
-        padding-bottom: 0;
-        justify-content: flex-end;
-    }
-    .details-card td:first-child {
-        padding-top: 0;
-    }
-    .details-card td[data-label]::before {
-        content: attr(data-label);
-        font-weight: 700;
-        color: var(--text-secondary);
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-right: 16px;
-        text-align: left;
-        flex-shrink: 0;
-    }
-    .details-card td:first-child:not([data-label]) {
-        justify-content: flex-start;
-        border-bottom: 1px solid var(--border-color);
-        padding-bottom: 10px;
-        margin-bottom: 10px;
-    }
-    .details-card td:first-child:not([data-label]) input[type="checkbox"] {
-        margin: 0;
-    }
+
 }
 
 @media (max-width: 600px) {
@@ -1439,73 +1381,7 @@ body.mobile-view .wishlist-stats-grid {
     grid-template-columns: 1fr !important;
 }
 
-/* Table to Card Stack for force-mobile mode */
-body.mobile-view .details-card table,
-body.mobile-view .details-card thead,
-body.mobile-view .details-card tbody,
-body.mobile-view .details-card th,
-body.mobile-view .details-card td,
-body.mobile-view .details-card tr {
-    display: block !important;
-}
 
-body.mobile-view .details-card thead {
-    display: none !important;
-}
-
-body.mobile-view .details-card tr {
-    background-color: var(--bg-surface) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: var(--radius-lg) !important;
-    padding: 16px !important;
-    margin-bottom: 16px !important;
-    box-shadow: var(--shadow-sm) !important;
-}
-
-body.mobile-view .details-card td {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    padding: 10px 0 !important;
-    border: none !important;
-    border-bottom: 1px dashed var(--border-color) !important;
-    text-align: right !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-}
-
-body.mobile-view .details-card td:last-child {
-    border-bottom: none !important;
-    padding-bottom: 0 !important;
-    justify-content: flex-end !important;
-}
-
-body.mobile-view .details-card td:first-child {
-    padding-top: 0 !important;
-}
-
-body.mobile-view .details-card td[data-label]::before {
-    content: attr(data-label) !important;
-    font-weight: 700 !important;
-    color: var(--text-secondary) !important;
-    font-size: 0.75rem !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-    margin-right: 16px !important;
-    text-align: left !important;
-    flex-shrink: 0 !important;
-}
-
-body.mobile-view .details-card td:first-child:not([data-label]) {
-    justify-content: flex-start !important;
-    border-bottom: 1px solid var(--border-color) !important;
-    padding-bottom: 10px !important;
-    margin-bottom: 10px !important;
-}
-
-body.mobile-view .details-card td:first-child:not([data-label]) input[type="checkbox"] {
-    margin: 0 !important;
-}
 
 /* Form Grid & Dialog Overrides in force-mobile mode */
 body.mobile-view .form-grid {
