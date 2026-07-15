@@ -1310,6 +1310,21 @@ body.bulk-select-active .list-delete-btn {
         flex: 1;
         text-align: center;
     }
+
+    .cards-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 16px;
+    }
+
+    .list-item {
+        padding: 12px;
+        min-height: 56px;
+    }
+    
+    .list-cover {
+        width: 48px;
+        height: 72px;
+    }
 }
 
 /* Force Mobile View Component Overrides */
@@ -1397,6 +1412,21 @@ body.mobile-view .bulk-select-bar.show {
 
 body.mobile-view .bulk-select-bar .btn {
     width: 100% !important;
+}
+
+body.mobile-view .cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+    gap: 16px !important;
+}
+
+body.mobile-view .list-item {
+    padding: 12px !important;
+    min-height: 56px !important;
+}
+
+body.mobile-view .list-cover {
+    width: 48px !important;
+    height: 72px !important;
 }
 
 /* Dashboard & Grid Stacking for force-mobile mode */

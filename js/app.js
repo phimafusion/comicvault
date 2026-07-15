@@ -53,6 +53,10 @@ export class App {
         this.btnMenuToggle = document.getElementById('btn-menu-toggle');
         this.sidebarOverlay = document.getElementById('sidebar-overlay');
         this.sidebar = document.querySelector('.sidebar');
+
+        // Bottom Nav
+        this.bottomNavItems = document.querySelectorAll('.bottom-nav-item');
+        this.btnBottomMenu = document.getElementById('btn-bottom-menu');
     }
 
     bindEvents() {
@@ -92,6 +96,23 @@ export class App {
             this.btnMenuToggle.addEventListener('click', () => {
                 if (this.sidebar) this.sidebar.classList.toggle('open');
                 if (this.sidebarOverlay) this.sidebarOverlay.classList.toggle('open');
+            });
+        }
+
+        if (this.btnBottomMenu) {
+            this.btnBottomMenu.addEventListener('click', () => {
+                if (this.sidebar) this.sidebar.classList.toggle('open');
+                if (this.sidebarOverlay) this.sidebarOverlay.classList.toggle('open');
+            });
+        }
+
+        if (this.bottomNavItems) {
+            this.bottomNavItems.forEach(item => {
+                if (item.id === 'btn-bottom-menu') return;
+                item.addEventListener('click', (e) => {
+                    const view = e.currentTarget.dataset.view;
+                    if (view) this.navigate(view);
+                });
             });
         }
 
@@ -202,6 +223,14 @@ export class App {
         this.navItems.forEach(item => {
             item.classList.toggle('active', item.dataset.view === view);
         });
+
+        if (this.bottomNavItems) {
+            this.bottomNavItems.forEach(item => {
+                if (item.id !== 'btn-bottom-menu') {
+                    item.classList.toggle('active', item.dataset.view === view);
+                }
+            });
+        }
 
         this.viewContainer.innerHTML = '<div style="display:flex; justify-content:center; padding:50px;"><i class="fa-solid fa-circle-notch fa-spin fa-2x"></i></div>';
         

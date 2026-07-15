@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ComicVault</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="manifest" href="manifest.json">
@@ -145,6 +145,26 @@
                 <!-- Views will be injected here -->
             </div>
         </main>
+
+        <!-- Bottom Nav Bar (Mobile Only) -->
+        <nav class="bottom-nav" id="bottom-nav">
+            <button class="bottom-nav-item active" data-view="collection">
+                <i class="fa-solid fa-layer-group"></i>
+                <span>Sammlung</span>
+            </button>
+            <button class="bottom-nav-item" data-view="wishlist">
+                <i class="fa-solid fa-star"></i>
+                <span>Wünsche</span>
+            </button>
+            <button class="bottom-nav-item" data-view="stats">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>Statistik</span>
+            </button>
+            <button class="bottom-nav-item" id="btn-bottom-menu">
+                <i class="fa-solid fa-bars"></i>
+                <span>Menü</span>
+            </button>
+        </nav>
     </div>
 
     <!-- Modal Overlay for Add/Edit -->
