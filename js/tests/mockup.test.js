@@ -57,4 +57,14 @@ describe('Mockup Mode Tests', () => {
         assert.isNull(getCurrentUser(), 'User should be logged out');
         assert.isNull(localStorage.getItem('mock_mode'), 'mock_mode should be cleared');
     });
+
+    it('should fall back to standard Firebase user when mock mode is disabled', () => {
+        // Enforce mock mode disabled
+        setMockMode(false);
+        
+        // standard mockFirebase in testHelper sets currentUser to { uid: 'mock-user-id' }
+        const user = getCurrentUser();
+        assert.isNotNull(user, 'Standard firebase user should be returned');
+        assert.equal(user.uid, 'mock-user-id', 'Should return mock-user-id from testHelper mock, not mockup mode user');
+    });
 });
