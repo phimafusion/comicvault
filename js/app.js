@@ -1,5 +1,5 @@
 import { db } from './db.js';
-import { onAuthStateChanged, loginWithGoogle, logout } from './auth.js';
+import { onAuthStateChanged, loginWithGoogle, logout, setMockMode } from './auth.js';
 import { renderCollection, attachCollectionEvents, cleanupCollection } from './views/collection.js';
 import { renderStats, cleanupStats } from './views/stats.js';
 import { renderBudget } from './views/budget.js';
@@ -38,6 +38,7 @@ export class App {
         this.appContainer = document.getElementById('app-container');
         this.loginScreen = document.getElementById('login-screen');
         this.btnGoogleLogin = document.getElementById('btn-google-login');
+        this.btnMockupLogin = document.getElementById('btn-mockup-login');
         this.loginError = document.getElementById('login-error');
         
         this.navItems = document.querySelectorAll('.nav-item');
@@ -65,6 +66,13 @@ export class App {
                 }
             });
         });
+
+        // Mockup Login Event
+        if (this.btnMockupLogin) {
+            this.btnMockupLogin.addEventListener('click', () => {
+                setMockMode(true);
+            });
+        }
 
         // Logout Event
         this.btnLogout.addEventListener('click', () => logout());

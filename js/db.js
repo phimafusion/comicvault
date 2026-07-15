@@ -48,6 +48,18 @@ class Database {
         if (this.comicsCache) {
             return [...this.comicsCache];
         }
+
+        const user = getCurrentUser();
+        if (user && user.uid === 'mock-user-123') {
+            this.comicsCache = [
+                { id: '1', serie: 'Spider-Man', titel: 'Amazing Fantasy #15', nummer: '15', preis: 0.12, wert: 50000, zustand: 'gut', rating: 5, bestand: 'vorhanden' },
+                { id: '2', serie: 'Batman', titel: 'The Killing Joke', nummer: '1', preis: 5.99, wert: 25, zustand: 'mint', rating: 5, bestand: 'vorhanden' },
+                { id: '3', serie: 'X-Men', titel: 'Dark Phoenix Saga', nummer: '137', preis: 1.50, wert: 150, zustand: 'fine', rating: 4, bestand: 'vorbestellt' },
+                { id: '4', serie: 'Avengers', titel: 'Endgame', nummer: '4', preis: 3.99, wert: 10, zustand: 'poor', rating: 3, bestand: 'verkauft' }
+            ];
+            return [...this.comicsCache];
+        }
+
         const col = this.getCollection();
         if (!col) return [];
 
@@ -75,10 +87,15 @@ class Database {
 
             return [...this.comicsCache];
         } catch (err) {
-            // Cache leer oder Fehler (z.B. erster Start) -> ganz normal aus dem Netzwerk laden
-            const snapshot = await col.orderBy('serie', 'asc').get();
-            this.comicsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            return [...this.comicsCache];
+            try {
+                // Cache leer oder Fehler (z.B. erster Start) -> ganz normal aus dem Netzwerk laden
+                const snapshot = await col.orderBy('serie', 'asc').get();
+                this.comicsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                return [...this.comicsCache];
+            } catch (networkErr) {
+                console.warn("Laden aus Firestore fehlgeschlagen:", networkErr);
+                return [];
+            }
         }
     }
 

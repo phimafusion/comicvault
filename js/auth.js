@@ -4,7 +4,40 @@ import { firebaseConfig } from './firebase-config.js';
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 
-export const logout = () => auth.signOut();
+let mockUser = null;
+let authCallback = null;
+
+const checkUrlForMock = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mock') === 'true' || localStorage.getItem('mock_mode') === 'true') {
+        setMockMode(true);
+    }
+};
+
+export const setMockMode = (active) => {
+    if (active) {
+        localStorage.setItem('mock_mode', 'true');
+        mockUser = {
+            uid: 'mock-user-123',
+            displayName: 'Mock User',
+            email: 'mock@example.com',
+            photoURL: ''
+        };
+        if (authCallback) authCallback(mockUser);
+    } else {
+        localStorage.removeItem('mock_mode');
+        mockUser = null;
+        if (authCallback) authCallback(auth.currentUser);
+    }
+};
+
+export const logout = () => {
+    if (mockUser) {
+        setMockMode(false);
+        return Promise.resolve();
+    }
+    return auth.signOut();
+};
 
 export const loginWithGoogle = async () => {
     try {
@@ -18,7 +51,16 @@ export const loginWithGoogle = async () => {
 };
 
 export const onAuthStateChanged = (callback) => {
-    auth.onAuthStateChanged(callback);
+    authCallback = callback;
+    auth.onAuthStateChanged((user) => {
+        if (mockUser) {
+            callback(mockUser);
+        } else {
+            callback(user);
+        }
+    });
 };
 
-export const getCurrentUser = () => auth.currentUser;
+export const getCurrentUser = () => mockUser || auth.currentUser;
+
+checkUrlForMock();
