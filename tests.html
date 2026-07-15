@@ -244,9 +244,22 @@
         }
         
         #mocha .test .duration {
-            font-size: 12px !important;
-            color: #64748b !important;
+            font-size: 11px !important;
+            padding: 3px 6px !important;
+            border-radius: 4px !important;
             float: right !important;
+            font-weight: 600 !important;
+            margin-left: 8px !important;
+        }
+        
+        #mocha .test .duration.medium {
+            background: rgba(245, 158, 11, 0.18) !important;
+            color: #fbbf24 !important;
+        }
+        
+        #mocha .test .duration.slow {
+            background: rgba(239, 68, 68, 0.18) !important;
+            color: #f87171 !important;
         }
         
         #mocha-stats {
