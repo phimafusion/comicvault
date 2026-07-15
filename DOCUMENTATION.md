@@ -53,6 +53,15 @@ Jeder "Tab" in der Navigation (`#collection`, `#stats`, `#wishlist`) hat ein eig
 ComicVault nutzt Custom Events, um Module lose miteinander zu koppeln:
 - `data-changed`: Wird z. B. von `collection.js` nach einem Save/Delete getriggert. Andere Module (wie `stats.js` oder `wishlist.js`) lauschen darauf, um ihre Caches zu leeren oder ihre Ansicht zu aktualisieren.
 
+## PWA, Offline- & Mockup-Modus
+
+ComicVault ist als Progressive Web App konzipiert und bietet hochentwickelte Offline-Features:
+- **Offline-Fähigkeit**: Firestore cached Abfragen in einer lokalen IndexedDB (`enablePersistence`). Der Service Worker (`sw.js`) cached zusätzlich alle statischen Assets (HTML, CSS, JS, Bilder) mittels einer Cache-First-Strategie.
+- **Service Worker Update Notification**: Ein Event-Listener überwacht Aktualisierungen des Service Workers. Steht eine neue Version bereit, wird der Nutzer über ein In-App-Toast-Overlay aufgefordert, die Seite neu zu laden.
+- **In-App Installations-Prompt**: Die App fängt den `beforeinstallprompt`-Event ab und bietet dem Nutzer in den Einstellungen eine native Installations-Schaltfläche an.
+- **Dynamische Statusleiste**: Das Meta-Tag `theme-color` wird bei jedem Theme-Wechsel dynamisch aktualisiert, um die Statusleiste im Standalone-Modus des Mobilgeräts farblich anzupassen.
+- **Mockup-Modus**: Ermöglicht das Testen und Erkunden der App vollständig offline und ohne Google-Konto. In diesem Modus greift die App auf lokale Dummy-Daten zurück und simuliert eine erfolgreiche Authentifizierung über `localStorage`.
+
 ## Tests (`tests.html`)
 
 Da ComicVault vollständig im Browser läuft, werden auch die Tests in einem In-Browser Mocha-Environment ausgeführt.
