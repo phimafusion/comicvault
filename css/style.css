@@ -530,6 +530,13 @@ body {
     .view-container {
         padding: 16px 16px calc(64px + env(safe-area-inset-bottom, 0px)) 16px !important;
     }
+    
+    .view-controls-sticky {
+        position: static !important;
+        min-height: 0 !important;
+        margin-bottom: 16px !important;
+        height: auto !important;
+    }
 }
 
 @media (max-width: 480px) {
@@ -606,6 +613,13 @@ body.mobile-view .header-search {
 
 body.mobile-view .view-container {
     padding: 16px 16px calc(64px + env(safe-area-inset-bottom, 0px)) 16px !important;
+}
+
+body.mobile-view .view-controls-sticky {
+    position: static !important;
+    min-height: 0 !important;
+    margin-bottom: 16px !important;
+    height: auto !important;
 }
 
 body.mobile-view .sidebar-overlay {
