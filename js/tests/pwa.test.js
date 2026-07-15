@@ -134,13 +134,110 @@ describe('PWA (Progressive Web App) Integration Tests', () => {
             appInstance.registerServiceWorker();
             window.dispatchEvent(new Event('load'));
             
-        expect(registerCalled).to.be.false;
+            expect(registerCalled).to.be.false;
         } finally {
             if (originalDescriptor) {
                 Object.defineProperty(Navigator.prototype, 'serviceWorker', originalDescriptor);
             } else {
                 delete Navigator.prototype.serviceWorker;
             }
+        }
+    });
+
+    it('sollte den meta-Tag fuer theme-color dynamisch anpassen, wenn das Theme gewechselt wird', (done) => {
+        let themeMeta = document.querySelector('meta[name="theme-color"]');
+        let createdMeta = false;
+        if (!themeMeta) {
+            themeMeta = document.createElement('meta');
+            themeMeta.name = 'theme-color';
+            themeMeta.content = '#6d28d9';
+            document.head.appendChild(themeMeta);
+            createdMeta = true;
+        }
+        
+        // Mock CSS Variable --bg-surface am body setzen
+        const originalBg = document.body.style.getPropertyValue('--bg-surface');
+        document.body.style.setProperty('--bg-surface', '#112233');
+        
+        appInstance.applyTheme();
+        
+        setTimeout(() => {
+            try {
+                expect(themeMeta.getAttribute('content')).to.equal('#112233');
+                done();
+            } catch (err) {
+                done(err);
+            } finally {
+                if (originalBg) {
+                    document.body.style.setProperty('--bg-surface', originalBg);
+                } else {
+                    document.body.style.removeProperty('--bg-surface');
+                }
+                if (createdMeta) {
+                    themeMeta.remove();
+                }
+            }
+        }, 100);
+    });
+
+    it('sollte einen Update-Toast anzeigen und auf Klick neu laden', () => {
+        let reloadCalled = false;
+        const originalReload = appInstance.reloadPage;
+        
+        // stub reloadPage
+        appInstance.reloadPage = () => {
+            reloadCalled = true;
+        };
+        
+        try {
+            appInstance.showUpdateToast();
+            
+            const toast = document.getElementById('pwa-update-toast');
+            expect(toast).to.not.be.null;
+            expect(toast.classList.contains('pwa-toast')).to.be.true;
+            
+            const btn = document.getElementById('btn-pwa-update-reload');
+            expect(btn).to.not.be.null;
+            
+            btn.click();
+            expect(reloadCalled).to.be.true;
+            
+            toast.remove();
+        } finally {
+            appInstance.reloadPage = originalReload;
+        }
+    });
+
+    it('sollte die PWA-Installationskarte in den Einstellungen anzeigen, wenn deferredPrompt verfuegbar ist', async () => {
+        let promptCalled = false;
+        const mockPromptEvent = {
+            prompt: () => { promptCalled = true; },
+            userChoice: Promise.resolve({ outcome: 'accepted' })
+        };
+        window.deferredPrompt = mockPromptEvent;
+        
+        const container = document.createElement('div');
+        container.id = 'test-settings-container';
+        document.body.appendChild(container);
+        
+        try {
+            const { renderSettings } = await import('../views/settings.js');
+            renderSettings(container);
+            
+            const installCard = container.querySelector('#pwa-install-card');
+            expect(installCard).to.not.be.null;
+            expect(installCard.style.display).to.equal('flex');
+            
+            const installBtn = container.querySelector('#btn-pwa-install');
+            expect(installBtn).to.not.be.null;
+            
+            await installBtn.click();
+            expect(promptCalled).to.be.true;
+            expect(window.deferredPrompt).to.be.null;
+            expect(installCard.style.display).to.equal('none');
+        } finally {
+            container.remove();
+            window.deferredPrompt = null;
         }
     });
 });

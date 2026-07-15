@@ -426,13 +426,17 @@ export class App {
         document.body.appendChild(toast);
         
         document.getElementById('btn-pwa-update-reload').addEventListener('click', () => {
-            window.location.reload();
+            this.reloadPage();
         });
         
         // Trigger show animation
         setTimeout(() => {
             toast.classList.add('show');
         }, 100);
+    }
+
+    reloadPage() {
+        window.location.reload();
     }
 }
 
