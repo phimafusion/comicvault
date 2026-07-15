@@ -1,12 +1,13 @@
 const { assert } = chai;
-import { setupDOM, clearDOM, mockFirebase } from './testHelper.js';
+import { setupTestEnv, cleanup } from './testHelper.js';
 import { setMockMode, getCurrentUser, logout } from '../auth.js';
 import { db } from '../db.js';
 
 describe('Mockup Mode Tests', () => {
+    let testEnv;
+
     beforeEach(() => {
-        setupDOM();
-        mockFirebase();
+        testEnv = setupTestEnv();
         // Reset localStorage
         localStorage.clear();
         // Clear caches
@@ -15,7 +16,7 @@ describe('Mockup Mode Tests', () => {
     });
 
     afterEach(() => {
-        clearDOM();
+        cleanup();
         setMockMode(false);
         localStorage.clear();
     });
