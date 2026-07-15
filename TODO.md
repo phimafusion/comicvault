@@ -27,9 +27,13 @@ Diese Liste dient als Notizzettel für zukünftige Aufgaben, Ideen und Refactori
 - [x] **[11] App-Installation auf Mobilgerät** → Als PWA umgesetzt (kein Capacitor/APK)
   - Umgesetzt via Web App Manifest (`manifest.json`) + Service Worker (`sw.js`)
   - Installierbar auf Android & iOS direkt aus dem Browser ("Zum Startbildschirm hinzufügen")
+  - In-App-Installations-Prompt über den `beforeinstallprompt`-Event in den Einstellungen hinzugefügt
+  - Service-Worker-Update-Benachrichtigung (Toast "Neu laden") bei neuen Versionen hinzugefügt
+  - Dynamisches Anpassen des `theme-color` Meta-Tags entsprechend dem gewählten Theme zur Einfärbung der Statusleiste
   - Läuft im Standalone-Modus (kein Browser-Chrome, wie eine native App)
   - Service Worker cached alle App-Dateien (Cache-First) → schnelles Laden, Offline-fähig
   - Firestore-Daten bleiben weiterhin live synchronisiert (Firebase läuft über das Netz)
+- [ ] **[12] Teilen-Funktion (Web Share API)** zur nativen Weitergabe von Comics und der Wunschliste auf Mobilgeräten via Messenger, E-Mail etc.
 
 ---
 

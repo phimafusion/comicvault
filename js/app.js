@@ -24,6 +24,16 @@ export class App {
         this.initMobileView();
         this.registerServiceWorker();
         
+        // Global PWA Install Handler
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            window.deferredPrompt = e;
+            const installCard = document.getElementById('pwa-install-card');
+            if (installCard) {
+                installCard.style.display = 'flex';
+            }
+        });
+
         // Firebase Auth Listener
         onAuthStateChanged((user) => {
             if (user) {
@@ -297,6 +307,17 @@ export class App {
                 }
             }
         }
+
+        // Update theme-color meta tag dynamically to match current theme
+        const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+        if (metaThemeColor) {
+            setTimeout(() => {
+                const computedBg = getComputedStyle(document.body).getPropertyValue('--bg-surface').trim();
+                if (computedBg) {
+                    metaThemeColor.setAttribute('content', computedBg);
+                }
+            }, 50);
+        }
     }
 
     toggleTheme() {
@@ -360,7 +381,24 @@ export class App {
         if ('serviceWorker' in navigator && !window.mocha) {
             const register = () => {
                 navigator.serviceWorker.register('./sw.js')
-                    .then(reg => console.log('ServiceWorker registered:', reg))
+                    .then(reg => {
+                        console.log('ServiceWorker registered:', reg);
+                        
+                        // Check if there is already a waiting service worker (installed previously but not yet active)
+                        if (reg.waiting) {
+                            this.showUpdateToast();
+                        }
+                        
+                        // Listen for future service worker updates
+                        reg.addEventListener('updatefound', () => {
+                            const newWorker = reg.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    this.showUpdateToast();
+                                }
+                            });
+                        });
+                    })
                     .catch(err => console.warn('ServiceWorker registration failed:', err));
             };
 
@@ -370,6 +408,31 @@ export class App {
                 window.addEventListener('load', register);
             }
         }
+    }
+
+    showUpdateToast() {
+        if (document.getElementById('pwa-update-toast')) return;
+        
+        const toast = document.createElement('div');
+        toast.id = 'pwa-update-toast';
+        toast.className = 'pwa-toast';
+        toast.innerHTML = `
+            <div class="pwa-toast-content">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>Neue Version von ComicVault verfügbar!</span>
+            </div>
+            <button class="btn btn-primary" id="btn-pwa-update-reload" style="height: 32px; padding: 0 12px; font-size: 0.8rem; border-radius: 6px;">Neu laden</button>
+        `;
+        document.body.appendChild(toast);
+        
+        document.getElementById('btn-pwa-update-reload').addEventListener('click', () => {
+            window.location.reload();
+        });
+        
+        // Trigger show animation
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 100);
     }
 }
 

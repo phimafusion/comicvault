@@ -404,6 +404,29 @@ export function renderSettings(container) {
         showClearDatabaseModal();
     });
 
+    // PWA Install Card Handling
+    const installCard = document.getElementById('pwa-install-card');
+    if (installCard) {
+        if (window.deferredPrompt) {
+            installCard.style.display = 'flex';
+        }
+        
+        const installBtn = document.getElementById('btn-pwa-install');
+        if (installBtn) {
+            installBtn.addEventListener('click', async () => {
+                const promptEvent = window.deferredPrompt;
+                if (!promptEvent) return;
+                
+                promptEvent.prompt();
+                const { outcome } = await promptEvent.userChoice;
+                console.log(`User prompt choice: ${outcome}`);
+                
+                window.deferredPrompt = null;
+                installCard.style.display = 'none';
+            });
+        }
+    }
+
     // Autocomplete für Standardwerte aktivieren
     initAutocomplete(document.getElementById('settings-default-condition'), settings.customSuggestions.zustand || []);
     

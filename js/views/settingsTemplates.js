@@ -198,6 +198,25 @@ export function getSettingsHtml(settings) {
                 </div>
             </div>
 
+            <!-- Sektion: App installieren -->
+            <div class="details-card collapsible" id="pwa-install-card" style="flex-direction: column; grid-column: span 2; border-color: var(--primary-color); display: none;">
+                <div class="settings-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%; user-select: none;">
+                    <h3 style="margin: 0; display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-mobile-screen-button" style="color: var(--primary-color);"></i> App installieren
+                    </h3>
+                    <i class="fa-solid fa-chevron-right toggle-icon" style="color: var(--text-secondary); transition: transform 0.2s ease; transform: rotate(0deg);"></i>
+                </div>
+                
+                <div class="collapsible-content" style="display: none; flex-direction: column; width: 100%; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                    <p style="color: var(--text-secondary); margin-bottom: 16px; margin-top: 0;">
+                        Installiere ComicVault auf deinem Smartphone oder Desktop, um die App im Vollbildmodus und offline nutzen zu können.
+                    </p>
+                    <button class="btn btn-primary" id="btn-pwa-install" style="width: 100%;">
+                        <i class="fa-solid fa-download"></i> ComicVault installieren
+                    </button>
+                </div>
+            </div>
+
             <!-- Sektion: Datenbank leeren -->
             <div class="details-card collapsible" style="flex-direction: column; grid-column: span 2; border-color: var(--primary-color);">
                 <div class="settings-header" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%; user-select: none;">
