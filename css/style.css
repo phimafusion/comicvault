@@ -671,7 +671,10 @@ body.mobile-view .sidebar-overlay {
 }
 
 /* Make sure toast displays above bottom navigation in mobile view */
-body.mobile-view .pwa-toast,
+body.mobile-view .pwa-toast {
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+}
+
 @media (max-width: 768px) {
     .pwa-toast {
         bottom: calc(76px + env(safe-area-inset-bottom, 0px));
