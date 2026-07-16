@@ -148,7 +148,7 @@ export async function renderStats(container) {
         
         <!-- Inventory TBR Table -->
         <div class="stats-grid" style="display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 24px;">
-            <div class="details-card" style="flex-direction: column; padding: 24px;">
+            <div class="details-card table-card" style="flex-direction: column; padding: 24px;">
                 <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 8px; display: flex; align-items: center; gap: 10px;">
                     <i class="fa-solid fa-list-ol" style="color: var(--secondary-color);"></i>
                     <span>Entwicklung des Lesestapels (Bestand)</span>
@@ -160,7 +160,7 @@ export async function renderStats(container) {
                     <span style="display: inline-block; margin-top: 4px;"><strong>Symbole:</strong> 🏆 Lesestärkster Monat &nbsp;&nbsp; 💸 Kaufstärkster Monat</span>
                 </p>
                 <div style="overflow-x: auto; width: 100%; max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
-                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;" id="table-inventory-tbr">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; min-width: 650px;" id="table-inventory-tbr">
                         <!-- Wird dynamisch befüllt -->
                     </table>
                 </div>

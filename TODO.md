@@ -114,3 +114,10 @@ Diese Liste dient als Notizzettel für zukünftige Aufgaben, Ideen und Refactori
   - Deaktivieren der künstlichen 10ms `setTimeout`-Pausen im Import-Service im Testmodus.
   - Einführung eines `'import-completed'` Custom Events zur synchronen und deterministischen Fortführung der Tests.
 
+### [17] Phase 6: Mobile Ansichten für Tabellen reparieren [Umgesetzt]
+- [x] **Problem**: Die Tabellen der Wunschliste, der TBR-Entwicklung (Statistiken) und der Budgets waren auf Mobilgeräten extrem gestaucht, ragten über den Bildschirmrand hinaus und wurden abgeschnitten, da `.details-card` mobil Flex-Zentrierung verwendet.
+- [x] **Lösung (Block-Layout & Mindestbreiten)**:
+  - Einführung der CSS-Klasse `.details-card.table-card` mit `display: block !important` und `width: 100% !important`, um das Dehnen des Flex-Containers auf Mobilgeräten zu verhindern.
+  * Zuweisung gesunder Mindestbreiten (`650px` für Wunschliste/Lesestapel, `950px` für Monatsbudget) und Nutzung von `white-space: nowrap !important;` für Geldbeträge, um Zeilenumbrüche zu verhindern.
+  * Dadurch lassen sich alle Tabellen mobil innerhalb der Karte horizontal scrollen.
+- [x] **Verifikation**: Visuelle Prüfung im Mobilmodus und erfolgreicher Durchlauf aller 165 Tests.

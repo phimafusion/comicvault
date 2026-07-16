@@ -49,9 +49,9 @@ export async function renderWishlist(container) {
             </div>
         </div>
         
-        <div class="details-card" style="flex-direction: column; border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; padding: 0;">
+        <div class="details-card table-card" style="flex-direction: column; border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; padding: 0;">
             <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; min-width: 650px;">
                     <thead>
                         <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(0,0,0,0.15);">
                             <th style="padding: 12px; width: 40px; text-align: center;">

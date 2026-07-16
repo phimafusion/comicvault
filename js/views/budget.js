@@ -214,14 +214,14 @@ export async function renderBudget(container) {
             </div>
             
             <!-- 1. Card: Monats-Planung des ausgewählten Jahres -->
-            <div class="details-card" style="flex-direction: column; padding: 24px; background-color: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); margin-bottom: 32px;">
+            <div class="details-card table-card" style="flex-direction: column; padding: 24px; background-color: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); margin-bottom: 32px;">
                 <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5;">
                     Hier kannst du deine monatlichen Budgets für das ausgewählte Jahr <strong style="color: var(--text-primary);">${selectedYear}</strong> anpassen. Die Deltas werden innerhalb des Jahres fortlaufend kumuliert.
                 </p>
                 
                 
                 <div style="overflow-x: auto; width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 20px;">
-                    <table class="budget-table" style="width: 100%; border-collapse: collapse; text-align: left; min-width: 800px;">
+                    <table class="budget-table" style="width: 100%; border-collapse: collapse; text-align: left; min-width: 950px;">
                         <thead>
                             <tr style="border-bottom: 2px solid var(--border-color); background-color: var(--bg-main);">
                                 <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); font-size: 0.95rem;">Jahr</th>
@@ -277,7 +277,7 @@ export async function renderBudget(container) {
                 <h3 class="view-subtitle" style="font-family: var(--font-display); font-size: 1.8rem; color: var(--text-primary); margin: 0;">Historische Jahresübersicht</h3>
             </div>
             
-            <div class="details-card" style="flex-direction: column; padding: 24px; background-color: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
+            <div class="details-card table-card" style="flex-direction: column; padding: 24px; background-color: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
                 <p style="color: var(--text-secondary); margin-bottom: 20px; font-size: 0.95rem; line-height: 1.5;">
                     Vergleichende Übersicht über deine jährlichen Budgets und Ausgaben. Das Jahresdelta zeigt den Endwert zum 31. Dezember des jeweiligen Jahres.
                 </p>
