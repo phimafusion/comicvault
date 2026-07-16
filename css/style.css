@@ -716,10 +716,22 @@ body.mobile-view .details-card.table-card {
         padding: 4px 6px !important;
         font-size: 0.8rem !important;
     }
+}
 
-    .budget-table td {
-        white-space: nowrap !important;
-    }
+/* Global Budget Table Nowrap */
+.budget-table td {
+    white-space: nowrap !important;
+}
+
+/* Global Font Size Adjustments */
+html.font-size-small {
+    font-size: 14px !important;
+}
+html.font-size-medium {
+    font-size: 16px !important;
+}
+html.font-size-large {
+    font-size: 18px !important;
 }
 
 

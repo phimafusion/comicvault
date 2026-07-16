@@ -318,6 +318,12 @@ export class App {
                 }
             }, 50);
         }
+
+        // Schriftgröße anwenden
+        const fontSize = settings.fontSize || 'medium';
+        const htmlEl = document.documentElement;
+        htmlEl.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
+        htmlEl.classList.add(`font-size-${fontSize}`);
     }
 
     toggleTheme() {

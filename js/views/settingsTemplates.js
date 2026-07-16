@@ -29,6 +29,15 @@ export function getSettingsHtml(settings) {
                         </select>
                     </div>
                     
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label class="form-label">Schriftgröße</label>
+                        <select id="settings-font-size" class="form-control">
+                            <option value="small" ${settings.fontSize === 'small' ? 'selected' : ''}>Klein</option>
+                            <option value="medium" ${settings.fontSize === 'medium' || !settings.fontSize ? 'selected' : ''}>Mittel (Standard)</option>
+                            <option value="large" ${settings.fontSize === 'large' ? 'selected' : ''}>Groß</option>
+                        </select>
+                    </div>
+                    
                     <div class="form-group">
                         <label class="form-label">Modus</label>
                         <button class="btn btn-secondary" id="settings-toggle-dark" style="justify-content: flex-start; width: 100%;">

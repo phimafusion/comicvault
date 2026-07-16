@@ -121,3 +121,12 @@ Diese Liste dient als Notizzettel für zukünftige Aufgaben, Ideen und Refactori
   * Zuweisung gesunder Mindestbreiten (`650px` für Wunschliste/Lesestapel, `950px` für Monatsbudget) und Nutzung von `white-space: nowrap !important;` für Geldbeträge, um Zeilenumbrüche zu verhindern.
   * Dadurch lassen sich alle Tabellen mobil innerhalb der Karte horizontal scrollen.
 - [x] **Verifikation**: Visuelle Prüfung im Mobilmodus und erfolgreicher Durchlauf aller 165 Tests.
+
+### [18] Phase 7: Globale Schriftgrößen-Auswahl in Einstellungen [Umgesetzt]
+- [x] **Problem**: Der Wunsch nach flexibler Schriftgrößen-Ausgabe (z. B. eine kleinere Schriftart für noch kompaktere Mobil- und Tabellendarstellungen).
+- [x] **Lösung (Root-Font-Size-Skalierung)**:
+  - Integration eines Dropdowns für die Schriftgröße ("Klein", "Mittel", "Groß") im Bereich "Design & Themes" in den Einstellungen.
+  - Dynamisches Setzen der Klassen `font-size-small` (14px), `font-size-medium` (16px), `font-size-large` (18px) auf dem `html`-Element beim Laden und Umschalten. Da die App relative Einheiten (`rem`) nutzt, skaliert das gesamte UI nahtlos mit.
+  - Globale Umstellung der `white-space: nowrap !important` Budget-Zellen-Regel auf alle Bildschirmgrößen, um Umbrüche bei Beträgen in allen Fenstergrößen zu unterbinden.
+- [x] **Verifikation**: Visuelle Bestätigung der proportionalen Skalierung und Test-Suite-Durchlauf (168 Tests erfolgreich).
+

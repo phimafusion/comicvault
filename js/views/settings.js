@@ -351,6 +351,16 @@ export function renderSettings(container) {
         }
     });
 
+    document.getElementById('settings-font-size').addEventListener('change', (e) => {
+        const newSize = e.target.value;
+        const currentSettings = db.getSettings();
+        currentSettings.fontSize = newSize;
+        db.saveSettings(currentSettings);
+        if (window.app) {
+            window.app.applyTheme();
+        }
+    });
+
     document.getElementById('settings-toggle-dark').addEventListener('click', () => {
         if (window.app) {
             window.app.toggleTheme();
