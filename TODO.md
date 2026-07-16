@@ -107,10 +107,10 @@ Diese Liste dient als Notizzettel für zukünftige Aufgaben, Ideen und Refactori
   - Test-Caching Problem in `tests.html` gelöst.
   - Manuelle Stichprobe über die Test-Suite (erfolgreich).
 
-### [16] Phase 5: Langsame Integrationstests beschleunigen
-- [ ] **Problem**: Einige Integrationstests (insb. JSON-Import-Tests) benötigen über 100 ms pro Test, da sie aufwendige DOM-Rendering-Zyklen auslösen und künstliche Timeouts im Import-Code für UI-Aktualisierungen aufrufen.
-- [ ] **Lösungsansatz**:
-  - Deaktivieren/Umgehen des echten DOM-Renderings für reine Logik- und Parsing-Tests.
-  - Deaktivieren oder Mocken der künstlichen `setTimeout`-Pausen des Import-Service innerhalb der Test-Umgebung.
-  - Optimierung der DB-Mockups in `testHelper.js` zur schnelleren synchronen/asynchronen Abarbeitung.
+### [16] Phase 5: Langsame Integrationstests beschleunigen [Umgesetzt]
+- [x] **Problem**: Einige Integrationstests (insb. JSON-Import-Tests) benötigen über 100 ms pro Test, da sie aufwendige DOM-Rendering-Zyklen auslösen und künstliche Timeouts im Import-Code für UI-Aktualisierungen aufrufen.
+- [x] **Lösung (Event-basierte Synchronisation & Testmodus)**:
+  - Vermeidung von teuren DOM-Reflows (`scrollTop`) bei aktivem `window.__TESTING__`.
+  - Deaktivieren der künstlichen 10ms `setTimeout`-Pausen im Import-Service im Testmodus.
+  - Einführung eines `'import-completed'` Custom Events zur synchronen und deterministischen Fortführung der Tests.
 

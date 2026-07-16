@@ -31,6 +31,7 @@ const defaultSettings = {
  * @returns {Object} References to environment elements and state helpers
  */
 export function setupTestEnv(options = {}) {
+    window.__TESTING__ = true;
     // 1. Backup original functions if not already backed up
     if (!backups.auth) backups.auth = firebase.auth;
     if (!backups.getSettings) backups.getSettings = db.getSettings;
@@ -207,6 +208,7 @@ export function setupTestEnv(options = {}) {
  * Restores original function definitions and cleans up any modifications made to the DOM.
  */
 export function cleanup() {
+    window.__TESTING__ = false;
     // 1. Restore original functions
     if (backups.auth) firebase.auth = backups.auth;
     if (backups.getSettings) db.getSettings = backups.getSettings;

@@ -9,7 +9,10 @@ import {
     importJSONData
 } from '../services/importExportService.js';
 
+let viewContainer = null;
+
 export function renderImport(container) {
+    viewContainer = container;
     const html = `
         <div class="view-controls" style="padding-top: 32px;">
             <h2 class="view-title">Import / Export</h2>
@@ -270,7 +273,9 @@ async function handleCSVImport() {
                 const name = `${comicData.serie || ''} ${comicData.nummer ? '#' + comicData.nummer : ''}`;
                 const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${escapeHTML(name)}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${escapeHTML(comicData.titel || '')}</span></div>`;
                 logNew.insertAdjacentHTML('beforeend', logLine);
-                logNew.scrollTop = logNew.scrollHeight;
+                if (!window.__TESTING__) {
+                    logNew.scrollTop = logNew.scrollHeight;
+                }
             };
 
             const onLogUpdated = (comicData, oldData, changedFields) => {
@@ -285,14 +290,18 @@ async function handleCSVImport() {
                     </div>
                 `;
                 logUpdated.insertAdjacentHTML('beforeend', logLine);
-                logUpdated.scrollTop = logUpdated.scrollHeight;
+                if (!window.__TESTING__) {
+                    logUpdated.scrollTop = logUpdated.scrollHeight;
+                }
             };
 
             const onLogSkipped = (comicData) => {
                 const name = `${comicData.serie || ''} ${comicData.nummer ? '#' + comicData.nummer : ''}`;
                 const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${escapeHTML(name)}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${escapeHTML(comicData.titel || '')}</span></div>`;
                 logSkipped.insertAdjacentHTML('beforeend', logLine);
-                logSkipped.scrollTop = logSkipped.scrollHeight;
+                if (!window.__TESTING__) {
+                    logSkipped.scrollTop = logSkipped.scrollHeight;
+                }
             };
 
             const result = await importCSVData({
@@ -323,6 +332,10 @@ async function handleCSVImport() {
             statusDiv.style.display = 'block';
             statusDiv.innerHTML = `<i class="fa-solid fa-xmark" style="color: var(--danger)"></i> Fehler: ${error.message}`;
             if (logOverlay) logOverlay.style.display = 'none';
+        } finally {
+            if (viewContainer) {
+                viewContainer.dispatchEvent(new CustomEvent('import-completed'));
+            }
         }
     };
 
@@ -457,7 +470,9 @@ async function handleJSONImport() {
                 const safeSuffix = escapeHTML(suffix);
                 const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${prefix}${safeName}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${safeSuffix}</span></div>`;
                 logNew.insertAdjacentHTML('beforeend', logLine);
-                logNew.scrollTop = logNew.scrollHeight;
+                if (!window.__TESTING__) {
+                    logNew.scrollTop = logNew.scrollHeight;
+                }
             };
 
             const onLogUpdated = (data, oldData, changedFields, isWishlist) => {
@@ -475,7 +490,9 @@ async function handleJSONImport() {
                     </div>
                 `;
                 logUpdated.insertAdjacentHTML('beforeend', logLine);
-                logUpdated.scrollTop = logUpdated.scrollHeight;
+                if (!window.__TESTING__) {
+                    logUpdated.scrollTop = logUpdated.scrollHeight;
+                }
             };
 
             const onLogSkipped = (data, isWishlist) => {
@@ -487,7 +504,9 @@ async function handleJSONImport() {
                 const safeSuffix = escapeHTML(suffix);
                 const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${prefix}${safeName}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${safeSuffix}</span></div>`;
                 logSkipped.insertAdjacentHTML('beforeend', logLine);
-                logSkipped.scrollTop = logSkipped.scrollHeight;
+                if (!window.__TESTING__) {
+                    logSkipped.scrollTop = logSkipped.scrollHeight;
+                }
             };
 
             const result = await importJSONData({
@@ -519,6 +538,10 @@ async function handleJSONImport() {
             statusDiv.style.display = 'block';
             statusDiv.innerHTML = `<i class="fa-solid fa-xmark" style="color: var(--danger)"></i> Fehler: ${error.message}`;
             if (logOverlay) logOverlay.style.display = 'none';
+        } finally {
+            if (viewContainer) {
+                viewContainer.dispatchEvent(new CustomEvent('import-completed'));
+            }
         }
     };
 

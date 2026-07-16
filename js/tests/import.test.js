@@ -124,11 +124,12 @@ describe('JSON Import Feature Tests', () => {
             writable: true
         });
 
+        const importPromise = new Promise(resolve => container.addEventListener('import-completed', resolve, { once: true }));
         // Trigger click which starts reader
         btnImport.click();
 
         // Wait for async reader and import processing loops
-        await tick(100);
+        await importPromise;
 
         const sumNew = document.getElementById('sum-new').textContent;
         const sumUpdated = document.getElementById('sum-updated').textContent;
@@ -194,9 +195,10 @@ describe('JSON Import Feature Tests', () => {
             writable: true
         });
 
+        const importPromise = new Promise(resolve => container.addEventListener('import-completed', resolve, { once: true }));
         btnImport.click();
 
-        await tick(100);
+        await importPromise;
 
         const sumNew = document.getElementById('sum-new').textContent;
         const sumUpdated = document.getElementById('sum-updated').textContent;
@@ -242,9 +244,10 @@ describe('JSON Import Feature Tests', () => {
             writable: true
         });
 
+        const importPromise = new Promise(resolve => container.addEventListener('import-completed', resolve, { once: true }));
         btnImport.click();
 
-        await tick(100);
+        await importPromise;
 
         // existing-1 sollte gelöscht worden sein (clearDatabase wurde aufgerufen)
         expect(testEnv.getLastClearDatabaseCall()).to.be.true;
@@ -264,9 +267,10 @@ describe('JSON Import Feature Tests', () => {
             writable: true
         });
 
+        const importPromise = new Promise(resolve => container.addEventListener('import-completed', resolve, { once: true }));
         btnImport.click();
 
-        await tick(100);
+        await importPromise;
 
         expect(statusDiv.style.display).to.equal('block');
         expect(statusDiv.textContent).to.contain('Fehler');
@@ -472,10 +476,11 @@ describe('Excel (XLSX) Import Feature Tests', () => {
             writable: true
         });
 
+        const importPromise = new Promise(resolve => container.addEventListener('import-completed', resolve, { once: true }));
         btnImport.click();
 
         // Warte auf asynchrone Verarbeitung
-        await tick(100);
+        await importPromise;
 
         const sumNew = document.getElementById('sum-new').textContent;
         expect(sumNew).to.equal('1 neu');

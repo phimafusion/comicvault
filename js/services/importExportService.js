@@ -432,7 +432,9 @@ export async function importJSONData({
             }
         }
 
-        await new Promise(resolve => setTimeout(resolve, 10));
+        if (!window.__TESTING__) {
+            await new Promise(resolve => setTimeout(resolve, 10));
+        }
     }
 
     for (let i = 0; i < wishlistToImport.length; i += batchSize) {
@@ -493,7 +495,9 @@ export async function importJSONData({
             }
         }
 
-        await new Promise(resolve => setTimeout(resolve, 10));
+        if (!window.__TESTING__) {
+            await new Promise(resolve => setTimeout(resolve, 10));
+        }
     }
 
     return { aborted: isAborted(), newCount, updatedCount, skipCount, totalProcessed: current };
