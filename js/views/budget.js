@@ -7,6 +7,20 @@ function formatCurrency(amount, currencySymbol) {
     return amount.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + currencySymbol;
 }
 
+// Hilfsfunktion zum Rendern einer einzelnen Zeile in der historischen Tabelle
+function renderHistoricalRow(y, types, currency) {
+    return `
+        <tr style="border-bottom: 1px solid var(--border-color); transition: var(--transition);" class="budget-row">
+            <td style="padding: 14px 16px; font-weight: 600; color: var(--text-primary);">${y.year}</td>
+            ${types.map(t => `<td style="padding: 14px 16px; text-align: right; color: var(--text-secondary);">${formatCurrency(y.expensesByType[t], currency)}</td>`).join('')}
+            <td style="padding: 14px 16px; text-align: right; color: var(--text-secondary);">${formatCurrency(y.expensesByType["Sonstige"], currency)}</td>
+            <td style="padding: 14px 16px; text-align: right; font-weight: 600; color: var(--text-primary);">${formatCurrency(y.totalExpenses, currency)}</td>
+            <td style="padding: 14px 16px; text-align: right; font-weight: 600; color: var(--text-primary);">${formatCurrency(y.totalBudget, currency)}</td>
+            <td style="padding: 14px 16px; text-align: right; font-weight: 700; color: ${y.delta < 0 ? 'var(--danger)' : 'var(--success)'};">${formatCurrency(y.delta, currency)}</td>
+        </tr>
+    `;
+}
+
 // Reine Berechnungsfunktion für Budgetstatistiken (isoliert testbar)
 export function calculateBudgetStats(comics, budgets, types, selectedYear) {
     const targetYear = parseInt(selectedYear, 10);
@@ -295,16 +309,7 @@ export async function renderBudget(container) {
                             </tr>
                         </thead>
                         <tbody id="historical-budget-tbody">
-                            ${yearsSummaryData.map(y => `
-                                <tr style="border-bottom: 1px solid var(--border-color); transition: var(--transition);" class="budget-row">
-                                    <td style="padding: 14px 16px; font-weight: 600; color: var(--text-primary);">${y.year}</td>
-                                    ${types.map(t => `<td style="padding: 14px 16px; text-align: right; color: var(--text-secondary);">${formatCurrency(y.expensesByType[t], currency)}</td>`).join('')}
-                                    <td style="padding: 14px 16px; text-align: right; color: var(--text-secondary);">${formatCurrency(y.expensesByType["Sonstige"], currency)}</td>
-                                    <td style="padding: 14px 16px; text-align: right; font-weight: 600; color: var(--text-primary);">${formatCurrency(y.totalExpenses, currency)}</td>
-                                    <td style="padding: 14px 16px; text-align: right; font-weight: 600; color: var(--text-primary);">${formatCurrency(y.totalBudget, currency)}</td>
-                                    <td style="padding: 14px 16px; text-align: right; font-weight: 700; color: ${y.delta < 0 ? 'var(--danger)' : 'var(--success)'};">${formatCurrency(y.delta, currency)}</td>
-                                </tr>
-                            `).join('')}
+                            ${yearsSummaryData.map(y => renderHistoricalRow(y, types, currency)).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -431,16 +436,7 @@ export async function renderBudget(container) {
             
             const tbody = container.querySelector('#historical-budget-tbody');
             if (tbody) {
-                tbody.innerHTML = yearsSummaryData.map(y => `
-                    <tr style="border-bottom: 1px solid var(--border-color); transition: var(--transition);" class="budget-row">
-                        <td style="padding: 14px 16px; font-weight: 600; color: var(--text-primary);">${y.year}</td>
-                        ${types.map(t => `<td style="padding: 14px 16px; text-align: right; color: var(--text-secondary);">${formatCurrency(y.expensesByType[t], currency)}</td>`).join('')}
-                        <td style="padding: 14px 16px; text-align: right; color: var(--text-secondary);">${formatCurrency(y.expensesByType["Sonstige"], currency)}</td>
-                        <td style="padding: 14px 16px; text-align: right; font-weight: 600; color: var(--text-primary);">${formatCurrency(y.totalExpenses, currency)}</td>
-                        <td style="padding: 14px 16px; text-align: right; font-weight: 600; color: var(--text-primary);">${formatCurrency(y.totalBudget, currency)}</td>
-                        <td style="padding: 14px 16px; text-align: right; font-weight: 700; color: ${y.delta < 0 ? 'var(--danger)' : 'var(--success)'};">${formatCurrency(y.delta, currency)}</td>
-                    </tr>
-                `).join('');
+                tbody.innerHTML = yearsSummaryData.map(y => renderHistoricalRow(y, types, currency)).join('');
             }
             
             // Feedback anzeigen

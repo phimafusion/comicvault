@@ -1271,11 +1271,11 @@ body.bulk-select-active .list-delete-btn {
 
 /* Force Mobile View Component Overrides */
 body.mobile-view .details-card {
-    flex-direction: column !important;
-    align-items: center !important;
-    text-align: center !important;
-    gap: 16px !important;
-    padding: 16px !important;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+    padding: 16px;
 }
 
 body.mobile-view .details-specs-grid {

@@ -683,26 +683,26 @@ body.mobile-view .pwa-toast {
 
 /* Table Card Mobile Optimizations */
 body.mobile-view .details-card.table-card {
-    display: block !important;
-    align-items: stretch !important;
-    text-align: left !important;
-    padding: 12px !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    overflow: hidden !important;
+    display: block;
+    align-items: stretch;
+    text-align: left;
+    padding: 12px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
 }
 
 @media (max-width: 768px) {
     .details-card.table-card {
-        display: block !important;
-        align-items: stretch !important;
-        text-align: left !important;
-        padding: 12px !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-        overflow: hidden !important;
+        display: block;
+        align-items: stretch;
+        text-align: left;
+        padding: 12px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
     }
     
     .table-card th,
