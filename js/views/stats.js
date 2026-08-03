@@ -10,8 +10,12 @@ import {
     renderHighlightsCards,
     renderTopPublishersTable,
     renderTopSeriesTable,
-    renderInventoryTBRTable
+    renderInventoryTBRTable,
+    renderStatsMultiSelect,
+    renderTimeframeSelect,
+    renderDebugContainerContent
 } from './stats/statsTemplates.js';
+import { initTimelineChart, initDoughnutChart, initHorizontalBarChart } from './stats/chartController.js';
 
 let activeStatsFilters = {
     verlag: [],
@@ -79,13 +83,13 @@ export async function renderStats(container) {
             <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap; flex: 1;">
                 <!-- Direkt sichtbare Multi-Filter -->
                 <div class="direct-filters" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-                    ${renderStatsMultiSelect('verlag', 'Verlag', verlage)}
-                    ${renderStatsMultiSelect('serie', 'Serie', serien)}
-                    ${renderStatsMultiSelect('format', 'Format', formate)}
-                    ${renderStatsMultiSelect('bestand', 'Bestand', bestände)}
-                    ${renderStatsMultiSelect('sprache', 'Sprache', sprachen)}
-                    ${renderStatsMultiSelect('typ', 'Typ', typen)}
-                    ${renderTimeframeSelect(sortedYears)}
+                    ${renderStatsMultiSelect('verlag', 'Verlag', verlage, activeStatsFilters)}
+                    ${renderStatsMultiSelect('serie', 'Serie', serien, activeStatsFilters)}
+                    ${renderStatsMultiSelect('format', 'Format', formate, activeStatsFilters)}
+                    ${renderStatsMultiSelect('bestand', 'Bestand', bestände, activeStatsFilters)}
+                    ${renderStatsMultiSelect('sprache', 'Sprache', sprachen, activeStatsFilters)}
+                    ${renderStatsMultiSelect('typ', 'Typ', typen, activeStatsFilters)}
+                    ${renderTimeframeSelect(sortedYears, activeStatsFilters.zeitraum)}
                     
                     <button id="btn-reset-stats-filters" class="btn btn-secondary" style="height: 36px; width: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; border-color: transparent;" title="Alle Filter zurücksetzen">
                         <i class="fa-solid fa-rotate-left"></i>
@@ -254,54 +258,7 @@ export async function renderStats(container) {
     updateStats();
 }
 
-function renderStatsMultiSelect(key, label, options) {
-    const selected = activeStatsFilters[key] || [];
-    const isActive = selected.length > 0;
-    const displayText = isActive ? `${label} (${selected.length})` : label;
-    
-    return `
-        <div class="multi-select-container" style="position: relative;">
-            <button class="btn btn-secondary stats-filter-trigger ${isActive ? 'active-filter' : ''}" 
-                    data-key="${key}" 
-                    style="height: 36px; font-size: 0.85rem; border-radius: 8px; padding: 0 15px; background: ${isActive ? 'rgba(6, 182, 212, 0.1)' : 'var(--bg-card)'}; border: 1px solid ${isActive ? 'var(--primary-color)' : 'var(--border-color)'}; color: ${isActive ? 'var(--primary-color)' : 'inherit'}; min-width: 100px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                <span>${displayText}</span>
-                <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem; opacity: 0.6;"></i>
-            </button>
-            <div class="multi-select-dropdown" id="dropdown-stats-${key}" style="display: none; position: absolute; top: 42px; left: 0; z-index: 1000; background: #1e293b; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5); min-width: 240px; max-height: 400px; overflow-y: auto; padding: 8px;">
-                ${options.length === 0 ? `
-                    <div style="padding: 10px; color: var(--text-secondary); font-size: 0.85rem; text-align: center;">Keine Optionen verfügbar</div>
-                ` : options.map(opt => `
-                    <label style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; font-size: 0.85rem; border-radius: 6px; transition: background 0.2s; margin-bottom: 2px;" class="filter-option">
-                        <input type="checkbox" class="stats-filter-checkbox" data-key="${key}" value="${opt}" ${selected.includes(opt) ? 'checked' : ''} style="accent-color: var(--primary-color); width: 16px; height: 16px;">
-                        <span style="flex: 1; color: var(--text-main);">${opt}</span>
-                    </label>
-                `).join('')}
-            </div>
-        </div>
-    `;
-}
 
-function renderTimeframeSelect(years) {
-    const val = activeStatsFilters.zeitraum;
-    const options = [
-        { value: 'all', label: 'Gesamter Zeitraum' },
-        { value: 'last6', label: 'Letzte 6 Monate' },
-        { value: 'last12', label: 'Letzte 12 Monate' },
-        { value: 'thisYear', label: 'Dieses Jahr' },
-        { value: 'lastYear', label: 'Letztes Jahr' }
-    ];
-    years.forEach(y => {
-        options.push({ value: `year-${y}`, label: `Jahr ${y}` });
-    });
-    
-    return `
-        <div class="timeframe-select-container">
-            <select id="select-stats-timeframe" class="btn btn-secondary" style="height: 36px; font-size: 0.85rem; border-radius: 8px; padding: 0 15px; background: var(--bg-card); border: 1px solid var(--border-color); color: inherit; min-width: 140px; text-align: left; cursor: pointer; outline: none;">
-                ${options.map(opt => `<option value="${opt.value}" ${val === opt.value ? 'selected' : ''}>${opt.label}</option>`).join('')}
-            </select>
-        </div>
-    `;
-}
 
 const handleGlobalStatsClick = () => {
     document.querySelectorAll('.multi-select-dropdown').forEach(d => d.style.display = 'none');
@@ -552,18 +509,19 @@ async function updateStats() {
         timelineLabels, 
         displayTimeline.map(d => d.purchased),
         displayTimeline.map(d => d.read),
-        displayTimeline.map(d => d.tbr)
+        displayTimeline.map(d => d.tbr),
+        statsCharts
     );
 
     // Format Verteilung
-    initDoughnutChart('chartFormat', Object.keys(formatData), Object.values(formatData), 'Format');
+    initDoughnutChart('chartFormat', Object.keys(formatData), Object.values(formatData), 'Format', statsCharts);
 
     // Bestands Verteilung
-    initDoughnutChart('chartBestand', Object.keys(bestandData), Object.values(bestandData), 'Bestand');
+    initDoughnutChart('chartBestand', Object.keys(bestandData), Object.values(bestandData), 'Bestand', statsCharts);
 
     // Bezugsquellen Spendings
     const sortedQuellen = Object.entries(quellenSpend).sort((a, b) => b[1] - a[1]);
-    initHorizontalBarChart('chartQuellen', sortedQuellen.map(e => e[0]), sortedQuellen.map(e => e[1]), `Ausgaben in ${currencySymbol}`);
+    initHorizontalBarChart('chartQuellen', sortedQuellen.map(e => e[0]), sortedQuellen.map(e => e[1]), `Ausgaben in ${currencySymbol}`, statsCharts);
 
     // Diagnose-Container befüllen falls ungewöhnlich frühe Daten vorliegen
     const debugContainer = document.getElementById('stats-debug-container');
@@ -572,190 +530,10 @@ async function updateStats() {
         
         if (earlyComics.length > 0) {
             debugContainer.style.display = 'block';
-            debugContainer.innerHTML = `
-                <div style="font-weight: 600; color: var(--warning); margin-bottom: 8px; font-family: var(--font-display);">
-                    <i class="fa-solid fa-triangle-exclamation"></i> Diagnose: Ungewöhnlich frühe Kaufdaten gefunden (vor 2020)
-                </div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
-                    Diese Einträge verschieben den Startpunkt deines zeitlichen Diagramms weit nach hinten. 
-                    Wenn dies Eingabefehler sind (z. B. "04.12" vom Browser als April 2012 anstatt 4. Dezember interpretiert), passe das Datum im Comic an:
-                    <ul style="margin-top: 8px; padding-left: 20px; color: var(--text-primary);">
-                        ${earlyComics.map(c => `<li><strong>${c.titel}</strong>: Eingetragenes Kaufdatum: <code>"${c.kaufdatum}"</code> (interpretiert als ${parseToDate(c.kaufdatum).toLocaleDateString('de-DE')})</li>`).join('')}
-                    </ul>
-                </div>
-            `;
+            debugContainer.innerHTML = renderDebugContainerContent(earlyComics);
         } else {
             debugContainer.style.display = 'none';
         }
     }
 }
 
-// Chart.js Diagramm Initialisierungshelfer
-
-function initTimelineChart(id, labels, purchasedData, readData, tbrData) {
-    const ctx = document.getElementById(id);
-    if (!ctx) return;
-
-    if (statsCharts[id]) statsCharts[id].destroy();
-
-    statsCharts[id] = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Lesestapel (TBR)',
-                    data: tbrData,
-                    borderColor: 'rgba(139, 92, 246, 1)', // Violet
-                    backgroundColor: 'rgba(139, 92, 246, 0.1)', // Light violet fill
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.35,
-                    pointRadius: 2,
-                    pointHoverRadius: 5
-                },
-                {
-                    label: 'Käufe (kumuliert)',
-                    data: purchasedData,
-                    borderColor: 'rgba(6, 182, 212, 1)', // Cyan
-                    backgroundColor: 'transparent',
-                    borderWidth: 2,
-                    borderDash: [5, 5],
-                    fill: false,
-                    tension: 0.3,
-                    pointRadius: 0,
-                    pointHoverRadius: 4
-                },
-                {
-                    label: 'Gelesen (kumuliert)',
-                    data: readData,
-                    borderColor: 'rgba(16, 185, 129, 1)', // Emerald/Green
-                    backgroundColor: 'transparent',
-                    borderWidth: 2,
-                    fill: false,
-                    tension: 0.3,
-                    pointRadius: 0,
-                    pointHoverRadius: 4
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false
-            },
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: { color: '#94a3b8', font: { size: 11, family: 'Inter' } }
-                },
-                tooltip: {
-                    padding: 12,
-                    cornerRadius: 8,
-                    bodySpacing: 4
-                }
-            },
-            scales: {
-                y: { 
-                    ticks: { color: '#94a3b8', font: { family: 'Inter' } }, 
-                    grid: { color: 'rgba(255,255,255,0.05)' } 
-                },
-                x: { 
-                    ticks: { color: '#94a3b8', font: { size: 10, family: 'Inter' } }, 
-                    grid: { display: false } 
-                }
-            }
-        }
-    });
-}
-
-function initDoughnutChart(id, labels, data, title) {
-    const ctx = document.getElementById(id);
-    if (!ctx) return;
-
-    if (statsCharts[id]) statsCharts[id].destroy();
-
-    const colors = [
-        'rgba(6, 182, 212, 0.75)',  // Primary
-        'rgba(139, 92, 246, 0.75)', // Purple/Violet
-        'rgba(16, 185, 129, 0.75)', // Success
-        'rgba(244, 63, 94, 0.75)',  // Accent/Rose
-        'rgba(245, 158, 11, 0.75)', // Warning
-        'rgba(100, 116, 139, 0.75)', // Slate
-        'rgba(236, 72, 153, 0.75)'  // Pink
-    ];
-
-    statsCharts[id] = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Anzahl',
-                data: data,
-                backgroundColor: colors,
-                borderColor: 'rgba(30, 41, 59, 0.5)',
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'right',
-                    labels: { 
-                        color: '#94a3b8', 
-                        font: { size: 11, family: 'Inter' },
-                        boxWidth: 12
-                    }
-                }
-            },
-            cutout: '65%'
-        }
-    });
-}
-
-function initHorizontalBarChart(id, labels, data, label) {
-    const ctx = document.getElementById(id);
-    if (!ctx) return;
-
-    if (statsCharts[id]) statsCharts[id].destroy();
-
-    statsCharts[id] = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: label,
-                data: data,
-                backgroundColor: 'rgba(6, 182, 212, 0.7)',
-                hoverBackgroundColor: 'rgba(6, 182, 212, 0.9)',
-                borderColor: 'rgba(6, 182, 212, 1)',
-                borderWidth: 1,
-                borderRadius: 4
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                x: { 
-                    ticks: { color: '#94a3b8', font: { family: 'Inter' } }, 
-                    grid: { color: 'rgba(255,255,255,0.05)' } 
-                },
-                y: { 
-                    ticks: { color: '#94a3b8', font: { size: 11, family: 'Inter' } }, 
-                    grid: { display: false } 
-                }
-            }
-        }
-    });
-}

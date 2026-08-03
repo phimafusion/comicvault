@@ -238,3 +238,68 @@ export function renderInventoryTBRTable(yearlyData, currentYear, currencySymbol)
         </tbody>
     `;
 }
+
+export function renderStatsMultiSelect(key, label, options, activeStatsFilters) {
+    const selected = activeStatsFilters[key] || [];
+    const isActive = selected.length > 0;
+    const displayText = isActive ? `${label} (${selected.length})` : label;
+    
+    return `
+        <div class="multi-select-container" style="position: relative;">
+            <button class="btn btn-secondary stats-filter-trigger ${isActive ? 'active-filter' : ''}" 
+                    data-key="${key}" 
+                    style="height: 36px; font-size: 0.85rem; border-radius: 8px; padding: 0 15px; background: ${isActive ? 'rgba(6, 182, 212, 0.1)' : 'var(--bg-card)'}; border: 1px solid ${isActive ? 'var(--primary-color)' : 'var(--border-color)'}; color: ${isActive ? 'var(--primary-color)' : 'inherit'}; min-width: 100px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                <span>${displayText}</span>
+                <i class="fa-solid fa-chevron-down" style="font-size: 0.7rem; opacity: 0.6;"></i>
+            </button>
+            <div class="multi-select-dropdown" id="dropdown-stats-${key}" style="display: none; position: absolute; top: 42px; left: 0; z-index: 1000; background: #1e293b; border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5); min-width: 240px; max-height: 400px; overflow-y: auto; padding: 8px;">
+                ${options.length === 0 ? `
+                    <div style="padding: 10px; color: var(--text-secondary); font-size: 0.85rem; text-align: center;">Keine Optionen verfügbar</div>
+                ` : options.map(opt => `
+                    <label style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; font-size: 0.85rem; border-radius: 6px; transition: background 0.2s; margin-bottom: 2px;" class="filter-option">
+                        <input type="checkbox" class="stats-filter-checkbox" data-key="${key}" value="${opt}" ${selected.includes(opt) ? 'checked' : ''} style="accent-color: var(--primary-color); width: 16px; height: 16px;">
+                        <span style="flex: 1; color: var(--text-main);">${opt}</span>
+                    </label>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+export function renderTimeframeSelect(years, activeTimeframe) {
+    const options = [
+        { value: 'all', label: 'Gesamter Zeitraum' },
+        { value: 'last6', label: 'Letzte 6 Monate' },
+        { value: 'last12', label: 'Letzte 12 Monate' },
+        { value: 'thisYear', label: 'Dieses Jahr' },
+        { value: 'lastYear', label: 'Letztes Jahr' }
+    ];
+    years.forEach(y => {
+        options.push({ value: `year-${y}`, label: `Jahr ${y}` });
+    });
+    
+    return `
+        <div class="timeframe-select-container">
+            <select id="select-stats-timeframe" class="btn btn-secondary" style="height: 36px; font-size: 0.85rem; border-radius: 8px; padding: 0 15px; background: var(--bg-card); border: 1px solid var(--border-color); color: inherit; min-width: 140px; text-align: left; cursor: pointer; outline: none;">
+                ${options.map(opt => `<option value="${opt.value}" ${activeTimeframe === opt.value ? 'selected' : ''}>${opt.label}</option>`).join('')}
+            </select>
+        </div>
+    `;
+}
+
+export function renderDebugContainerContent(earlyComics) {
+    if (earlyComics.length === 0) return '';
+    return `
+        <div style="font-weight: 600; color: var(--warning); margin-bottom: 8px; font-family: var(--font-display);">
+            <i class="fa-solid fa-triangle-exclamation"></i> Diagnose: Ungewöhnlich frühe Kaufdaten gefunden (vor 2020)
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
+            Diese Einträge verschieben den Startpunkt deines zeitlichen Diagramms weit nach hinten. 
+            Wenn dies Eingabefehler sind (z. B. "04.12" vom Browser als April 2012 anstatt 4. Dezember interpretiert), passe das Datum im Comic an:
+            <ul style="margin-top: 8px; padding-left: 20px; color: var(--text-primary);">
+                ${earlyComics.map(c => `<li><strong>${escapeHTML(c.titel)}</strong>: Eingetragenes Kaufdatum: <code>"${escapeHTML(c.kaufdatum)}"</code></li>`).join('')}
+            </ul>
+        </div>
+    `;
+}
+

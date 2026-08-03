@@ -130,3 +130,22 @@ Diese Liste dient als Notizzettel für zukünftige Aufgaben, Ideen und Refactori
   - Globale Umstellung der `white-space: nowrap !important` Budget-Zellen-Regel auf alle Bildschirmgrößen, um Umbrüche bei Beträgen in allen Fenstergrößen zu unterbinden.
 - [x] **Verifikation**: Visuelle Bestätigung der proportionalen Skalierung und Test-Suite-Durchlauf (168 Tests erfolgreich).
 
+---
+
+## 🏗️ Geplante Refactorings & Code-Qualität
+
+- [x] **[19] Template-Extraktion (Budget & Stats)**
+  - Extraktion von Inline-HTML-Templates aus `budget.js` in eine eigene `budgetTemplates.js`.
+  - Auslagerung von HTML-Accordion-Tabellen und Trennung der Chart.js-Steuerung in `statsTemplates.js` / `chartController.js` aus `stats.js`.
+- [ ] **[20] Zentrales Storage Management (`storageService.js`)**
+  - Kapselung aller `localStorage`-Zugriffe (Theme, Schriftgröße, Spaltenbreiten, sichtbare Felder, Mockup-Modus) in einem zentralen Service.
+  - Bereitstellung von typisierten Storage-Keys, Default-Werten und zentraler JSON-Serialisierung.
+- [ ] **[21] Modularisierung der Datenbankschicht (`db.js`)**
+  - Aufteilung von `db.js` in Untermodule: `firebaseAdapter.js` (Firestore CRUD), `mockAdapter.js` (Offline Dummy-Daten) und `cacheManager.js` (In-Memory Caching & Invalidierung).
+- [ ] **[22] Konsolidierung von Utility-Modulen**
+  - Zusammenführung und Strukturierung verstreuter Hilfsfunktionen (`utils.js` & `statsUtils.js`) in fokussierte Module (`dateUtils.js`, `formatUtils.js`, `domUtils.js`).
+- [ ] **[23] Headless Test-Runner für CI/CD (GitHub Actions)**
+  - Implementierung eines Headless-Runners (z. B. via Playwright/Puppeteer) für `tests.html`.
+  - Erstellung einer GitHub Actions Workflow-Datei (`.github/workflows/test.yml`) zur automatisierten Ausführung aller Tests bei Pull Requests.
+
+
