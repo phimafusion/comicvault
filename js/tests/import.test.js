@@ -505,4 +505,29 @@ describe('Excel (XLSX) Import Feature Tests', () => {
         expect(imported.bewertung).to.equal(10);
         expect(imported.bemerkung).to.equal('Klassiker!');
     });
+
+    it('sollte getAllComics mit { forceServer: true } aufrufen, um vor dem Import einen frischen Cloud-Abgleich zu erzwingen', async () => {
+        let forceServerCalled = false;
+        const originalGetAllComics = db.getAllComics;
+
+        db.getAllComics = async (options) => {
+            if (options && options.forceServer === true) {
+                forceServerCalled = true;
+            }
+            return originalGetAllComics.call(db, options);
+        };
+
+        try {
+            const { importCSVData } = await import('../services/importExportService.js');
+            await importCSVData({
+                rows: [{ 'Titel': 'Test Comic', 'Serie': 'Test' }],
+                onProgress: () => {},
+                isAborted: () => false
+            });
+
+            expect(forceServerCalled).to.be.true;
+        } finally {
+            db.getAllComics = originalGetAllComics;
+        }
+    });
 });

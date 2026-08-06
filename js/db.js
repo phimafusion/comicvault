@@ -44,8 +44,12 @@ class Database {
         return dbFirestore.collection('users').doc(user.uid).collection('comics');
     }
 
-    async getAllComics() {
-        if (this.comicsCache) {
+    async getAllComics(options = {}) {
+        if (options.forceServer) {
+            this.comicsCache = null;
+        }
+
+        if (this.comicsCache && !options.forceServer) {
             return [...this.comicsCache];
         }
 
@@ -62,6 +66,24 @@ class Database {
 
         const col = this.getCollection();
         if (!col) return [];
+
+        if (options.forceServer) {
+            try {
+                const serverSnapshot = await col.orderBy('serie', 'asc').get({ source: 'server' });
+                this.comicsCache = serverSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                return [...this.comicsCache];
+            } catch (err) {
+                // Fallback wenn z.B. offline oder in Mock-Umgebung
+                try {
+                    const snapshot = await col.orderBy('serie', 'asc').get();
+                    this.comicsCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    return [...this.comicsCache];
+                } catch (networkErr) {
+                    console.warn("Laden aus Firestore fehlgeschlagen:", networkErr);
+                    return [];
+                }
+            }
+        }
 
         try {
             // Zuerst versuchen, die Daten extrem schnell aus dem lokalen IndexedDB-Cache zu laden

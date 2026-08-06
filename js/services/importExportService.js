@@ -230,7 +230,7 @@ export async function importCSVData({
     onLogSkipped,
     isAborted
 }) {
-    const existingComics = await db.getAllComics();
+    const existingComics = await db.getAllComics({ forceServer: true });
     const idMap = new Map();
     const contentMap = new Map();
     const coreMap = new Map();
@@ -332,7 +332,7 @@ export async function importJSONData({
     isAborted
 }) {
     const [existingComics, existingWishlist] = await Promise.all([
-        db.getAllComics(),
+        db.getAllComics({ forceServer: true }),
         db.getWishlist()
     ]);
 
