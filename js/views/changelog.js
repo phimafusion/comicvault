@@ -140,23 +140,24 @@ export function renderChangelog(container) {
             const entryId = revertBtn.dataset.entryId;
             if (!entryId) return;
 
-        revertBtn.disabled = true;
-        const originalContent = revertBtn.innerHTML;
-        revertBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Rückgängig...';
+            revertBtn.disabled = true;
+            const originalContent = revertBtn.innerHTML;
+            revertBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Rückgängig...';
 
-        try {
-            await db.revertChangelogEntry(entryId);
-            showToast('Änderung erfolgreich rückgängig gemacht.');
-            setTimeout(() => {
-                loadEntries(currentLimit);
-            }, 800);
-        } catch (error) {
-            console.error("Fehler beim Rückgängig machen:", error);
-            showToast(error.message || 'Fehler beim Rückgängig machen.', 'error');
-            revertBtn.disabled = false;
-            revertBtn.innerHTML = originalContent;
-        }
-    });
+            try {
+                await db.revertChangelogEntry(entryId);
+                showToast('Änderung erfolgreich rückgängig gemacht.');
+                setTimeout(() => {
+                    loadEntries(currentLimit);
+                }, 800);
+            } catch (error) {
+                console.error("Fehler beim Rückgängig machen:", error);
+                showToast(error.message || 'Fehler beim Rückgängig machen.', 'error');
+                revertBtn.disabled = false;
+                revertBtn.innerHTML = originalContent;
+            }
+        });
+    }
 }
 
 async function loadEntries(limit) {
