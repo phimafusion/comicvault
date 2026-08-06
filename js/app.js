@@ -67,6 +67,12 @@ export class App {
         // Bottom Nav
         this.bottomNavItems = document.querySelectorAll('.bottom-nav-item');
         this.btnBottomMenu = document.getElementById('btn-bottom-menu');
+
+        // Testsuite Modal
+        this.btnOpenTestsuite = document.getElementById('btn-open-testsuite');
+        this.testsuiteModal = document.getElementById('testsuite-modal');
+        this.testsuiteIframe = document.getElementById('testsuite-iframe');
+        this.btnCloseTestsuiteModal = document.getElementById('btn-close-testsuite-modal');
     }
 
     bindEvents() {
@@ -201,6 +207,28 @@ export class App {
             const event = new CustomEvent('global-search', { detail: { query: e.target.value } });
             document.dispatchEvent(event);
         });
+
+        if (this.btnOpenTestsuite) {
+            this.btnOpenTestsuite.addEventListener('click', () => {
+                if (this.testsuiteIframe) {
+                    this.testsuiteIframe.src = './tests.html';
+                }
+                if (this.testsuiteModal) {
+                    this.testsuiteModal.style.display = 'flex';
+                }
+            });
+        }
+
+        if (this.btnCloseTestsuiteModal) {
+            this.btnCloseTestsuiteModal.addEventListener('click', () => {
+                if (this.testsuiteModal) {
+                    this.testsuiteModal.style.display = 'none';
+                }
+                if (this.testsuiteIframe) {
+                    this.testsuiteIframe.src = 'about:blank';
+                }
+            });
+        }
     }
 
     showApp() {

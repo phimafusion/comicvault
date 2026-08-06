@@ -436,5 +436,30 @@ describe('ComicVault Database Caching Tests', () => {
         expect(db.comicsCache).to.be.null;
         expect(db.wishlistCache).to.be.null;
     });
+
+    it('sollte das Testsuite-Modal im Popup öffnen und beim Schließen das Iframe wieder entladen', async () => {
+        const btnOpen = document.getElementById('btn-open-testsuite');
+        const btnClose = document.getElementById('btn-close-testsuite-modal');
+        const modal = document.getElementById('testsuite-modal');
+        const iframe = document.getElementById('testsuite-iframe');
+
+        if (btnOpen && modal && iframe && btnClose) {
+            expect(modal.style.display).to.equal('none');
+
+            // Button klicken -> Modal öffnen
+            btnOpen.click();
+            await tick();
+
+            expect(modal.style.display).to.equal('flex');
+            expect(iframe.src).to.include('tests.html');
+
+            // Schließen klicken -> Modal schließen und iframe resetten
+            btnClose.click();
+            await tick();
+
+            expect(modal.style.display).to.equal('none');
+            expect(iframe.src).to.include('about:blank');
+        }
+    });
 });
 
