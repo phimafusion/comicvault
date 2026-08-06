@@ -171,4 +171,71 @@ describe('Subscriptions (Abos) Feature', function() {
         // Aufräumen
         db.getSubscriptions = originalGetSubscriptions;
     });
+
+    it('sollte den Pausierungs-Status eines Abonnements umschalten (pause & resume)', async function() {
+        await db.saveSubscription({
+            titel: 'Spawn',
+            verlag: 'Image',
+            haendler: 'Local Comic Store',
+            pausiert: false
+        });
+
+        await renderSubscriptions(container);
+        await tick();
+
+        let subs = await db.getSubscriptions();
+        expect(subs[0].pausiert).to.not.be.true;
+
+        const pauseBtn = container.querySelector('.btn-pause-sub');
+        expect(pauseBtn).to.exist;
+
+        // Click Pause
+        pauseBtn.click();
+        await tick();
+
+        subs = await db.getSubscriptions();
+        expect(subs[0].pausiert).to.be.true;
+
+        const tbody = container.querySelector('#subscriptions-body');
+        expect(tbody.textContent).to.include('Pausiert');
+
+        // Click Resume (Play)
+        const playBtn = container.querySelector('.btn-pause-sub');
+        playBtn.click();
+        await tick();
+
+        subs = await db.getSubscriptions();
+        expect(subs[0].pausiert).to.be.false;
+        expect(tbody.textContent).to.include('Aktiv');
+    });
+
+    it('sollte den Pausierungs-Status über die Checkbox im Modal speichern', async function() {
+        await renderSubscriptions(container);
+        await tick();
+
+        const addBtn = container.querySelector('#btn-add-subscription');
+        addBtn.click();
+        await tick();
+
+        const titelInput = document.querySelector('#sub-titel');
+        const pausiertCb = document.querySelector('#sub-pausiert');
+        const saveBtn = document.querySelector('#btn-save-sub');
+
+        expect(pausiertCb).to.exist;
+        expect(pausiertCb.checked).to.be.false;
+
+        titelInput.value = 'Uncanny X-Men';
+        pausiertCb.checked = true;
+
+        saveBtn.click();
+        await tick();
+
+        const subs = await db.getSubscriptions();
+        expect(subs).to.have.lengthOf(1);
+        expect(subs[0].titel).to.equal('Uncanny X-Men');
+        expect(subs[0].pausiert).to.be.true;
+
+        const closeBtn = document.querySelector('#btn-close-sub-modal');
+        if (closeBtn) closeBtn.click();
+    });
 });

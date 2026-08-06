@@ -39,11 +39,12 @@ export async function renderSubscriptions(container) {
                             <th class="sortable-sub-header" data-sort="titel" style="padding: 12px; cursor: pointer; user-select: none;">Serie / Titel <span class="sort-icon-container"></span></th>
                             <th class="sortable-sub-header" data-sort="verlag" style="padding: 12px; cursor: pointer; user-select: none;">Verlag <span class="sort-icon-container"></span></th>
                             <th class="sortable-sub-header" data-sort="haendler" style="padding: 12px; cursor: pointer; user-select: none;">Händler <span class="sort-icon-container"></span></th>
+                            <th class="sortable-sub-header" data-sort="pausiert" style="padding: 12px; cursor: pointer; user-select: none;">Status <span class="sort-icon-container"></span></th>
                             <th style="padding: 12px; text-align: right;">Aktionen</th>
                         </tr>
                     </thead>
                     <tbody id="subscriptions-body">
-                        <tr><td colspan="4" style="text-align:center; padding:20px;"><i class="fa-solid fa-circle-notch fa-spin"></i></td></tr>
+                        <tr><td colspan="5" style="text-align:center; padding:20px;"><i class="fa-solid fa-circle-notch fa-spin"></i></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -129,23 +130,39 @@ async function updateSubscriptionsTable() {
 
     // 3. Sort subscriptions
     subs.sort((a, b) => {
-        let valA = String(a[sortBy] || '').toLowerCase();
-        let valB = String(b[sortBy] || '').toLowerCase();
+        let valA = a[sortBy];
+        let valB = b[sortBy];
+        if (sortBy === 'pausiert') {
+            valA = a.pausiert ? 1 : 0;
+            valB = b.pausiert ? 1 : 0;
+            return sortOrder === 'asc' ? valA - valB : valB - valA;
+        }
+        valA = String(valA || '').toLowerCase();
+        valB = String(valB || '').toLowerCase();
         return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
     });
     
     if (subs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:40px; color:var(--text-secondary); font-style: italic;">Keine Abonnements gefunden.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--text-secondary); font-style: italic;">Keine Abonnements gefunden.</td></tr>`;
         return;
     }
 
     tbody.innerHTML = subs.map(sub => {
+        const isPaused = !!sub.pausiert;
+        const statusBadge = isPaused
+            ? `<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--warning); padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-pause"></i> Pausiert</span>`
+            : `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--success); padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-play"></i> Aktiv</span>`;
+
         return `
-            <tr class="subscription-row" data-id="${sub.id}" style="border-bottom: 1px solid var(--border-color); font-size: 0.95rem; transition: background-color 0.2s;">
+            <tr class="subscription-row ${isPaused ? 'paused' : ''}" data-id="${sub.id}" style="border-bottom: 1px solid var(--border-color); font-size: 0.95rem; transition: background-color 0.2s; ${isPaused ? 'opacity: 0.7;' : ''}">
                 <td data-label="Titel" style="padding: 12px; font-weight: 600; vertical-align: middle;">${sub.titel ? escapeHTML(sub.titel) : '-'}</td>
                 <td data-label="Verlag" style="padding: 12px; vertical-align: middle;">${sub.verlag ? escapeHTML(sub.verlag) : '-'}</td>
                 <td data-label="Händler" style="padding: 12px; vertical-align: middle;">${sub.haendler ? escapeHTML(sub.haendler) : '-'}</td>
+                <td data-label="Status" style="padding: 12px; vertical-align: middle;">${statusBadge}</td>
                 <td data-label="Aktionen" style="padding: 12px; text-align: right; vertical-align: middle; white-space: nowrap;">
+                    <button class="btn-pause-sub" data-id="${sub.id}" title="${isPaused ? 'Abo fortsetzen' : 'Abo pausieren'}" style="background:none; border:none; color:${isPaused ? 'var(--success)' : 'var(--warning)'}; cursor:pointer; margin-right:12px; font-size: 1rem;">
+                        <i class="fa-solid ${isPaused ? 'fa-play' : 'fa-pause'}"></i>
+                    </button>
                     <button class="btn-edit-sub" data-id="${sub.id}" title="Bearbeiten" style="background:none; border:none; color:var(--secondary-color); cursor:pointer; margin-right:12px; font-size: 1rem;">
                         <i class="fa-solid fa-pen"></i>
                     </button>
@@ -158,6 +175,19 @@ async function updateSubscriptionsTable() {
     }).join('');
 
     // Bind item events
+    tbody.querySelectorAll('.btn-pause-sub').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const id = btn.dataset.id;
+            const sub = subs.find(s => s.id === id);
+            if (sub) {
+                const updatedSub = { ...sub, id: sub.id, pausiert: !sub.pausiert };
+                await db.saveSubscription(updatedSub);
+                updateSubscriptionsTable();
+            }
+        });
+    });
+
     tbody.querySelectorAll('.btn-edit-sub').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
@@ -204,6 +234,10 @@ async function openSubscriptionModal(sub = null) {
                                 <label for="sub-haendler">Händler</label>
                                 <input type="text" id="sub-haendler" class="form-control">
                             </div>
+                            <div class="form-group" style="margin-top: 16px; display: flex; align-items: center; gap: 10px;">
+                                <input type="checkbox" id="sub-pausiert" style="width: 18px; height: 18px; cursor: pointer;">
+                                <label for="sub-pausiert" style="cursor: pointer; margin: 0; user-select: none;">Abo vorübergehend pausieren</label>
+                            </div>
                         </form>
                     </div>
                     <div class="modal-footer">
@@ -229,7 +263,8 @@ async function openSubscriptionModal(sub = null) {
             const subData = {
                 titel: document.getElementById('sub-titel').value.trim(),
                 verlag: document.getElementById('sub-verlag').value.trim(),
-                haendler: document.getElementById('sub-haendler').value.trim()
+                haendler: document.getElementById('sub-haendler').value.trim(),
+                pausiert: document.getElementById('sub-pausiert').checked
             };
 
             const id = document.getElementById('sub-id').value;
@@ -251,12 +286,14 @@ async function openSubscriptionModal(sub = null) {
         document.getElementById('sub-titel').value = sub.titel || '';
         document.getElementById('sub-verlag').value = sub.verlag || '';
         document.getElementById('sub-haendler').value = sub.haendler || '';
+        document.getElementById('sub-pausiert').checked = !!sub.pausiert;
     } else {
         document.getElementById('sub-modal-title').textContent = 'Neues Abo';
         document.getElementById('sub-id').value = '';
         document.getElementById('sub-titel').value = '';
         document.getElementById('sub-verlag').value = '';
         document.getElementById('sub-haendler').value = '';
+        document.getElementById('sub-pausiert').checked = false;
     }
 
     // Lade Autocomplete-Vorschläge
