@@ -605,6 +605,60 @@ class Database {
         // Remove the reverted entry from history to avoid confusion / pollution
         await col.doc(entryId).delete();
     }
+
+    async revertChangelogBatch(entryIds) {
+        const col = this.getChangelogCollection();
+        if (!col) throw new Error("Nicht angemeldet.");
+        if (!Array.isArray(entryIds) || entryIds.length === 0) return { reverted: 0, failed: 0 };
+
+        const docPromises = entryIds.map(id => col.doc(id).get());
+        const docSnapshots = await Promise.all(docPromises);
+
+        const validEntries = docSnapshots
+            .filter(d => d.exists)
+            .map(d => ({ id: d.id, ...d.data() }));
+
+        // Sort reverse-chronologically (newest timestamp first) to maintain state consistency
+        validEntries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        let reverted = 0;
+        let failed = 0;
+
+        for (const entry of validEntries) {
+            try {
+                await this.revertChangelogEntry(entry.id);
+                reverted++;
+            } catch (err) {
+                console.error(`Fehler beim Rückgängig machen von Eintrag ${entry.id}:`, err);
+                failed++;
+            }
+        }
+
+        return { reverted, failed };
+    }
+
+    async revertChangelogTimeframe(timeframeMs) {
+        const col = this.getChangelogCollection();
+        if (!col) throw new Error("Nicht angemeldet.");
+
+        const cutoffDate = new Date(Date.now() - timeframeMs).toISOString();
+        let docs = [];
+        
+        try {
+            const snapshot = await col.where('timestamp', '>=', cutoffDate).orderBy('timestamp', 'desc').get();
+            docs = snapshot.docs;
+        } catch (err) {
+            // Fallback for query index limitations or mock environments
+            const snapshot = await col.get();
+            docs = snapshot.docs.filter(d => {
+                const data = d.data();
+                return data.timestamp && data.timestamp >= cutoffDate;
+            });
+        }
+
+        const entryIds = docs.map(d => d.id);
+        return await this.revertChangelogBatch(entryIds);
+    }
 }
 
 export const db = new Database();

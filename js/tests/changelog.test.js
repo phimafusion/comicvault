@@ -485,4 +485,111 @@ describe('Changelog Feature Tests', () => {
         expect(list.innerHTML).to.include('&lt;script id="xss-old-script"&gt;alert("old")&lt;/script&gt;Old');
         expect(list.innerHTML).to.include('&lt;script id="xss-new-script"&gt;alert("new")&lt;/script&gt;New');
     });
+
+    it('sollte mehrere Einträge über revertChangelogBatch in umgekehrt-chronologischer Reihenfolge rückgängig machen', async () => {
+        mockComics = [];
+        mockChangelog = [];
+
+        // Comic anlegen
+        const comicId = 'comic-bulk-1';
+        mockComics.push({ id: comicId, titel: 'Batman #1', preis: 10.00 });
+
+        const now = Date.now();
+
+        // 2 Aktionen hintereinander: update 1 (preis 10->15), update 2 (preis 15->20)
+        mockChangelog.push({
+            id: 'log-b1',
+            timestamp: new Date(now - 2000).toISOString(),
+            action: 'update',
+            comicId,
+            changes: [{ field: 'preis', old: 10.00, new: 15.00 }]
+        });
+
+        mockChangelog.push({
+            id: 'log-b2',
+            timestamp: new Date(now - 1000).toISOString(),
+            action: 'update',
+            comicId,
+            changes: [{ field: 'preis', old: 15.00, new: 20.00 }]
+        });
+
+        mockComics[0].preis = 20.00;
+
+        // Batch revert beider Einträge
+        const res = await db.revertChangelogBatch(['log-b1', 'log-b2']);
+
+        expect(res.reverted).to.equal(2);
+        expect(mockComics[0].preis).to.equal(10.00);
+        expect(mockChangelog.length).to.equal(0);
+    });
+
+    it('sollte Einträge eines Zeitraums über revertChangelogTimeframe gesammelt rückgängig machen', async () => {
+        mockComics = [];
+        mockChangelog = [];
+
+        const now = Date.now();
+        const comicId = 'comic-tf-1';
+
+        // 1 alter Eintrag (vor 2 Tagen)
+        mockChangelog.push({
+            id: 'log-old',
+            timestamp: new Date(now - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            action: 'create',
+            comicId: 'old-comic',
+            titel: 'Old Comic'
+        });
+        mockComics.push({ id: 'old-comic', titel: 'Old Comic' });
+
+        // 1 neuer Eintrag (vor 10 Minuten)
+        mockChangelog.push({
+            id: 'log-recent',
+            timestamp: new Date(now - 10 * 60 * 1000).toISOString(),
+            action: 'create',
+            comicId: 'recent-comic',
+            titel: 'Recent Comic'
+        });
+        mockComics.push({ id: 'recent-comic', titel: 'Recent Comic' });
+
+        // Revert 1 Stunde (60 * 60 * 1000)
+        const res = await db.revertChangelogTimeframe(60 * 60 * 1000);
+
+        expect(res.reverted).to.equal(1);
+        expect(mockComics.find(c => c.id === 'recent-comic')).to.be.undefined;
+        expect(mockComics.find(c => c.id === 'old-comic')).to.not.be.undefined;
+        expect(mockChangelog.length).to.equal(1);
+        expect(mockChangelog[0].id).to.equal('log-old');
+    });
+
+    it('sollte UI-Checkboxen und Sammel-Rückgängig Buttons korrekt im DOM steuern', async () => {
+        mockComics = [];
+        mockChangelog = [
+            { id: 'log-ui-1', timestamp: new Date().toISOString(), action: 'create', comicId: 'c1', titel: 'Comic 1' },
+            { id: 'log-ui-2', timestamp: new Date().toISOString(), action: 'create', comicId: 'c2', titel: 'Comic 2' }
+        ];
+
+        await renderChangelog(container);
+        await tick();
+
+        const btnSelected = container.querySelector('#btn-bulk-revert-selected');
+        const checkboxes = container.querySelectorAll('.changelog-checkbox');
+        const selectAllCb = container.querySelector('#changelog-select-all');
+
+        expect(btnSelected.style.display).to.equal('none');
+        expect(checkboxes.length).to.equal(2);
+
+        // Checkbox 1 aktivieren
+        checkboxes[0].click();
+        await tick();
+
+        expect(btnSelected.style.display).to.equal('inline-flex');
+        expect(container.querySelector('#changelog-selected-count').textContent).to.equal('1');
+
+        // Alle auswählen anklicken
+        selectAllCb.click();
+        await tick();
+
+        expect(checkboxes[0].checked).to.be.true;
+        expect(checkboxes[1].checked).to.be.true;
+        expect(container.querySelector('#changelog-selected-count').textContent).to.equal('2');
+    });
 });

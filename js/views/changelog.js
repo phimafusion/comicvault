@@ -93,13 +93,40 @@ export function renderChangelog(container) {
                 border-left: 4px solid var(--danger);
             }
         </style>
-        <div class="view-controls" style="padding-top: 32px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
-            <h2 class="view-title" style="margin: 0;">Änderungsverlauf</h2>
-            <button class="btn btn-secondary" id="btn-clear-changelog" style="color: var(--danger); border-color: var(--border-color); display: flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-trash-can"></i> Verlauf leeren
-            </button>
+        <div class="view-controls" style="padding-top: 32px; display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                <h2 class="view-title" style="margin: 0;">Änderungsverlauf</h2>
+                <button class="btn btn-secondary" id="btn-clear-changelog" style="color: var(--danger); border-color: var(--border-color); display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-trash-can"></i> Verlauf leeren
+                </button>
+            </div>
+            
+            <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); flex-wrap: wrap; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <span style="font-weight: 500; font-size: 0.9rem; color: var(--text-primary);"><i class="fa-solid fa-rotate-left"></i> Sammel-Rückgängig:</span>
+                    <select id="bulk-revert-timeframe-select" class="form-control" style="width: auto; padding: 6px 12px; font-size: 0.88rem;">
+                        <option value="1h">Letzte 1 Stunde</option>
+                        <option value="24h" selected>Letzte 24 Stunden</option>
+                        <option value="7d">Letzte 7 Tage</option>
+                        <option value="30d">Letzte 30 Tage</option>
+                    </select>
+                    <button class="btn btn-secondary" id="btn-bulk-revert-timeframe" style="padding: 6px 14px; font-size: 0.88rem;">
+                        <i class="fa-solid fa-history"></i> Zeitraum rückgängig
+                    </button>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <button class="btn btn-primary" id="btn-bulk-revert-selected" style="display: none; padding: 6px 14px; font-size: 0.88rem;">
+                        <i class="fa-solid fa-check-double"></i> Ausgewählte rückgängig machen (<span id="changelog-selected-count">0</span>)
+                    </button>
+                </div>
+            </div>
         </div>
         
+        <div id="changelog-select-all-wrap" style="display: none; align-items: center; gap: 8px; margin-bottom: 12px; padding: 0 4px; font-size: 0.85rem; color: var(--text-secondary);">
+            <input type="checkbox" id="changelog-select-all" style="cursor: pointer; width: 16px; height: 16px;">
+            <label for="changelog-select-all" style="cursor: pointer; user-select: none;">Alle auf dieser Seite auswählen</label>
+        </div>
+
         <div id="changelog-list" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
             <!-- Entries will be loaded here -->
         </div>
@@ -130,9 +157,74 @@ export function renderChangelog(container) {
         });
     }
 
-    // Event listener for revert action
+    // Event listener for timeframe bulk revert
+    const btnTimeframeRevert = container.querySelector('#btn-bulk-revert-timeframe') || document.getElementById('btn-bulk-revert-timeframe');
+    if (btnTimeframeRevert) {
+        btnTimeframeRevert.addEventListener('click', () => {
+            const tfSelect = container.querySelector('#bulk-revert-timeframe-select') || document.getElementById('bulk-revert-timeframe-select');
+            const tfVal = tfSelect ? tfSelect.value : '24h';
+            
+            let ms = 24 * 60 * 60 * 1000;
+            let label = 'den letzten 24 Stunden';
+
+            if (tfVal === '1h') {
+                ms = 60 * 60 * 1000;
+                label = 'der letzten 1 Stunde';
+            } else if (tfVal === '7d') {
+                ms = 7 * 24 * 60 * 60 * 1000;
+                label = 'den letzten 7 Tagen';
+            } else if (tfVal === '30d') {
+                ms = 30 * 24 * 60 * 60 * 1000;
+                label = 'den letzten 30 Tagen';
+            }
+
+            showBulkRevertConfirmModal({
+                type: 'timeframe',
+                timeframeMs: ms,
+                timeframeLabel: label,
+                onSuccess: () => loadEntries(currentLimit)
+            });
+        });
+    }
+
+    // Event listener for selected bulk revert
+    const btnSelectedRevert = container.querySelector('#btn-bulk-revert-selected') || document.getElementById('btn-bulk-revert-selected');
+    if (btnSelectedRevert) {
+        btnSelectedRevert.addEventListener('click', () => {
+            const checkedBoxes = Array.from(document.querySelectorAll('.changelog-checkbox:checked'));
+            const ids = checkedBoxes.map(cb => cb.dataset.entryId).filter(Boolean);
+            
+            if (ids.length === 0) return;
+
+            showBulkRevertConfirmModal({
+                type: 'selected',
+                entryIds: ids,
+                onSuccess: () => loadEntries(currentLimit)
+            });
+        });
+    }
+
+    // Event listener for select all checkbox
+    const selectAllCheckbox = container.querySelector('#changelog-select-all') || document.getElementById('changelog-select-all');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            document.querySelectorAll('.changelog-checkbox').forEach(cb => {
+                cb.checked = isChecked;
+            });
+            updateBulkSelectionUI();
+        });
+    }
+
+    // Event listener for revert action & checkbox clicks
     const listContainer = container.querySelector('#changelog-list') || document.getElementById('changelog-list');
     if (listContainer) {
+        listContainer.addEventListener('change', (e) => {
+            if (e.target.classList.contains('changelog-checkbox')) {
+                updateBulkSelectionUI();
+            }
+        });
+
         listContainer.addEventListener('click', async (e) => {
             const revertBtn = e.target.closest('.btn-revert');
             if (!revertBtn) return;
@@ -160,9 +252,29 @@ export function renderChangelog(container) {
     }
 }
 
+function updateBulkSelectionUI() {
+    const checkedBoxes = document.querySelectorAll('.changelog-checkbox:checked');
+    const btnSelected = document.getElementById('btn-bulk-revert-selected');
+    const countSpan = document.getElementById('changelog-selected-count');
+    const selectAllCb = document.getElementById('changelog-select-all');
+
+    const totalBoxes = document.querySelectorAll('.changelog-checkbox');
+
+    if (countSpan) countSpan.textContent = checkedBoxes.length;
+
+    if (btnSelected) {
+        btnSelected.style.display = checkedBoxes.length > 0 ? 'inline-flex' : 'none';
+    }
+
+    if (selectAllCb && totalBoxes.length > 0) {
+        selectAllCb.checked = checkedBoxes.length === totalBoxes.length;
+    }
+}
+
 async function loadEntries(limit) {
     const listContainer = document.getElementById('changelog-list');
     const footerContainer = document.getElementById('changelog-footer');
+    const selectAllWrap = document.getElementById('changelog-select-all-wrap');
     if (!listContainer) return;
 
     listContainer.innerHTML = '<div style="display:flex; justify-content:center; padding:50px;"><i class="fa-solid fa-circle-notch fa-spin fa-2x"></i></div>';
@@ -179,8 +291,12 @@ async function loadEntries(limit) {
                 </div>
             `;
             footerContainer.style.display = 'none';
+            if (selectAllWrap) selectAllWrap.style.display = 'none';
+            updateBulkSelectionUI();
             return;
         }
+
+        if (selectAllWrap) selectAllWrap.style.display = 'flex';
 
         let html = '';
         entries.forEach(entry => {
@@ -233,22 +349,25 @@ async function loadEntries(limit) {
             html += `
                 <div class="changelog-card fade-in" style="background: var(--bg-surface); border-left: 4px solid ${borderColor}; border-radius: var(--radius-md); padding: 16px 20px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border-color); border-left-width: 4px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                        <span style="font-weight: 700; font-size: 1.05rem; color: var(--text-primary); font-family: var(--font-display);">
-                            ${entry.serie || 'Unbekannt'} ${entry.nummer !== undefined && entry.nummer !== null ? '#' + entry.nummer : ''}
-                            ${entry.titel ? `<span style="font-weight: 500; font-size: 0.9rem; color: var(--text-secondary); margin-left: 8px;">(${entry.titel})</span>` : ''}
-                        </span>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" class="changelog-checkbox" data-entry-id="${entry.id}" style="cursor: pointer; width: 18px; height: 18px;">
+                            <span style="font-weight: 700; font-size: 1.05rem; color: var(--text-primary); font-family: var(--font-display);">
+                                ${entry.serie || 'Unbekannt'} ${entry.nummer !== undefined && entry.nummer !== null ? '#' + entry.nummer : ''}
+                                ${entry.titel ? `<span style="font-weight: 500; font-size: 0.9rem; color: var(--text-secondary); margin-left: 8px;">(${entry.titel})</span>` : ''}
+                            </span>
+                        </div>
                         <span style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 600;">
                             <i class="fa-regular fa-clock" style="margin-right: 4px;"></i> ${displayDateTime(entry.timestamp)}
                         </span>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-left: 28px;">
                         <span class="badge" style="background-color: ${badgeBg}; color: ${badgeColor}; font-weight: bold; font-size: 0.75rem; padding: 4px 10px; border-radius: var(--radius-full); text-transform: uppercase; letter-spacing: 0.5px;">
                             <i class="${actionIcon}"></i> ${actionLabel}
                         </span>
                         ${entry.verlag ? `<span style="font-size: 0.8rem; color: var(--text-secondary);"><i class="fa-solid fa-building" style="opacity:0.6; margin-right:4px;"></i>${escapeHTML(entry.verlag)}</span>` : ''}
                         <span style="font-size: 0.8rem; color: var(--text-secondary); opacity: 0.7;">ID: ${entry.comicId}</span>
                     </div>
-                    ${diffHtml ? `<div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-color); font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">${diffHtml}</div>` : ''}
+                    ${diffHtml ? `<div style="margin-top: 8px; padding-top: 8px; padding-left: 28px; border-top: 1px dashed var(--border-color); font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">${diffHtml}</div>` : ''}
                     <div style="display: flex; justify-content: flex-end; margin-top: 4px; border-top: 1px solid rgba(255, 255, 255, 0.03); padding-top: 8px;">
                         ${revertBtnHtml}
                     </div>
@@ -257,6 +376,7 @@ async function loadEntries(limit) {
         });
 
         listContainer.innerHTML = html;
+        updateBulkSelectionUI();
 
         // Show/hide load more footer
         if (entries.length === limit) {
@@ -276,6 +396,73 @@ async function loadEntries(limit) {
         `;
         footerContainer.style.display = 'none';
     }
+}
+
+function showBulkRevertConfirmModal({ type, timeframeMs, timeframeLabel, entryIds = [], onSuccess }) {
+    const existing = document.getElementById('changelog-bulk-revert-modal');
+    if (existing) existing.remove();
+
+    const isTimeframe = type === 'timeframe';
+    const title = isTimeframe ? `Änderungen aus ${timeframeLabel} rückgängig machen` : `${entryIds.length} ausgewählte Änderungen rückgängig machen`;
+    const description = isTimeframe
+        ? `Möchtest du wirklich alle Änderungen aus <strong>${timeframeLabel}</strong> gesammelt rückgängig machen?`
+        : `Möchtest du wirklich die <strong>${entryIds.length} ausgewählten Änderungen</strong> gesammelt rückgängig machen?`;
+
+    const modalHtml = `
+        <div id="changelog-bulk-revert-modal" class="modal-overlay" style="display: flex; z-index: 2100;">
+            <div class="modal-content" style="max-width: 480px;">
+                <div class="modal-header">
+                    <h2>${title}</h2>
+                    <button class="close-btn" id="changelog-bulk-modal-close"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="modal-body" style="padding: 24px;">
+                    <p style="margin: 0 0 12px 0; font-size: 1rem; color: var(--text-main); line-height: 1.5;">
+                        ${description}
+                    </p>
+                    <p style="margin: 0; font-size: 0.85rem; color: var(--secondary-color); font-weight: 500;">
+                        <i class="fa-solid fa-info-circle"></i> Die Änderungen werden in streng umgekehrt-chronologischer Reihenfolge verarbeitet, um den Ursprungszustand wiederherzustellen.
+                    </p>
+                </div>
+                <div class="modal-footer" style="padding: 16px 24px;">
+                    <button class="btn btn-secondary" id="changelog-bulk-modal-cancel">Abbrechen</button>
+                    <button class="btn btn-primary" id="changelog-bulk-modal-confirm">
+                        <i class="fa-solid fa-rotate-left"></i> Jetzt rückgängig machen
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = document.getElementById('changelog-bulk-revert-modal');
+    const closeModal = () => modal.remove();
+
+    document.getElementById('changelog-bulk-modal-close').addEventListener('click', closeModal);
+    document.getElementById('changelog-bulk-modal-cancel').addEventListener('click', closeModal);
+
+    document.getElementById('changelog-bulk-modal-confirm').addEventListener('click', async () => {
+        const confirmBtn = document.getElementById('changelog-bulk-modal-confirm');
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verarbeite Rückabwicklung...';
+
+        try {
+            let res;
+            if (isTimeframe) {
+                res = await db.revertChangelogTimeframe(timeframeMs);
+            } else {
+                res = await db.revertChangelogBatch(entryIds);
+            }
+
+            closeModal();
+            showToast(`${res.reverted} Änderung(en) erfolgreich rückgängig gemacht.`);
+            if (onSuccess) onSuccess();
+        } catch (error) {
+            console.error("Fehler beim Sammel-Rückgängigmachen:", error);
+            showToast(error.message || 'Fehler beim Sammel-Rückgängigmachen.', 'error');
+            closeModal();
+        }
+    });
 }
 
 function displayDateTime(dateStr) {
