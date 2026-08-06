@@ -90,6 +90,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
         // Ersten Wunsch transferieren (Batman: The Long Halloween, ID = w1)
         transferBtns[0].click();
         await tick();
+        await tick();
 
         // Überprüfen, ob das Modal geöffnet wurde
         const modal = document.getElementById('comic-modal');

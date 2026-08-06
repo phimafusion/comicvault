@@ -111,6 +111,7 @@ describe('Changelog Feature Tests', () => {
                     get: async () => {
                         const found = mockChangelog.find(l => l.id === id);
                         return {
+                            id,
                             exists: !!found,
                             data: () => {
                                 if (!found) return null;
@@ -126,6 +127,8 @@ describe('Changelog Feature Tests', () => {
                 }),
                 get: async () => ({
                     docs: mockChangelog.map(log => ({
+                        id: log.id,
+                        data: () => ({ ...log }),
                         ref: {
                             delete: async () => {
                                 mockChangelog = mockChangelog.filter(l => l.id !== log.id);

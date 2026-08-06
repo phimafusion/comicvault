@@ -615,8 +615,13 @@ class Database {
         const docSnapshots = await Promise.all(docPromises);
 
         const validEntries = docSnapshots
-            .filter(d => d.exists)
-            .map(d => ({ id: d.id, ...d.data() }));
+            .filter(d => d && (d.exists !== false))
+            .map(d => {
+                const data = typeof d.data === 'function' ? d.data() : d;
+                const id = d.id || (data ? data.id : null);
+                return { ...data, id };
+            })
+            .filter(e => e.id);
 
         // Sort reverse-chronologically (newest timestamp first) to maintain state consistency
         validEntries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -646,17 +651,23 @@ class Database {
         
         try {
             const snapshot = await col.where('timestamp', '>=', cutoffDate).orderBy('timestamp', 'desc').get();
-            docs = snapshot.docs;
+            docs = snapshot.docs || [];
         } catch (err) {
             // Fallback for query index limitations or mock environments
             const snapshot = await col.get();
-            docs = snapshot.docs.filter(d => {
-                const data = d.data();
-                return data.timestamp && data.timestamp >= cutoffDate;
+            docs = snapshot.docs || [];
+            docs = docs.filter(d => {
+                const data = typeof d.data === 'function' ? d.data() : d;
+                return data && data.timestamp && data.timestamp >= cutoffDate;
             });
         }
 
-        const entryIds = docs.map(d => d.id);
+        const entryIds = docs.map(d => {
+            if (d.id) return d.id;
+            const data = typeof d.data === 'function' ? d.data() : d;
+            return data ? data.id : null;
+        }).filter(Boolean);
+
         return await this.revertChangelogBatch(entryIds);
     }
 }
