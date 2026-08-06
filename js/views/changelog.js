@@ -116,22 +116,29 @@ export function renderChangelog(container) {
     loadEntries(currentLimit);
 
     // Event listener for clear changelog
-    document.getElementById('btn-clear-changelog').addEventListener('click', showClearConfirmationModal);
+    const btnClear = container.querySelector('#btn-clear-changelog') || document.getElementById('btn-clear-changelog');
+    if (btnClear) {
+        btnClear.addEventListener('click', showClearConfirmationModal);
+    }
 
     // Event listener for load more
-    document.getElementById('btn-changelog-load-more').addEventListener('click', () => {
-        currentLimit += 50;
-        loadEntries(currentLimit);
-    });
+    const btnLoadMore = container.querySelector('#btn-changelog-load-more') || document.getElementById('btn-changelog-load-more');
+    if (btnLoadMore) {
+        btnLoadMore.addEventListener('click', () => {
+            currentLimit += 50;
+            loadEntries(currentLimit);
+        });
+    }
 
     // Event listener for revert action
-    const listContainer = document.getElementById('changelog-list');
-    listContainer.addEventListener('click', async (e) => {
-        const revertBtn = e.target.closest('.btn-revert');
-        if (!revertBtn) return;
+    const listContainer = container.querySelector('#changelog-list') || document.getElementById('changelog-list');
+    if (listContainer) {
+        listContainer.addEventListener('click', async (e) => {
+            const revertBtn = e.target.closest('.btn-revert');
+            if (!revertBtn) return;
 
-        const entryId = revertBtn.dataset.entryId;
-        if (!entryId) return;
+            const entryId = revertBtn.dataset.entryId;
+            if (!entryId) return;
 
         revertBtn.disabled = true;
         const originalContent = revertBtn.innerHTML;
