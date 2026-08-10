@@ -640,19 +640,25 @@ export async function updateGrid() {
             const compSeries = sA.localeCompare(sB, undefined, { numeric: true, sensitivity: 'base' });
             if (compSeries !== 0) return sortOrder === 'asc' ? compSeries : -compSeries;
             
-            // Zusätzliche Sortierung nach Jahr (Aquaman 2012 vor Aquaman 2017)
+            // Bei gleichen Serien nach Heftnummer sortieren (falls unterschiedlich)
+            const nA = (a.nummer !== null && a.nummer !== undefined && a.nummer !== '') ? Number(a.nummer) : null;
+            const nB = (b.nummer !== null && b.nummer !== undefined && b.nummer !== '') ? Number(b.nummer) : null;
+            if (nA !== null && nB !== null && nA !== nB) {
+                return sortOrder === 'asc' ? nA - nB : nB - nA;
+            }
+
+            // Nach Einzelband-Titel sortieren (z.B. Bände innerhalb derselben Reihe/Serie)
+            const tA = (a.titel || '').toLowerCase();
+            const tB = (b.titel || '').toLowerCase();
+            const compTitle = tA.localeCompare(tB, undefined, { numeric: true, sensitivity: 'base' });
+            if (compTitle !== 0) return sortOrder === 'asc' ? compTitle : -compTitle;
+
+            // Als letzter Tie-Breaker das Erscheinungsjahr vergleichen
             const jA = a.jahr || 0;
             const jB = b.jahr || 0;
             if (jA !== jB) return sortOrder === 'asc' ? jA - jB : jB - jA;
 
-            const nA = a.nummer || 0;
-            const nB = b.nummer || 0;
-            if (nA !== nB) return sortOrder === 'asc' ? nA - nB : nB - nA;
-
-            const tA = (a.titel || '').toLowerCase();
-            const tB = (b.titel || '').toLowerCase();
-            const compTitle = tA.localeCompare(tB, undefined, { numeric: true, sensitivity: 'base' });
-            return sortOrder === 'asc' ? compTitle : -compTitle;
+            return 0;
         }
 
         if (['kaufdatum', 'gelesen_am', 'updated_at', 'created_at'].includes(sortBy)) {

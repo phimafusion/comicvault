@@ -463,25 +463,31 @@ describe('ComicVault Database Caching Tests', () => {
     });
 
     describe('Collection Sorting Logic', () => {
-        it('sollte Comics in derselben Serie alphabetisch nach Titel sortieren', async () => {
+        it('sollte Comics in derselben Serie alphabetisch nach Titel sortieren (auch bei unterschiedlichen Erscheinungsjahren)', async () => {
             const seriesComics = [
-                { id: '10', titel: 'Mimi\'s Tales of Terror', serie: 'Junji Ito Deluxe Edition', verlag: 'Carlsen', me: 1 },
-                { id: '11', titel: 'Alley', serie: 'Junji Ito Deluxe Edition', verlag: 'Carlsen', me: 1 },
-                { id: '12', titel: 'Dissolving Classroom', serie: 'Junji Ito Deluxe Edition', verlag: 'Carlsen', me: 1 }
+                { id: '10', titel: 'Mimi\'s Tales of Terror', serie: 'Junji Ito Deluxe Edition', jahr: 2026, nummer: 1 },
+                { id: '11', titel: 'Alley', serie: 'Junji Ito Deluxe Edition', jahr: 2026, nummer: 1 },
+                { id: '12', titel: 'Tomb Town', serie: 'Junji Ito Deluxe Edition', jahr: 2023, nummer: 1 }
             ];
 
             const testEnvSort = setupTestEnv({ mockComics: seriesComics });
             await renderCollection(testEnvSort.viewContainer);
             await tick();
 
-            // Titel-Spalte zum Sortieren klicken (aufsteigend)
             const titleHeader = testEnvSort.viewContainer.querySelector('.sortable-header[data-sort="titel"]');
             expect(titleHeader).to.not.be.null;
+
+            // Klick 1: aufsteigend A -> Z
             titleHeader.click();
             await tick();
+            const titlesAsc = Array.from(testEnvSort.viewContainer.querySelectorAll('.comic-title')).map(el => el.textContent.trim());
+            expect(titlesAsc).to.deep.equal(['Alley', 'Mimi\'s Tales of Terror', 'Tomb Town']);
 
-            const titles = Array.from(testEnvSort.viewContainer.querySelectorAll('.comic-title')).map(el => el.textContent.trim());
-            expect(titles).to.deep.equal(['Alley', 'Dissolving Classroom', 'Mimi\'s Tales of Terror']);
+            // Klick 2: absteigend Z -> A
+            titleHeader.click();
+            await tick();
+            const titlesDesc = Array.from(testEnvSort.viewContainer.querySelectorAll('.comic-title')).map(el => el.textContent.trim());
+            expect(titlesDesc).to.deep.equal(['Tomb Town', 'Mimi\'s Tales of Terror', 'Alley']);
         });
 
         it('sollte nach Datumsfeldern (z.B. gelesen_am) chronologisch sortieren', async () => {
