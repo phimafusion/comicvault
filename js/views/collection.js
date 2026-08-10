@@ -509,6 +509,8 @@ export function attachCollectionEvents() {
 }
 
 export function resetCollectionState() {
+    visibleFields = JSON.parse(localStorage.getItem('comicvault_visible_fields')) || JSON.parse(JSON.stringify(defaultVisibleFields));
+    if (!visibleFields.columnWidths) visibleFields.columnWidths = {};
     sortBy = 'titel';
     sortOrder = 'asc';
     searchTerm = '';
