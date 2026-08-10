@@ -81,21 +81,22 @@ export function findDuplicates(comics, ignoredList = []) {
             const titlesMatch = normTitleA === normTitleB;
             const seriesMatch = normSerieA === normSerieB;
             const numbersMatch = numA === numB;
-            const publishersMatch = verlagA === verlagB;
+            const publishersMatchExact = verlagA === verlagB;
+            const publishersMatchCompatible = (!verlagA || !verlagB || verlagA === verlagB);
             const formatsMatch = formatA === formatB;
 
             let matchType = null;
 
-            // Exaktes Duplikat: Titel, Serie, Nummer, Verlag und Format sind identisch
-            if (titlesMatch && seriesMatch && numbersMatch && publishersMatch && formatsMatch) {
+            // Exaktes Duplikat: Titel, Serie, Nummer, Verlag UND Format sind exakt identisch
+            if (titlesMatch && seriesMatch && numbersMatch && publishersMatchExact && formatsMatch) {
                 matchType = 'exact';
             }
-            // Gleicher Band: Serie, Nummer und Titel passen überein
-            else if (titlesMatch && seriesMatch && numbersMatch) {
+            // Gleicher Band: Serie, Nummer, Titel UND kompatibler Verlag (gleicher oder unbelegter Verlag)
+            else if (titlesMatch && seriesMatch && numbersMatch && publishersMatchCompatible) {
                 matchType = 'issue';
             }
-            // Ähnlicher Titel/Serie mit gleicher Heftnummer
-            else if (numbersMatch && (isSimilarText(cA.titel, cB.titel) || isSimilarText(cA.serie, cB.serie))) {
+            // Ähnlicher Titel/Serie mit gleicher Heftnummer und kompatiblem Verlag
+            else if (numbersMatch && publishersMatchCompatible && (isSimilarText(cA.titel, cB.titel) || isSimilarText(cA.serie, cB.serie))) {
                 matchType = 'similar';
             }
 

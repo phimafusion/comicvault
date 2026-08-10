@@ -48,7 +48,7 @@ describe('ComicVault Duplicate Finder Tests', () => {
             const mockComics = [
                 { id: '1', titel: 'Spider-Man #1', serie: 'Spider-Man', nummer: '1', verlag: 'Marvel', format: 'Heft' },
                 { id: '2', titel: 'Spider-Man #1', serie: 'Spider-Man', nummer: '1', verlag: 'Marvel', format: 'Heft' }, // Exakt 1 & 2
-                { id: '3', titel: 'Spider-Man #1', serie: 'Spider-Man', nummer: '1', verlag: 'Panini', format: 'Hardcover' }, // Gleicher Band 1 & 3
+                { id: '3', titel: 'Spider-Man #1', serie: 'Spider-Man', nummer: '1', verlag: 'Marvel', format: 'Hardcover' }, // Gleicher Band 1 & 3 (gleicher Verlag)
                 { id: '4', titel: 'Batman #10', serie: 'Batman', nummer: '10', verlag: 'DC', format: 'Heft' }
             ];
 
@@ -58,6 +58,16 @@ describe('ComicVault Duplicate Finder Tests', () => {
             const exactMatch = duplicates.find(p => p.matchType === 'exact');
             expect(exactMatch).to.not.be.undefined;
             expect([exactMatch.comicA.id, exactMatch.comicB.id]).to.include.members(['1', '2']);
+        });
+
+        it('sollte verschiedene Verlage (z. B. Marvel vs. DC) nicht als Duplikate werten', () => {
+            const mockComics = [
+                { id: '10', titel: 'Crossover #1', serie: 'Crossover', nummer: '1', verlag: 'Marvel', format: 'Heft' },
+                { id: '11', titel: 'Crossover #1', serie: 'Crossover', nummer: '1', verlag: 'DC', format: 'Heft' }
+            ];
+
+            const duplicates = findDuplicates(mockComics, []);
+            expect(duplicates.length).to.equal(0);
         });
 
         it('sollte ignorierten Paaren (Kein Duplikat) das Flag isIgnored setzen', () => {
