@@ -117,5 +117,30 @@ describe('ComicVault Duplicate Finder Tests', () => {
             const pairKey = getPairKey('201', '202');
             expect(ignoredList).to.include(pairKey);
         });
+
+        it('sollte standardmäßig auf exakte Duplikate filtern', async () => {
+            const mockComics = [
+                // Exakt
+                { id: '301', titel: 'Spawn #1', serie: 'Spawn', nummer: '1', verlag: 'Image', format: 'Heft' },
+                { id: '302', titel: 'Spawn #1', serie: 'Spawn', nummer: '1', verlag: 'Image', format: 'Heft' },
+                // Nur gleiche Bände (abweichendes Format)
+                { id: '303', titel: 'Spawn #1', serie: 'Spawn', nummer: '1', verlag: 'Panini', format: 'Hardcover' }
+            ];
+
+            testEnv = setupTestEnv({ mockComics });
+            container = testEnv.viewContainer;
+
+            await renderDuplicates(container);
+            await tick();
+
+            // Der aktive Filter-Button sollte "Exakte Treffer" sein
+            const activeFilterBtn = container.querySelector('.btn-filter-match.btn-primary');
+            expect(activeFilterBtn).to.not.be.null;
+            expect(activeFilterBtn.dataset.match).to.equal('exact');
+
+            // Es sollte 1 Karte (exaktes Paar 301 & 302) gerendert werden
+            const cards = container.querySelectorAll('.duplicate-pair-card');
+            expect(cards.length).to.equal(1);
+        });
     });
 });

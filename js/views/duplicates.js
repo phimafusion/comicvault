@@ -3,6 +3,7 @@ import { escapeHTML, displayDate, renderStars, getPlaceholderImage } from '../ut
 import { openModal } from './form.js';
 
 let activeTab = 'candidates'; // 'candidates' oder 'ignored'
+let activeMatchTypeFilter = 'exact'; // Standardmäßig auf 'exact' gefiltert!
 let eventsAttached = false;
 let currentDuplicateGroups = [];
 let activeMergePair = null;
@@ -207,17 +208,64 @@ export async function renderDuplicates(container) {
 }
 
 function renderCandidatesTab(candidates) {
-    if (candidates.length === 0) {
+    let filtered = candidates;
+    if (activeMatchTypeFilter !== 'all') {
+        filtered = candidates.filter(p => p.matchType === activeMatchTypeFilter);
+    }
+
+    const exactCount = candidates.filter(p => p.matchType === 'exact').length;
+    const issueCount = candidates.filter(p => p.matchType === 'issue').length;
+    const similarCount = candidates.filter(p => p.matchType === 'similar').length;
+
+    const filterBarHtml = `
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; background: var(--bg-card); padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">
+                    <i class="fa-solid fa-filter" style="margin-right: 6px; color: var(--primary-color);"></i>Gefiltert nach:
+                </span>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button class="btn ${activeMatchTypeFilter === 'exact' ? 'btn-primary' : 'btn-secondary'} btn-filter-match" data-match="exact" style="font-size: 0.8rem; padding: 5px 12px;">
+                        Exakte Treffer (${exactCount})
+                    </button>
+                    <button class="btn ${activeMatchTypeFilter === 'issue' ? 'btn-primary' : 'btn-secondary'} btn-filter-match" data-match="issue" style="font-size: 0.8rem; padding: 5px 12px;">
+                        Gleiche Bände (${issueCount})
+                    </button>
+                    <button class="btn ${activeMatchTypeFilter === 'similar' ? 'btn-primary' : 'btn-secondary'} btn-filter-match" data-match="similar" style="font-size: 0.8rem; padding: 5px 12px;">
+                        Ähnliche Titel (${similarCount})
+                    </button>
+                    <button class="btn ${activeMatchTypeFilter === 'all' ? 'btn-primary' : 'btn-secondary'} btn-filter-match" data-match="all" style="font-size: 0.8rem; padding: 5px 12px;">
+                        Alle Treffer (${candidates.length})
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    if (filtered.length === 0) {
+        let emptyMsg = 'Keine Duplikate gefunden';
+        let emptyDesc = 'Deine Sammlung ist sauber und enthält keine potenziellen doppelten Einträge.';
+        if (activeMatchTypeFilter === 'exact') {
+            emptyMsg = 'Keine exakten Duplikate gefunden';
+            emptyDesc = 'Es wurden keine 100% identischen Einträge gefunden. Klicke oben auf "Gleiche Bände" oder "Alle Treffer", um weitere Kandidaten zu prüfen.';
+        } else if (activeMatchTypeFilter === 'issue') {
+            emptyMsg = 'Keine gleichen Bände gefunden';
+            emptyDesc = 'Es wurden keine gleichen Bände mit abweichendem Format/Verlag gefunden.';
+        } else if (activeMatchTypeFilter === 'similar') {
+            emptyMsg = 'Keine ähnlichen Titel gefunden';
+            emptyDesc = 'Es wurden keine Titel mit ähnlicher Schreibweise gefunden.';
+        }
+
         return `
+            ${filterBarHtml}
             <div style="text-align: center; padding: 60px 20px; background: var(--bg-card); border-radius: 12px; border: 1px dashed var(--border-color);">
                 <i class="fa-solid fa-circle-check" style="font-size: 3rem; color: var(--success); margin-bottom: 16px;"></i>
-                <h3 style="margin: 0 0 8px 0; color: var(--text-main);">Keine Duplikate gefunden</h3>
-                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Deine Sammlung ist sauber und enthält keine potenziellen doppelten Einträge.</p>
+                <h3 style="margin: 0 0 8px 0; color: var(--text-main);">${emptyMsg}</h3>
+                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">${emptyDesc}</p>
             </div>
         `;
     }
 
-    return candidates.map(pair => renderPairCard(pair, false)).join('');
+    return filterBarHtml + filtered.map(pair => renderPairCard(pair, false)).join('');
 }
 
 function renderIgnoredTab(ignoredPairs) {
@@ -465,6 +513,14 @@ export function attachDuplicatesEvents(container) {
         };
     }
 
+    // Match Type Filter Buttons
+    container.querySelectorAll('.btn-filter-match').forEach(btn => {
+        btn.onclick = () => {
+            activeMatchTypeFilter = btn.dataset.match;
+            renderDuplicates(container);
+        };
+    });
+
     // Refresh Scan Button
     const btnRefresh = container.querySelector('#btn-refresh-duplicates');
     if (btnRefresh) {
@@ -598,6 +654,8 @@ export function attachDuplicatesEvents(container) {
 }
 
 export function cleanupDuplicates() {
+    activeTab = 'candidates';
+    activeMatchTypeFilter = 'exact';
     activeMergePair = null;
     const mergeModal = document.getElementById('duplicate-merge-modal');
     if (mergeModal) mergeModal.style.display = 'none';
