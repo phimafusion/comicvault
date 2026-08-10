@@ -465,9 +465,9 @@ describe('ComicVault Database Caching Tests', () => {
     describe('Collection Sorting Logic', () => {
         it('sollte Comics in derselben Serie alphabetisch nach Titel sortieren (auch bei unterschiedlichen Erscheinungsjahren)', async () => {
             const seriesComics = [
-                { id: '10', titel: 'Mimi\'s Tales of Terror', serie: 'Junji Ito Deluxe Edition', jahr: 2026, nummer: 1 },
-                { id: '11', titel: 'Alley', serie: 'Junji Ito Deluxe Edition', jahr: 2026, nummer: 1 },
-                { id: '12', titel: 'Tomb Town', serie: 'Junji Ito Deluxe Edition', jahr: 2023, nummer: 1 }
+                { id: '10', titel: 'Mimi\'s Tales of Terror', serie: 'Junji Ito Deluxe Edition', jahr: 2026, nummer: 1, bestand: 'vorhanden' },
+                { id: '11', titel: 'Alley', serie: 'Junji Ito Deluxe Edition', jahr: 2026, nummer: 1, bestand: 'vorhanden' },
+                { id: '12', titel: 'Tomb Town', serie: 'Junji Ito Deluxe Edition', jahr: 2023, nummer: 1, bestand: 'vorhanden' }
             ];
 
             const testEnvSort = setupTestEnv({ mockComics: seriesComics });
@@ -492,10 +492,10 @@ describe('ComicVault Database Caching Tests', () => {
 
         it('sollte nach Datumsfeldern (z.B. gelesen_am) chronologisch sortieren', async () => {
             const dateComics = [
-                { id: '20', titel: 'Book A', gelesen_am: '02.05.26' },
-                { id: '21', titel: 'Book B', gelesen_am: '09.10.24' },
-                { id: '22', titel: 'Book C', gelesen_am: '08.02.25' },
-                { id: '23', titel: 'Book D', gelesen_am: '' }
+                { id: '20', titel: 'Book A', gelesen_am: '02.05.26', bestand: 'vorhanden' },
+                { id: '21', titel: 'Book B', gelesen_am: '09.10.24', bestand: 'vorhanden' },
+                { id: '22', titel: 'Book C', gelesen_am: '08.02.25', bestand: 'vorhanden' },
+                { id: '23', titel: 'Book D', gelesen_am: '', bestand: 'vorhanden' }
             ];
 
             const testEnvDate = setupTestEnv({ mockComics: dateComics });
