@@ -38,6 +38,7 @@ let visibleFields = JSON.parse(localStorage.getItem('comicvault_visible_fields')
 if (!visibleFields.columnWidths) visibleFields.columnWidths = {};
 
 export async function renderCollection(container) {
+    resetCollectionState();
     needsAutoFit = true;
     const comics = await db.getAllComics();
 
