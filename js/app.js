@@ -9,6 +9,7 @@ import { renderImport } from './views/import.js';
 import { renderSettings } from './views/settings.js';
 import { renderChangelog } from './views/changelog.js';
 import { renderAiInsights } from './views/aiInsights.js';
+import { renderDuplicates, cleanupDuplicates } from './views/duplicates.js';
 import { openModal } from './views/form.js';
 
 export class App {
@@ -253,6 +254,8 @@ export class App {
             cleanupWishlist();
         } else if (this.currentView === 'subscriptions') {
             cleanupSubscriptions();
+        } else if (this.currentView === 'duplicates') {
+            cleanupDuplicates();
         }
 
         this.currentView = view;
@@ -300,6 +303,9 @@ export class App {
                 break;
             case 'changelog':
                 renderChangelog(this.viewContainer);
+                break;
+            case 'duplicates':
+                renderDuplicates(this.viewContainer);
                 break;
             default:
                 this.viewContainer.innerHTML = `<h2>${view}</h2><p>Befindet sich im Aufbau...</p>`;
