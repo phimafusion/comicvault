@@ -637,25 +637,61 @@ export async function updateGrid() {
         if (sortBy === 'titel') {
             const sA = (a.serie || a.titel || '').toLowerCase();
             const sB = (b.serie || b.titel || '').toLowerCase();
-            if (sA !== sB) return sortOrder === 'asc' ? sA.localeCompare(sB) : sB.localeCompare(sA);
+            const compSeries = sA.localeCompare(sB, undefined, { numeric: true, sensitivity: 'base' });
+            if (compSeries !== 0) return sortOrder === 'asc' ? compSeries : -compSeries;
             
             // Zusätzliche Sortierung nach Jahr (Aquaman 2012 vor Aquaman 2017)
             const jA = a.jahr || 0;
             const jB = b.jahr || 0;
             if (jA !== jB) return sortOrder === 'asc' ? jA - jB : jB - jA;
 
-            return sortOrder === 'asc' ? (a.nummer || 0) - (b.nummer || 0) : (b.nummer || 0) - (a.nummer || 0);
+            const nA = a.nummer || 0;
+            const nB = b.nummer || 0;
+            if (nA !== nB) return sortOrder === 'asc' ? nA - nB : nB - nA;
+
+            const tA = (a.titel || '').toLowerCase();
+            const tB = (b.titel || '').toLowerCase();
+            const compTitle = tA.localeCompare(tB, undefined, { numeric: true, sensitivity: 'base' });
+            return sortOrder === 'asc' ? compTitle : -compTitle;
+        }
+
+        if (['kaufdatum', 'gelesen_am', 'updated_at', 'created_at'].includes(sortBy)) {
+            const dA = parseToDate(valA);
+            const dB = parseToDate(valB);
+            
+            if (!dA && !dB) return 0;
+            if (!dA) return 1;
+            if (!dB) return -1;
+
+            const timeDiff = dA.getTime() - dB.getTime();
+            if (timeDiff !== 0) return sortOrder === 'asc' ? timeDiff : -timeDiff;
+            
+            const tA = (a.titel || '').toLowerCase();
+            const tB = (b.titel || '').toLowerCase();
+            const compTitle = tA.localeCompare(tB, undefined, { numeric: true, sensitivity: 'base' });
+            return sortOrder === 'asc' ? compTitle : -compTitle;
         }
 
         if (['preis', 'bewertung', 'jahr', 'nummer'].includes(sortBy)) {
-            valA = valA || 0;
-            valB = valB || 0;
-            return sortOrder === 'asc' ? valA - valB : valB - valA;
+            const nA = parseFloat(valA) || 0;
+            const nB = parseFloat(valB) || 0;
+            if (nA !== nB) return sortOrder === 'asc' ? nA - nB : nB - nA;
+            
+            const tA = (a.titel || '').toLowerCase();
+            const tB = (b.titel || '').toLowerCase();
+            const compTitle = tA.localeCompare(tB, undefined, { numeric: true, sensitivity: 'base' });
+            return sortOrder === 'asc' ? compTitle : -compTitle;
         }
         
         valA = String(valA || '').toLowerCase();
         valB = String(valB || '').toLowerCase();
-        return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        const compStr = valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' });
+        if (compStr !== 0) return sortOrder === 'asc' ? compStr : -compStr;
+
+        const tA = (a.titel || '').toLowerCase();
+        const tB = (b.titel || '').toLowerCase();
+        const compTitle = tA.localeCompare(tB, undefined, { numeric: true, sensitivity: 'base' });
+        return sortOrder === 'asc' ? compTitle : -compTitle;
     });
 
     grid.className = ''; 

@@ -139,7 +139,8 @@ async function updateSubscriptionsTable() {
         }
         valA = String(valA || '').toLowerCase();
         valB = String(valB || '').toLowerCase();
-        return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        const compStr = valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' });
+        return sortOrder === 'asc' ? compStr : -compStr;
     });
     
     if (subs.length === 0) {

@@ -461,5 +461,52 @@ describe('ComicVault Database Caching Tests', () => {
             expect(iframe.src).to.include('about:blank');
         }
     });
+
+    describe('Collection Sorting Logic', () => {
+        it('sollte Comics in derselben Serie alphabetisch nach Titel sortieren', async () => {
+            const seriesComics = [
+                { id: '10', titel: 'Mimi\'s Tales of Terror', serie: 'Junji Ito Deluxe Edition', verlag: 'Carlsen', me: 1 },
+                { id: '11', titel: 'Alley', serie: 'Junji Ito Deluxe Edition', verlag: 'Carlsen', me: 1 },
+                { id: '12', titel: 'Dissolving Classroom', serie: 'Junji Ito Deluxe Edition', verlag: 'Carlsen', me: 1 }
+            ];
+
+            const testEnvSort = setupTestEnv({ mockComics: seriesComics });
+            await renderCollection(testEnvSort.viewContainer);
+            await tick();
+
+            // Titel-Spalte zum Sortieren klicken (aufsteigend)
+            const titleHeader = testEnvSort.viewContainer.querySelector('.sortable-header[data-sort="titel"]');
+            expect(titleHeader).to.not.be.null;
+            titleHeader.click();
+            await tick();
+
+            const titles = Array.from(testEnvSort.viewContainer.querySelectorAll('.comic-title')).map(el => el.textContent.trim());
+            expect(titles).to.deep.equal(['Alley', 'Dissolving Classroom', 'Mimi\'s Tales of Terror']);
+        });
+
+        it('sollte nach Datumsfeldern (z.B. gelesen_am) chronologisch sortieren', async () => {
+            const dateComics = [
+                { id: '20', titel: 'Book A', gelesen_am: '02.05.26' },
+                { id: '21', titel: 'Book B', gelesen_am: '09.10.24' },
+                { id: '22', titel: 'Book C', gelesen_am: '08.02.25' },
+                { id: '23', titel: 'Book D', gelesen_am: '' }
+            ];
+
+            const testEnvDate = setupTestEnv({ mockComics: dateComics });
+            await renderCollection(testEnvDate.viewContainer);
+            await tick();
+
+            const gelesenHeader = testEnvDate.viewContainer.querySelector('.sortable-header[data-sort="gelesen_am"]');
+            expect(gelesenHeader).to.not.be.null;
+            
+            // Klick 1: aufsteigend (ältestes Datum -> neuestes Datum -> ungelesen am Ende)
+            gelesenHeader.click();
+            await tick();
+
+            const itemsAsc = Array.from(testEnvDate.viewContainer.querySelectorAll('.list-item')).map(el => el.querySelector('.comic-title').textContent.trim());
+            expect(itemsAsc).to.deep.equal(['Book B', 'Book C', 'Book A', 'Book D']);
+        });
+    });
 });
+
 
