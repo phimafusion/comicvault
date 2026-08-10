@@ -70,6 +70,18 @@ describe('ComicVault Duplicate Finder Tests', () => {
             expect(duplicates.length).to.equal(0);
         });
 
+        it('sollte nur Comics mit Bestand "vorhanden" oder "vorbestellt" berücksichtigen (keine verkauften)', () => {
+            const mockComics = [
+                { id: '20', titel: 'Batman #1', serie: 'Batman', nummer: '1', verlag: 'DC', format: 'Heft', bestand: 'vorhanden' },
+                { id: '21', titel: 'Batman #1', serie: 'Batman', nummer: '1', verlag: 'DC', format: 'Heft', bestand: 'verkauft' }, // Verkauft -> ignorieren
+                { id: '22', titel: 'Batman #1', serie: 'Batman', nummer: '1', verlag: 'DC', format: 'Heft', bestand: 'vorbestellt' } // Vorbestellt -> matchen mit 20
+            ];
+
+            const duplicates = findDuplicates(mockComics, []);
+            expect(duplicates.length).to.equal(1);
+            expect([duplicates[0].comicA.id, duplicates[0].comicB.id]).to.include.members(['20', '22']);
+        });
+
         it('sollte ignorierten Paaren (Kein Duplikat) das Flag isIgnored setzen', () => {
             const mockComics = [
                 { id: '1', titel: 'Spider-Man #1', serie: 'Spider-Man', nummer: '1', verlag: 'Marvel', format: 'Heft' },

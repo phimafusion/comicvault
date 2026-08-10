@@ -49,16 +49,23 @@ export function getPairKey(id1, id2) {
     return [String(id1), String(id2)].sort().join('___');
 }
 
-// Erkennt Duplikate in einer Liste von Comics
+// Erkennt Duplikate in einer Liste von Comics (nur 'vorhanden' und 'vorbestellt')
 export function findDuplicates(comics, ignoredList = []) {
     const ignoredSet = new Set(ignoredList);
     const pairs = [];
     const seenPairs = new Set();
 
-    for (let i = 0; i < comics.length; i++) {
-        for (let j = i + 1; j < comics.length; j++) {
-            const cA = comics[i];
-            const cB = comics[j];
+    // Nur vorhandene und vorbestellte Comics berücksichtigen (verkauft etc. ausschließen)
+    const validComics = (comics || []).filter(c => {
+        if (!c) return false;
+        const b = String(c.bestand || 'vorhanden').toLowerCase().trim();
+        return b === 'vorhanden' || b === 'vorbestellt';
+    });
+
+    for (let i = 0; i < validComics.length; i++) {
+        for (let j = i + 1; j < validComics.length; j++) {
+            const cA = validComics[i];
+            const cB = validComics[j];
 
             const pairKey = getPairKey(cA.id, cB.id);
             if (seenPairs.has(pairKey)) continue;
