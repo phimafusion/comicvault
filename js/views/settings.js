@@ -267,7 +267,7 @@ export function renderSettings(container) {
     }
 
     const activeColorScheme = settings.colorScheme || 'default';
-    const fontThemeSelect = document.getElementById('settings-font-theme-select');
+    const fontThemeSelect = container.querySelector('#settings-font-theme-select');
     if (fontThemeSelect) {
         fontThemeSelect.value = activeColorScheme;
         renderFontConfigsForTheme(activeColorScheme);
@@ -277,7 +277,7 @@ export function renderSettings(container) {
         });
     }
 
-    const saveThemeFontsBtn = document.getElementById('btn-save-theme-fonts');
+    const saveThemeFontsBtn = container.querySelector('#btn-save-theme-fonts');
     if (saveThemeFontsBtn) {
         saveThemeFontsBtn.addEventListener('click', () => {
             const themeName = fontThemeSelect.value;
@@ -320,7 +320,7 @@ export function renderSettings(container) {
         });
     }
 
-    const resetThemeFontsBtn = document.getElementById('btn-reset-theme-fonts');
+    const resetThemeFontsBtn = container.querySelector('#btn-reset-theme-fonts');
     if (resetThemeFontsBtn) {
         resetThemeFontsBtn.addEventListener('click', () => {
             const themeName = fontThemeSelect.value;
@@ -341,87 +341,109 @@ export function renderSettings(container) {
     }
 
     // Theme Events
-    document.getElementById('settings-color-scheme').addEventListener('change', (e) => {
-        const newScheme = e.target.value;
-        if (window.app) window.app.setColorScheme(newScheme);
-        const fSelect = document.getElementById('settings-font-theme-select');
-        if (fSelect) {
-            fSelect.value = newScheme;
-            renderFontConfigsForTheme(newScheme);
-        }
-    });
+    const colorSchemeSelect = container.querySelector('#settings-color-scheme');
+    if (colorSchemeSelect) {
+        colorSchemeSelect.addEventListener('change', (e) => {
+            const newScheme = e.target.value;
+            if (window.app) window.app.setColorScheme(newScheme);
+            const fSelect = container.querySelector('#settings-font-theme-select');
+            if (fSelect) {
+                fSelect.value = newScheme;
+                renderFontConfigsForTheme(newScheme);
+            }
+        });
+    }
 
-    document.getElementById('settings-font-size').addEventListener('change', (e) => {
-        const newSize = e.target.value;
-        const currentSettings = db.getSettings();
-        currentSettings.fontSize = newSize;
-        db.saveSettings(currentSettings);
-        if (window.app) {
-            window.app.applyTheme();
-        }
-    });
+    const fontSizeSelect = container.querySelector('#settings-font-size');
+    if (fontSizeSelect) {
+        fontSizeSelect.addEventListener('change', (e) => {
+            const newSize = e.target.value;
+            const currentSettings = db.getSettings();
+            currentSettings.fontSize = newSize;
+            db.saveSettings(currentSettings);
+            if (window.app) {
+                window.app.applyTheme();
+            }
+        });
+    }
 
-    document.getElementById('settings-toggle-dark').addEventListener('click', () => {
-        if (window.app) {
-            window.app.toggleTheme();
-            const newSettings = db.getSettings();
-            const btn = document.getElementById('settings-toggle-dark');
-            btn.innerHTML = newSettings.theme === 'light' ? '<i class="fa-solid fa-sun"></i> Light Mode' : '<i class="fa-solid fa-moon"></i> Dark Mode';
-        }
-    });
+    const toggleDarkBtn = container.querySelector('#settings-toggle-dark');
+    if (toggleDarkBtn) {
+        toggleDarkBtn.addEventListener('click', () => {
+            if (window.app) {
+                window.app.toggleTheme();
+                const newSettings = db.getSettings();
+                toggleDarkBtn.innerHTML = newSettings.theme === 'light' ? '<i class="fa-solid fa-sun"></i> Light Mode' : '<i class="fa-solid fa-moon"></i> Dark Mode';
+            }
+        });
+    }
 
     // Save Defaults
-    document.getElementById('btn-save-defaults').addEventListener('click', () => {
-        const current = db.getSettings();
-        current.currency = document.getElementById('settings-currency').value;
-        current.defaultLanguage = document.getElementById('settings-default-language').value;
-        current.defaultCondition = document.getElementById('settings-default-condition').value;
-        current.defaultPublisher = document.getElementById('settings-default-publisher').value;
+    const saveDefaultsBtn = container.querySelector('#btn-save-defaults');
+    if (saveDefaultsBtn) {
+        saveDefaultsBtn.addEventListener('click', () => {
+            const current = db.getSettings();
+            const currInput = container.querySelector('#settings-currency');
+            const langInput = container.querySelector('#settings-default-language');
+            const condInput = container.querySelector('#settings-default-condition');
+            const pubInput = container.querySelector('#settings-default-publisher');
 
-        db.saveSettings(current);
-        alert('Standardwerte wurden gespeichert.');
-    });
+            if (currInput) current.currency = currInput.value;
+            if (langInput) current.defaultLanguage = langInput.value;
+            if (condInput) current.defaultCondition = condInput.value;
+            if (pubInput) current.defaultPublisher = pubInput.value;
+
+            db.saveSettings(current);
+            alert('Standardwerte wurden gespeichert.');
+        });
+    }
 
     // Save Gemini Key
-    const saveKeyBtn = document.getElementById('btn-save-gemini-key');
+    const saveKeyBtn = container.querySelector('#btn-save-gemini-key');
     if (saveKeyBtn) {
         saveKeyBtn.addEventListener('click', () => {
             const current = db.getSettings();
-            current.geminiApiKey = document.getElementById('settings-gemini-api-key').value.trim();
+            const keyInput = container.querySelector('#settings-gemini-api-key');
+            if (keyInput) current.geminiApiKey = keyInput.value.trim();
             db.saveSettings(current);
             alert('Gemini API-Schlüssel wurde erfolgreich gespeichert.');
         });
     }
 
     // Toggle API Key visibility
-    const toggleKeyVisibilityBtn = document.getElementById('btn-toggle-api-key-visibility');
+    const toggleKeyVisibilityBtn = container.querySelector('#btn-toggle-api-key-visibility');
     if (toggleKeyVisibilityBtn) {
         toggleKeyVisibilityBtn.addEventListener('click', () => {
-            const input = document.getElementById('settings-gemini-api-key');
+            const input = container.querySelector('#settings-gemini-api-key');
             const icon = toggleKeyVisibilityBtn.querySelector('i');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.className = 'fa-solid fa-eye-slash';
-            } else {
-                input.type = 'password';
-                icon.className = 'fa-solid fa-eye';
+            if (input && icon) {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.className = 'fa-solid fa-eye-slash';
+                } else {
+                    input.type = 'password';
+                    icon.className = 'fa-solid fa-eye';
+                }
             }
         });
     }
 
     // Clear Database
-    document.getElementById('btn-clear-database').addEventListener('click', () => {
-        showClearDatabaseModal();
-    });
+    const clearDbBtn = container.querySelector('#btn-clear-database');
+    if (clearDbBtn) {
+        clearDbBtn.addEventListener('click', () => {
+            showClearDatabaseModal();
+        });
+    }
 
     // PWA Install Card Handling
-    const installCard = document.getElementById('pwa-install-card');
+    const installCard = container.querySelector('#pwa-install-card');
     if (installCard) {
         if (window.deferredPrompt) {
             installCard.style.display = 'flex';
         }
         
-        const installBtn = document.getElementById('btn-pwa-install');
+        const installBtn = container.querySelector('#btn-pwa-install');
         if (installBtn) {
             installBtn.addEventListener('click', async () => {
                 const promptEvent = window.deferredPrompt;
@@ -438,12 +460,18 @@ export function renderSettings(container) {
     }
 
     // Autocomplete für Standardwerte aktivieren
-    initAutocomplete(document.getElementById('settings-default-condition'), settings.customSuggestions.zustand || []);
+    const defaultConditionInput = container.querySelector('#settings-default-condition');
+    if (defaultConditionInput) {
+        initAutocomplete(defaultConditionInput, settings.customSuggestions.zustand || []);
+    }
     
     // Verlage dynamisch laden und Autocomplete aktivieren
     Promise.all([db.getAllComics(), db.getWishlist()]).then(([comics, wishes]) => {
-        const allPublishers = [...new Set([...comics, ...wishes].map(c => c.verlag).filter(Boolean))].sort();
-        initAutocomplete(document.getElementById('settings-default-publisher'), allPublishers);
+        const defaultPublisherInput = container.querySelector('#settings-default-publisher');
+        if (defaultPublisherInput) {
+            const allPublishers = [...new Set([...comics, ...wishes].map(c => c.verlag).filter(Boolean))].sort();
+            initAutocomplete(defaultPublisherInput, allPublishers);
+        }
     });
 }
 
