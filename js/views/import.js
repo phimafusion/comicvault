@@ -152,23 +152,40 @@ export function renderImport(container) {
     `;
     container.insertAdjacentHTML('beforeend', logOverlayHtml);
 
-    document.getElementById('btn-confirm-log-overlay').addEventListener('click', () => {
-        document.getElementById('import-log-overlay').style.display = 'none';
-    });
+    const btnConfirm = container.querySelector('#btn-confirm-log-overlay');
+    if (btnConfirm) {
+        btnConfirm.addEventListener('click', () => {
+            const overlay = container.querySelector('#import-log-overlay');
+            if (overlay) overlay.style.display = 'none';
+        });
+    }
 
-    document.getElementById('btn-cancel-import').addEventListener('click', () => {
-        importAborted = true;
-        const btnCancel = document.getElementById('btn-cancel-import');
-        btnCancel.disabled = true;
-        btnCancel.innerHTML = 'Breche ab...';
-    });
+    const btnCancel = container.querySelector('#btn-cancel-import');
+    if (btnCancel) {
+        btnCancel.addEventListener('click', () => {
+            importAborted = true;
+            btnCancel.disabled = true;
+            btnCancel.innerHTML = 'Breche ab...';
+        });
+    }
 
-    document.getElementById('btn-import-csv').addEventListener('click', handleCSVImport);
-    document.getElementById('btn-import-json').addEventListener('click', handleJSONImport);
-    document.getElementById('btn-export-xlsx').addEventListener('click', () => handleExport('xlsx'));
-    document.getElementById('btn-export-csv').addEventListener('click', () => handleExport('csv'));
-    document.getElementById('btn-export-json').addEventListener('click', () => handleExport('json'));
-    document.getElementById('btn-start-url-import').addEventListener('click', handleUrlImport);
+    const btnImportCsv = container.querySelector('#btn-import-csv');
+    if (btnImportCsv) btnImportCsv.addEventListener('click', handleCSVImport);
+
+    const btnImportJson = container.querySelector('#btn-import-json');
+    if (btnImportJson) btnImportJson.addEventListener('click', handleJSONImport);
+
+    const btnExportXlsx = container.querySelector('#btn-export-xlsx');
+    if (btnExportXlsx) btnExportXlsx.addEventListener('click', () => handleExport('xlsx'));
+
+    const btnExportCsv = container.querySelector('#btn-export-csv');
+    if (btnExportCsv) btnExportCsv.addEventListener('click', () => handleExport('csv'));
+
+    const btnExportJson = container.querySelector('#btn-export-json');
+    if (btnExportJson) btnExportJson.addEventListener('click', () => handleExport('json'));
+
+    const btnStartUrl = container.querySelector('#btn-start-url-import');
+    if (btnStartUrl) btnStartUrl.addEventListener('click', handleUrlImport);
 }
 
 // URL Import Logic
