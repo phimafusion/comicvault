@@ -75,21 +75,21 @@ export function renderSettings(container) {
     });
 
     // Vorschlagslisten-Steuerung
-    const fieldSelect = document.getElementById('settings-suggestion-field');
-    const tagsContainer = document.getElementById('settings-suggestions-tags');
-    const newSugInput = document.getElementById('settings-new-suggestion');
-    const addSugBtn = document.getElementById('btn-add-suggestion');
-    const errorContainer = document.getElementById('settings-suggestions-error');
-    const errorSpan = errorContainer.querySelector('.error-msg');
+    const fieldSelect = container.querySelector('#settings-suggestion-field');
+    const tagsContainer = container.querySelector('#settings-suggestions-tags');
+    const newSugInput = container.querySelector('#settings-new-suggestion');
+    const addSugBtn = container.querySelector('#btn-add-suggestion');
+    const errorContainer = container.querySelector('#settings-suggestions-error');
+    const errorSpan = errorContainer ? errorContainer.querySelector('.error-msg') : null;
 
     function showError(message) {
-        errorSpan.textContent = message;
-        errorContainer.style.display = 'flex';
+        if (errorSpan) errorSpan.textContent = message;
+        if (errorContainer) errorContainer.style.display = 'flex';
     }
 
     function hideError() {
-        errorContainer.style.display = 'none';
-        errorSpan.textContent = '';
+        if (errorContainer) errorContainer.style.display = 'none';
+        if (errorSpan) errorSpan.textContent = '';
     }
 
     async function renderTags() {

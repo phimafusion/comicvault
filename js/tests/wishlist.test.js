@@ -84,6 +84,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
     });
 
     it('sollte das Modal zum Verschieben in die Sammlung mit vorausgefüllten Daten (ohne Bemerkung) öffnen', async () => {
+        await renderWishlist(container);
         const transferBtns = container.querySelectorAll('.btn-transfer-wish');
         expect(transferBtns.length).to.equal(3);
 
