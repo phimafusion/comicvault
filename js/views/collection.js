@@ -325,18 +325,7 @@ const handleCollectionClick = (e) => {
 
     // 2. Reset Button Click
     if (e.target.closest('#btn-reset-filters-direct')) {
-        activeFilters = { 
-            verlag: [], 
-            format: [], 
-            bestand: ['vorhanden', 'vorbestellt'], 
-            gelesen: [], 
-            bezugsquelle: [], 
-            serie: [],
-            kaufdatumStart: '',
-            kaufdatumEnd: '',
-            gelesenDatumStart: '',
-            gelesenDatumEnd: ''
-        };
+        resetCollectionState();
         const container = document.getElementById('view-container');
         renderCollection(container);
         return;
@@ -518,6 +507,24 @@ export function attachCollectionEvents() {
     window.addEventListener('comics-updated-background', handleBackgroundComicsUpdate);
 }
 
+export function resetCollectionState() {
+    sortBy = 'titel';
+    sortOrder = 'asc';
+    searchTerm = '';
+    activeFilters = {
+        verlag: [],
+        format: [],
+        bestand: ['vorhanden', 'vorbestellt'],
+        gelesen: [],
+        bezugsquelle: [],
+        serie: [],
+        kaufdatumStart: '',
+        kaufdatumEnd: '',
+        gelesenDatumStart: '',
+        gelesenDatumEnd: ''
+    };
+}
+
 export function cleanupCollection() {
     document.removeEventListener('click', handleCollectionClick);
     document.removeEventListener('change', handleCheckboxChange);
@@ -534,6 +541,7 @@ export function cleanupCollection() {
     
     window.removeEventListener('comics-updated-background', handleBackgroundComicsUpdate);
     
+    resetCollectionState();
     resetSelectMode();
     
     eventsAttached = false;
