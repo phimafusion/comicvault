@@ -1,5 +1,5 @@
 import { db } from '../db.js';
-import { escapeHTML } from '../utils.js';
+import { escapeHTML, formatCurrency } from '../utils.js';
 
 const FIELD_LABELS = {
     titel: 'Titel',
@@ -484,8 +484,8 @@ function formatDiff(changes) {
         let oldVal = ch.old;
         let newVal = ch.new;
 
-        if (ch.field === 'preis' && oldVal !== '' && oldVal !== null && oldVal !== undefined) oldVal = Number(oldVal).toFixed(2) + ' €';
-        if (ch.field === 'preis' && newVal !== '' && newVal !== null && newVal !== undefined) newVal = Number(newVal).toFixed(2) + ' €';
+        if (ch.field === 'preis' && oldVal !== '' && oldVal !== null && oldVal !== undefined) oldVal = formatCurrency(oldVal);
+        if (ch.field === 'preis' && newVal !== '' && newVal !== null && newVal !== undefined) newVal = formatCurrency(newVal);
         if (ch.field === 'limitierung' || ch.field === 'variant' || ch.field === 'vorbestellt') {
             oldVal = oldVal ? 'Ja' : 'Nein';
             newVal = newVal ? 'Ja' : 'Nein';

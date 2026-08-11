@@ -77,9 +77,9 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         // um den Test deterministisch zu machen.
         // Das können wir auch einfach über die activeFilters steuern, die in collection.js importiert sind.
         // Da activeFilters in collection.js lokal definiert ist, können wir sie über die Reset-Funktion leeren.
-        const btnReset = container.querySelector('#btn-reset-filters-direct');
-        if (btnReset) {
-            btnReset.click();
+        const btnResetDirect = container.querySelector('#btn-reset-filters-direct');
+        if (btnResetDirect) {
+            btnResetDirect.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         }
         await tick();
     });
@@ -89,7 +89,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         cleanup();
     });
 
-    it('sollte standardmäßig alle Mock-Comics auflisten', () => {
+    it('sollte standardmäßig alle Mock-Comics auflisten', async () => {
         const items = container.querySelectorAll('.list-item');
         expect(items.length).to.equal(4);
     });
@@ -104,7 +104,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         
         // Anwenden-Button klicken
         const btnApply = dropdownKauf.querySelector('.btn-date-filter-apply');
-        btnApply.click();
+        btnApply.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
         await tick();
 
@@ -123,7 +123,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         endInput.value = '2026-02-15';
         
         const btnApply = dropdownKauf.querySelector('.btn-date-filter-apply');
-        btnApply.click();
+        btnApply.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
         await tick();
 
@@ -145,7 +145,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         endInput.value = '2026-02-28';
         
         const btnApply = dropdownKauf.querySelector('.btn-date-filter-apply');
-        btnApply.click();
+        btnApply.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
         await tick();
 
@@ -167,7 +167,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         endInput.value = '2026-02-28';
         
         const btnApply = dropdownGelesen.querySelector('.btn-date-filter-apply');
-        btnApply.click();
+        btnApply.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
         await tick();
 
@@ -186,7 +186,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         endInput.value = '2026-01-01';
         
         const btnApply = dropdownKauf.querySelector('.btn-date-filter-apply');
-        btnApply.click();
+        btnApply.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await tick();
         
         let items = container.querySelectorAll('.list-item');
@@ -196,7 +196,7 @@ describe('ComicVault Sammlungsliste - Datumsbereichs-Filter Tests', () => {
         // Jetzt leeren
         const dropdownKauf2 = container.querySelector('#dropdown-kaufdatum');
         const btnReset = dropdownKauf2.querySelector('.btn-date-filter-reset');
-        btnReset.click();
+        btnReset.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         await tick();
 
         items = container.querySelectorAll('.list-item');

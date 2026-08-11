@@ -148,8 +148,8 @@ describe('JSON Import Feature Tests', () => {
         // Check detailed diff logs
         const logUpdated = document.getElementById('log-updated');
         expect(logUpdated.innerHTML).to.contain('Preis');
-        expect(logUpdated.innerHTML).to.contain('19.99 €');
-        expect(logUpdated.innerHTML).to.contain('24.99 €');
+        expect(logUpdated.innerHTML).to.contain('19,99 €');
+        expect(logUpdated.innerHTML).to.contain('24,99 €');
     });
 
     it('sollte ein JSON-Backup-Objekt mit Comics und Wunschliste importieren', async () => {

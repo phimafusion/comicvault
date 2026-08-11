@@ -120,6 +120,28 @@ export function parseDate(val) {
     return str;
 }
 
+// Hilfsfunktion zur deutschen Zahlenformatierung (z.B. 1.234,56)
+export function formatNumber(val, decimals = 2) {
+    if (val === undefined || val === null || val === '') return '0,00';
+    const num = Number(val);
+    if (isNaN(num)) return '0,00';
+    return num.toLocaleString('de-DE', {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+    });
+}
+
+// Hilfsfunktion zur deutschen Währungsformatierung (z.B. 1.234,56 €)
+export function formatCurrency(amount, currencySymbol = '€') {
+    if (amount === undefined || amount === null || amount === '') return '0,00 ' + currencySymbol;
+    const num = Number(amount);
+    if (isNaN(num)) return '0,00 ' + currencySymbol;
+    return num.toLocaleString('de-DE', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    }) + ' ' + currencySymbol;
+}
+
 export function parseCurrency(val) {
     if (val === undefined || val === null || val === "") return null;
     if (typeof val === 'number') return val;

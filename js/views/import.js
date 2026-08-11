@@ -1,5 +1,5 @@
 import { db } from '../db.js';
-import { escapeHTML } from '../utils.js';
+import { escapeHTML, formatCurrency } from '../utils.js';
 import { openModal } from './form.js';
 import {
     parseCSV,
@@ -597,8 +597,8 @@ function formatDiff(newData, oldData, changedFields) {
         let oldVal = oldData[f];
         let newVal = newData[f];
 
-        if (f === 'preis' && oldVal !== null && oldVal !== undefined) oldVal = Number(oldVal).toFixed(2) + ' €';
-        if (f === 'preis' && newVal !== null && newVal !== undefined) newVal = Number(newVal).toFixed(2) + ' €';
+        if (f === 'preis' && oldVal !== null && oldVal !== undefined) oldVal = formatCurrency(oldVal);
+        if (f === 'preis' && newVal !== null && newVal !== undefined) newVal = formatCurrency(newVal);
         if (f === 'limitierung' || f === 'variant' || f === 'vorbestellt') {
             oldVal = oldVal ? 'Ja' : 'Nein';
             newVal = newVal ? 'Ja' : 'Nein';

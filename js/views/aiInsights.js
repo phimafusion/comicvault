@@ -1,5 +1,5 @@
 import { db } from '../db.js';
-import { parseCurrency, escapeHTML } from '../utils.js';
+import { parseCurrency, escapeHTML, formatCurrency, formatNumber } from '../utils.js';
 
 // Aggregiert statistische Daten über die Comicsammlung für das KI-Prompt
 export function compileCollectionStatsPromptData(comics = [], wishes = []) {
@@ -96,7 +96,7 @@ Hier sind die aggregierten statistischen Daten meiner Comicsammlung:
 - Gesamtanzahl Comics: ${promptData.totalComics}
 - Bereits gelesene Comics: ${promptData.readCount}
 - Ungelesene Comics: ${promptData.unreadCount} (Lesestapel)
-- Geschätzter Gesamtwert der Sammlung: ${promptData.totalValue.toFixed(2)} €
+- Geschätzter Gesamtwert der Sammlung: ${formatCurrency(promptData.totalValue)}
 - Haupt-Verlage in der Sammlung:
 ${promptData.publishers.map(p => `  * ${p.name}: ${p.count} Titel`).join('\n')}
 - Haupt-Formate:
@@ -152,7 +152,7 @@ export function generateLocalMockInsights(stats) {
     
     if (hasComics) {
         title = `Die Chroniken von ComicVault: Analyse deiner ${stats.totalComics} Schätze`;
-        intro = `Deine Sammlung umfasst aktuell **${stats.totalComics} Comics** mit einem Gesamtwert von **${stats.totalValue.toFixed(2)} €**. Ein Blick auf deine Regale verrät eine sorgfältig kuratierte Auswahl mit klaren Schwerpunkten!`;
+        intro = `Deine Sammlung umfasst aktuell **${stats.totalComics} Comics** mit einem Gesamtwert von **${formatCurrency(stats.totalValue)}**. Ein Blick auf deine Regale verrät eine sorgfältig kuratierte Auswahl mit klaren Schwerpunkten!`;
         
         const topPub = stats.publishers[0] ? `${escapeHTML(stats.publishers[0].name)} (${stats.publishers[0].count} Titel)` : "unbekannten Verlagen";
         const secondPub = stats.publishers[1] ? ` gefolgt von ${escapeHTML(stats.publishers[1].name)} (${stats.publishers[1].count} Titel)` : "";
@@ -172,7 +172,7 @@ ${tableRows}
 * **Deine Kronjuwelen**: Titel wie ${stats.topRated.slice(0, 3).map(c => `*${escapeHTML(c.titel)}* (Bewertung: ${c.bewertung}/10)`).join(', ') || 'noch keine bewerteten Comics'} stechen als absolute Highlights deiner Sammlung hervor.
 `;
         
-        const unreadPercent = ((stats.unreadCount / stats.totalComics) * 100).toFixed(1);
+        const unreadPercent = formatNumber((stats.unreadCount / stats.totalComics) * 100, 1);
         const unreadText = stats.unreadCount > 0 
             ? `Du hast aktuell noch **${stats.unreadCount} ungelesene Comics** (${unreadPercent}% deines Bestands). Das ist dein persönlicher Lesestapel des Glücks (Pile of Joy) – da wartet noch viel Lesespaß in deinen Regalen!`
             : "Wahnsinn! Du hast tatsächlich alle Comics in deiner Sammlung gelesen. Ein wahrer Vollblut-Leser!";

@@ -1,5 +1,5 @@
 import { db } from '../db.js';
-import { escapeHTML } from '../utils.js';
+import { escapeHTML, formatCurrency } from '../utils.js';
 import { openModal } from './form.js';
 
 let selectedWishIds = new Set();
@@ -277,7 +277,7 @@ async function updateWishlistTable() {
     const currency = settings.currency || '€';
 
     if (elTotalItems) elTotalItems.textContent = totalItems;
-    if (elTotalBudget) elTotalBudget.textContent = totalBudget.toFixed(2) + ' ' + currency;
+    if (elTotalBudget) elTotalBudget.textContent = formatCurrency(totalBudget, currency);
     if (elTotalPreorders) elTotalPreorders.textContent = preorderedCount;
 
     // Update table header sorting icons
@@ -348,7 +348,7 @@ async function updateWishlistTable() {
                 <td data-label="Typ" style="padding: 12px; vertical-align: middle;">${escapeHTML(wish.typ) || '-'}</td>
                 <td data-label="Name" class="wish-title-cell" style="padding: 12px; font-weight: 600; vertical-align: middle;">${escapeHTML(wish.titel)}</td>
                 <td data-label="Format" style="padding: 12px; vertical-align: middle;">${escapeHTML(wish.format) || '-'}</td>
-                <td data-label="Preis" style="padding: 12px; vertical-align: middle;">${wish.preis ? wish.preis.toFixed(2) + ' ' + currency : '-'}</td>
+                <td data-label="Preis" style="padding: 12px; vertical-align: middle;">${wish.preis ? formatCurrency(wish.preis, currency) : '-'}</td>
                 <td data-label="Release" style="padding: 12px; vertical-align: middle;">${escapeHTML(wish.jahr) || '-'}</td>
                 <td data-label="Status" style="padding: 12px; vertical-align: middle;">
                     <span class="badge ${wish.vorbestellt ? 'badge-vorbestellt' : 'badge-abgegeben'}" style="font-size: 0.75rem; padding: 4px 8px; border-radius: 6px;">

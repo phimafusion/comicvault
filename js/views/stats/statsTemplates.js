@@ -1,5 +1,4 @@
-import { escapeHTML } from '../../utils.js';
-import { renderStars } from '../../utils.js';
+import { escapeHTML, renderStars, formatCurrency, formatNumber } from '../../utils.js';
 
 export function renderKPICards({ totalComics, totalValue, readPercent, tbrCount, tbrValue }, currencySymbol) {
     return `
@@ -8,11 +7,11 @@ export function renderKPICards({ totalComics, totalValue, readPercent, tbrCount,
             <div class="stats-kpi-label">Comics (gefiltert)</div>
         </div>
         <div class="stats-kpi-card stats-kpi-success">
-            <div class="stats-kpi-value">${totalValue.toFixed(2)} ${currencySymbol}</div>
+            <div class="stats-kpi-value">${formatCurrency(totalValue, currencySymbol)}</div>
             <div class="stats-kpi-label">Sammlungswert</div>
         </div>
         <div class="stats-kpi-card stats-kpi-secondary">
-            <div class="stats-kpi-value">${readPercent}%</div>
+            <div class="stats-kpi-value">${formatNumber(readPercent, 2)}%</div>
             <div class="stats-kpi-label">Gelesen Quote</div>
         </div>
         <div class="stats-kpi-card stats-kpi-warning">
@@ -20,7 +19,7 @@ export function renderKPICards({ totalComics, totalValue, readPercent, tbrCount,
             <div class="stats-kpi-label">Lesestapel (TBR)</div>
         </div>
         <div class="stats-kpi-card stats-kpi-accent">
-            <div class="stats-kpi-value">${tbrValue.toFixed(2)} ${currencySymbol}</div>
+            <div class="stats-kpi-value">${formatCurrency(tbrValue, currencySymbol)}</div>
             <div class="stats-kpi-label">Ungelesener Wert</div>
         </div>
     `;
@@ -50,17 +49,17 @@ export function renderTypeStatsTable(typeStats, currencySymbol) {
                         <tr class="stats-tr" data-type="${stat.type}">
                             <td data-label="Typ" class="stats-td stats-font-display">${escapeHTML(stat.type)}</td>
                             <td data-label="Anzahl" class="stats-td stats-text-center stats-color-primary">${stat.total}</td>
-                            <td data-label="Sammlungswert" class="stats-td stats-text-right stats-color-success">${stat.value.toFixed(2)} ${currencySymbol}</td>
+                            <td data-label="Sammlungswert" class="stats-td stats-text-right stats-color-success">${formatCurrency(stat.value, currencySymbol)}</td>
                             <td data-label="Gelesen Quote" class="stats-td stats-text-center">
                                 <div class="stats-progress-container">
-                                    <span class="stats-progress-label">${stat.readPercent}%</span>
+                                    <span class="stats-progress-label">${formatNumber(stat.readPercent, 2)}%</span>
                                     <div class="stats-progress-bar-bg">
                                         <div class="stats-progress-bar-fill" style="width: ${stat.readPercent}%;"></div>
                                     </div>
                                 </div>
                             </td>
                             <td data-label="Lesestapel (TBR)" class="stats-td stats-text-center stats-color-warning">${stat.tbrCount}</td>
-                            <td data-label="Ungelesener Wert" class="stats-td stats-text-right stats-color-accent">${stat.tbrValue.toFixed(2)} ${currencySymbol}</td>
+                            <td data-label="Ungelesener Wert" class="stats-td stats-text-right stats-color-accent">${formatCurrency(stat.tbrValue, currencySymbol)}</td>
                         </tr>
                     `).join('')}
                 </tbody>
@@ -70,11 +69,11 @@ export function renderTypeStatsTable(typeStats, currencySymbol) {
 }
 
 export function renderHighlightsCards({ avgPrice, speedText, topPurchaseMonth, topPurchaseVal, topReadMonth, topReadVal, maxPriceComic }, currencySymbol) {
-    const teuersterText = maxPriceComic ? `${escapeHTML(maxPriceComic.titel)} (${Number(maxPriceComic.preis).toFixed(2)} ${currencySymbol})` : '-';
+    const teuersterText = maxPriceComic ? `${escapeHTML(maxPriceComic.titel)} (${formatCurrency(maxPriceComic.preis, currencySymbol)})` : '-';
     return `
         <div class="stats-highlight-item">
             <span class="stats-highlight-label">Ø Preis pro Comic</span>
-            <span class="stats-highlight-value">${avgPrice} ${currencySymbol}</span>
+            <span class="stats-highlight-value">${formatCurrency(avgPrice, currencySymbol)}</span>
         </div>
         <div class="stats-highlight-item">
             <span class="stats-highlight-label">Leseaktivität</span>
@@ -82,7 +81,7 @@ export function renderHighlightsCards({ avgPrice, speedText, topPurchaseMonth, t
         </div>
         <div class="stats-highlight-item">
             <span class="stats-highlight-label">Aktivster Kaufmonat</span>
-            <span class="stats-highlight-value">${topPurchaseMonth} ${topPurchaseVal > 0 ? `(${topPurchaseVal} Käufe)` : ''}</span>
+            <span class="stats-highlight-value">${topPurchaseMonth} ${topPurchaseVal > 0 ? `(${formatCurrency(topPurchaseVal, currencySymbol)})` : ''}</span>
         </div>
         <div class="stats-highlight-item">
             <span class="stats-highlight-label">Aktivster Lesemonat</span>
@@ -186,7 +185,7 @@ export function renderInventoryTBRTable(yearlyData, currentYear, currencySymbol)
                             ${y.year}
                         </td>
                         <td class="stats-td stats-text-center">${y.totalPurchased}</td>
-                        <td class="stats-td stats-text-center">${y.totalSpent.toFixed(2)} ${currencySymbol}</td>
+                        <td class="stats-td stats-text-center">${formatCurrency(y.totalSpent, currencySymbol)}</td>
                         <td class="stats-td stats-text-center">${y.totalRead}</td>
                         <td class="stats-td stats-text-center stats-color-warning">${y.endTBR}</td>
                         <td class="stats-td stats-text-center">${yearTrendHtml}</td>
@@ -198,13 +197,13 @@ export function renderInventoryTBRTable(yearlyData, currentYear, currencySymbol)
                     const monthLabel = monNames[d.date.getMonth()];
                     
                     let trendHtml = '';
-                    let trendPercentStr = (d.trendPercent !== undefined && d.trend !== 0) ? ` (${d.trendPercent > 0 ? '+' : ''}${d.trendPercent.toFixed(1)}%)` : '';
+                    let trendPercentStr = (d.trendPercent !== undefined && d.trend !== 0) ? ` (${d.trendPercent > 0 ? '+' : ''}${formatNumber(d.trendPercent, 1)}%)` : '';
                     if (d.trend > 0) {
                         trendHtml = `<span class="stats-color-danger" title="Lesestapel wächst"><i class="fa-solid fa-arrow-up"></i> +${d.trend}${trendPercentStr}</span>`;
                     } else if (d.trend < 0) {
                         trendHtml = `<span class="stats-color-success" title="Lesestapel schrumpft"><i class="fa-solid fa-arrow-down"></i> ${d.trend}${trendPercentStr}</span>`;
                     } else {
-                        trendHtml = `<span class="stats-color-secondary" title="Keine Veränderung"><i class="fa-solid fa-minus"></i> 0 (0.0%)</span>`;
+                        trendHtml = `<span class="stats-color-secondary" title="Keine Veränderung"><i class="fa-solid fa-minus"></i> 0 (0,0%)</span>`;
                     }
                     
                     // Sparklines & Icons
@@ -222,7 +221,7 @@ export function renderInventoryTBRTable(yearlyData, currentYear, currencySymbol)
                                 <div>${d.purchasedThisMonth}${pIcon}</div>
                                 <div class="stats-sparkline-bg"><div class="stats-sparkline-fill stats-bg-danger" style="width: ${pWidth}%;"></div></div>
                             </td>
-                            <td class="stats-td stats-text-center stats-color-secondary">${d.spentThisMonth.toFixed(2)} ${currencySymbol}</td>
+                            <td class="stats-td stats-text-center stats-color-secondary">${formatCurrency(d.spentThisMonth, currencySymbol)}</td>
                             <td class="stats-td stats-text-center stats-color-secondary">
                                 <div>${d.readThisMonth}${rIcon}</div>
                                 <div class="stats-sparkline-bg"><div class="stats-sparkline-fill stats-bg-success" style="width: ${rWidth}%;"></div></div>

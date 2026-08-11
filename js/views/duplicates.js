@@ -1,5 +1,5 @@
 import { db } from '../db.js';
-import { escapeHTML, displayDate, renderStars, getPlaceholderImage } from '../utils.js';
+import { escapeHTML, displayDate, renderStars, getPlaceholderImage, formatCurrency } from '../utils.js';
 import { openModal } from './form.js';
 
 let activeTab = 'candidates'; // 'candidates' oder 'ignored'
@@ -372,7 +372,7 @@ function renderComicComparisonBox(comic, otherComic, label, isIgnoredView, pairK
                 <div><strong>Bestand:</strong> <span style="${diffBestand ? 'color: var(--warning);' : ''}">${escapeHTML(comic.bestand || '-')}</span></div>
                 <div><strong>Gekauft:</strong> ${displayDate(comic.kaufdatum) || '-'}</div>
                 <div><strong>Gelesen:</strong> ${displayDate(comic.gelesen_am) || '-'}</div>
-                <div><strong>Preis:</strong> ${comic.preis ? Number(comic.preis).toFixed(2) + ' ' + (db.getSettings().currency || '€') : '-'}</div>
+                <div><strong>Preis:</strong> ${comic.preis ? formatCurrency(comic.preis, db.getSettings().currency || '€') : '-'}</div>
                 <div><strong>Bewertung:</strong> ${comic.bewertung ? renderStars(comic.bewertung) : '-'}</div>
             </div>
 

@@ -40,7 +40,7 @@ describe('ComicVault Wishlist Feature & Transfer Tests', () => {
 
         expect(totalItems.textContent).to.equal('3');
         // Budget: 25.00 + 19.99 + 9.99 = 54.98
-        expect(totalBudget.textContent).to.contain('54.98');
+        expect(totalBudget.textContent).to.contain('54,98');
         expect(totalPreorders.textContent).to.equal('1');
 
         const rows = container.querySelectorAll('.wishlist-row');

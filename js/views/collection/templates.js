@@ -1,5 +1,5 @@
 import { db } from '../../db.js';
-import { displayDate, renderStars, getPlaceholderImage, escapeHTML } from '../../utils.js';
+import { displayDate, renderStars, getPlaceholderImage, escapeHTML, formatCurrency } from '../../utils.js';
 
 export const FIELD_CONFIG = {
     titel: { label: 'Titel / Serie', defaultList: true, defaultTiles: true, defaultDetails: true, listWidth: 'minmax(150px, 1.5fr)' },
@@ -62,7 +62,7 @@ export function renderTile(comic, visibleFields, isSelectModeActive, selectedCom
     visibleFields.tiles.forEach(key => {
         if (!stdFields.includes(key)) {
             let val = comic[key] || '-';
-            if (key === 'preis') val = (comic.preis !== null && comic.preis !== undefined) ? Number(comic.preis).toFixed(2) + ' ' + (db.getSettings().currency || '€') : '-';
+            if (key === 'preis') val = (comic.preis !== null && comic.preis !== undefined) ? formatCurrency(comic.preis, db.getSettings()?.currency || '€') : '-';
             if (key === 'kaufdatum' || key === 'gelesen_am' || key === 'updated_at' || key === 'created_at') val = displayDate(val);
             extraFields += `<div style="font-size: 0.72rem; color: rgba(255, 255, 255, 0.75); margin-top: 2px;"><strong>${FIELD_CONFIG[key].label}:</strong> ${val}</div>`;
         }
@@ -131,7 +131,7 @@ export function renderListItem(comic, visibleFields, isSelectModeActive, selecte
             case 'bestand':
                 return `<div data-col="${field.key}"><span class="badge ${bestandClass}" style="font-size: 0.62rem; padding: 2px 6px;">${escapeHTML(comic.bestand || '-')}</span></div>`;
             case 'preis':
-                return `<div data-col="${field.key}" style="font-weight: bold; ${align}">${(val !== null && val !== undefined) ? Number(val).toFixed(2) + ' ' + (db.getSettings().currency || '€') : '-'}</div>`;
+                return `<div data-col="${field.key}" style="font-weight: bold; ${align}">${(val !== null && val !== undefined) ? formatCurrency(val, db.getSettings()?.currency || '€') : '-'}</div>`;
             case 'kaufdatum':
                 return `<div data-col="${field.key}" style="font-size: 0.78rem;">${displayDate(val)}</div>`;
             case 'gelesen_am':
@@ -235,7 +235,7 @@ export function renderDetailsItem(comic, visibleFields, isSelectModeActive, sele
                 val = '-';
             } else {
                 if (key === 'preis') {
-                    val = Number(comic.preis).toFixed(2) + ' ' + (db.getSettings().currency || '€');
+                    val = formatCurrency(comic.preis, db.getSettings()?.currency || '€');
                 } else if (key === 'kaufdatum' || key === 'gelesen_am' || key === 'updated_at' || key === 'created_at') {
                     val = displayDate(val);
                 } else if (key === 'zustand') {

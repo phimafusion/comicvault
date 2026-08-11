@@ -225,7 +225,7 @@ export function renderPrognosisSection(prognosisData, currency) {
                         ${yoySign}${formatCurrency(yoyDiff, currency)}
                     </div>
                     <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 6px;">
-                        ${prevSpentYTD > 0 ? `${yoySign}${yoyPercent.toFixed(1)}% ggü. Vorjahr (${formatCurrency(prevSpentYTD, currency)})` : 'Vorjahr: 0,00 ' + currency}
+                        ${prevSpentYTD > 0 ? `${yoySign}${yoyPercent.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% ggü. Vorjahr (${formatCurrency(prevSpentYTD, currency)})` : 'Vorjahr: 0,00 ' + currency}
                     </div>
                 </div>
             </div>

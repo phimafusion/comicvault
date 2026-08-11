@@ -7,7 +7,9 @@ import {
     parseStars,
     renderStars,
     getPlaceholderImage,
-    escapeHTML
+    escapeHTML,
+    formatNumber,
+    formatCurrency
 } from '../utils.js';
 
 const { expect } = chai;
@@ -177,6 +179,16 @@ describe('ComicVault Utility Module Tests', () => {
                 done(new Error("SVG placeholder failed to load in browser"));
             };
             img.src = getPlaceholderImage();
+        });
+    });
+
+    describe('formatNumber() & formatCurrency()', () => {
+        it('sollte Tausendertrennzeichen mit Punkt und Kommazahlen mit Komma formatieren (de-DE)', () => {
+            expect(formatNumber(1234.56)).to.equal('1.234,56');
+            expect(formatNumber(1000000.5)).to.equal('1.000.000,50');
+            expect(formatCurrency(1234.56, '€')).to.equal('1.234,56 €');
+            expect(formatCurrency(99.9, '$')).to.equal('99,90 $');
+            expect(formatCurrency(0)).to.equal('0,00 €');
         });
     });
 });

@@ -133,16 +133,16 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
         
         // Sammlungswert: Nur Vorhanden, Vorbestellt, Verliehen.
         // c1 (12.50) + c2 (20.00) + c3 (15.00) = 47.50. c4 ist "verkauft" -> 0.
-        expect(kpiCards[1].firstElementChild.textContent).to.contain('47.50');
+        expect(kpiCards[1].firstElementChild.textContent).to.contain('47,50');
         
-        // Gelesen-Quote: c1 und c4 sind gelesen -> 2 von 4 = 50.00%
-        expect(kpiCards[2].firstElementChild.textContent).to.equal('50.00%');
+        // Gelesen-Quote: c1 und c4 sind gelesen -> 2 von 4 = 50,00%
+        expect(kpiCards[2].firstElementChild.textContent).to.equal('50,00%');
 
         // Lesestapel (TBR) Anzahl: c2 und c3 sind im Besitz/bestellt und ungelesen -> 2
         expect(kpiCards[3].firstElementChild.textContent).to.equal('2');
 
         // Lesestapel (TBR) Wert: c2 (20.00) + c3 (15.00) = 35.00
-        expect(kpiCards[4].firstElementChild.textContent).to.contain('35.00');
+        expect(kpiCards[4].firstElementChild.textContent).to.contain('35,00');
     });
 
     it('sollte die Lese-Challenge (Jahresziel) anzeigen und aktualisieren können', async () => {
@@ -183,10 +183,10 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
         expect(kpiCards[0].firstElementChild.textContent).to.equal('3');
 
         // Sammlungswert in 2026: c1 (12.50) + c2 (20.00) + c3 (15.00) = 47.50
-        expect(kpiCards[1].firstElementChild.textContent).to.contain('47.50');
+        expect(kpiCards[1].firstElementChild.textContent).to.contain('47,50');
 
-        // Gelesen-Quote in 2026: Nur c1 ist gelesen -> 1 von 3 = 33.33%
-        expect(kpiCards[2].firstElementChild.textContent).to.equal('33.33%');
+        // Gelesen-Quote in 2026: Nur c1 ist gelesen -> 1 von 3 = 33,33%
+        expect(kpiCards[2].firstElementChild.textContent).to.equal('33,33%');
 
         // TBR-Anzahl in 2026: c2, c3 ungelesen -> 2
         expect(kpiCards[3].firstElementChild.textContent).to.equal('2');
@@ -210,16 +210,16 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
 
         // Sammlungswert für Image: c3 (15.00) ist vorbestellt. c4 (8.00) ist verkauft (nicht im Bestand).
         // Also 15.00
-        expect(kpiCards[1].firstElementChild.textContent).to.contain('15.00');
+        expect(kpiCards[1].firstElementChild.textContent).to.contain('15,00');
 
-        // Gelesen-Quote für Image: c4 ist gelesen, c3 nicht -> 1 von 2 = 50.00%
-        expect(kpiCards[2].firstElementChild.textContent).to.equal('50.00%');
+        // Gelesen-Quote für Image: c4 ist gelesen, c3 nicht -> 1 von 2 = 50,00%
+        expect(kpiCards[2].firstElementChild.textContent).to.equal('50,00%');
     });
 
     it('sollte die Highlights, Averages und Top Listen korrekt berechnen', () => {
         // Ø Preis berechnen: (12.50 + 20.00 + 15.00 + 8.00) / 4 = 55.50 / 4 = 13.88
         const avgPriceEl = container.querySelector('#stats-highlights').firstElementChild;
-        expect(avgPriceEl.lastElementChild.textContent).to.contain('13.88');
+        expect(avgPriceEl.lastElementChild.textContent).to.contain('13,88');
 
         // Top Verlage überprüfen: Image hat 2 Comics (c3, c4). Marvel hat 1 (c2), DC hat 1 (c1).
         // Image sollte an Platz 1 stehen.
@@ -251,13 +251,13 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
         // Anzahl: c1, c2, c4 -> 3
         expect(comicRow.children[1].textContent).to.equal('3');
         // Sammlungswert: c1 (12.50) + c2 (20.00) = 32.50 (c4 ist verkauft)
-        expect(comicRow.children[2].textContent).to.contain('32.50');
-        // Gelesen Quote: c1 und c4 gelesen -> 2 von 3 = 66.67%
-        expect(comicRow.children[3].textContent).to.contain('66.67%');
+        expect(comicRow.children[2].textContent).to.contain('32,50');
+        // Gelesen Quote: c1 und c4 gelesen -> 2 von 3 = 66,67%
+        expect(comicRow.children[3].textContent).to.contain('66,67%');
         // TBR count: c2 (c1 gelesen, c4 verkauft) -> 1
         expect(comicRow.children[4].textContent).to.equal('1');
         // TBR value: c2 -> 20.00
-        expect(comicRow.children[5].textContent).to.contain('20.00');
+        expect(comicRow.children[5].textContent).to.contain('20,00');
 
         // Prüfe Graphic Novel Reihe
         const gnRow = rows[1];
@@ -265,13 +265,13 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
         // Anzahl: c3 -> 1
         expect(gnRow.children[1].textContent).to.equal('1');
         // Sammlungswert: c3 (15.00) = 15.00 (vorbestellt)
-        expect(gnRow.children[2].textContent).to.contain('15.00');
+        expect(gnRow.children[2].textContent).to.contain('15,00');
         // Gelesen Quote: 0.00%
-        expect(gnRow.children[3].textContent).to.contain('0.00%');
+        expect(gnRow.children[3].textContent).to.contain('0,00%');
         // TBR count: c3 -> 1
         expect(gnRow.children[4].textContent).to.equal('1');
         // TBR value: c3 -> 15.00
-        expect(gnRow.children[5].textContent).to.contain('15.00');
+        expect(gnRow.children[5].textContent).to.contain('15,00');
 
         // Jetzt filtern nach Verlag "Image"
         const imageCheckbox = container.querySelector('.stats-filter-checkbox[data-key="verlag"][value="Image"]');
@@ -289,18 +289,18 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
         // Comic: c4 (Image, Comic, verkauft, gelesen, 8.00)
         const filteredComicRow = filteredRows[0];
         expect(filteredComicRow.children[1].textContent).to.equal('1'); // 1 Comic
-        expect(filteredComicRow.children[2].textContent).to.contain('0.00'); // Wert 0 da verkauft
-        expect(filteredComicRow.children[3].textContent).to.contain('100.00%'); // 1 von 1 gelesen
+        expect(filteredComicRow.children[2].textContent).to.contain('0,00'); // Wert 0 da verkauft
+        expect(filteredComicRow.children[3].textContent).to.contain('100,00%'); // 1 von 1 gelesen
         expect(filteredComicRow.children[4].textContent).to.equal('0'); // TBR 0
-        expect(filteredComicRow.children[5].textContent).to.contain('0.00'); // TBR wert 0
+        expect(filteredComicRow.children[5].textContent).to.contain('0,00'); // TBR wert 0
 
         // Graphic Novel: c3 (Image, Graphic Novel, vorbestellt, ungelesen, 15.00)
         const filteredGnRow = filteredRows[1];
         expect(filteredGnRow.children[1].textContent).to.equal('1');
-        expect(filteredGnRow.children[2].textContent).to.contain('15.00');
-        expect(filteredGnRow.children[3].textContent).to.contain('0.00%');
+        expect(filteredGnRow.children[2].textContent).to.contain('15,00');
+        expect(filteredGnRow.children[3].textContent).to.contain('0,00%');
         expect(filteredGnRow.children[4].textContent).to.equal('1');
-        expect(filteredGnRow.children[5].textContent).to.contain('15.00');
+        expect(filteredGnRow.children[5].textContent).to.contain('15,00');
     });
 });
 

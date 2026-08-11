@@ -112,7 +112,7 @@ describe('ComicVault KI Insights Tests', () => {
             expect(review).to.be.a('string');
             expect(review).to.contain('ComicVault');
             expect(review).to.contain('5 Comics');
-            expect(review).to.contain('82.98 €');
+            expect(review).to.contain('82,98 €');
         });
     });
 });
