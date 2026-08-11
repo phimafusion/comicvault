@@ -31,9 +31,9 @@ export async function renderSubscriptions(container) {
             </div>
         </div>
         
-        <div class="details-card" style="flex-direction: column; border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; padding: 0;">
+        <div class="subscriptions-table-container">
             <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <table class="subscriptions-table" style="width: 100%; border-collapse: collapse; text-align: left;">
                     <thead>
                         <tr style="border-bottom: 2px solid var(--border-color); color: var(--text-secondary); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(0,0,0,0.15);">
                             <th class="sortable-sub-header" data-sort="titel" style="padding: 12px; cursor: pointer; user-select: none;">Serie / Titel <span class="sort-icon-container"></span></th>

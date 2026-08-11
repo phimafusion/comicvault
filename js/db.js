@@ -444,6 +444,12 @@ class Database {
         }
     }
 
+    getSettingsDoc() {
+        const user = getCurrentUser();
+        if (!user) return null;
+        return dbFirestore.collection('users').doc(user.uid).collection('settings').doc('config');
+    }
+
     getSettings() {
         const settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"theme": "dark"}');
         if (!settings.customSuggestions) {
@@ -472,8 +478,35 @@ class Database {
         return settings;
     }
 
-    saveSettings(settings) {
+    async saveSettings(settings) {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        const doc = this.getSettingsDoc();
+        if (doc) {
+            try {
+                await doc.set(settings, { merge: true });
+            } catch (err) {
+                console.warn('Fehler beim Speichern der Einstellungen in Firestore:', err);
+            }
+        }
+    }
+
+    async syncSettingsFromFirestore() {
+        const doc = this.getSettingsDoc();
+        if (!doc) return;
+        try {
+            const snapshot = await doc.get();
+            if (snapshot.exists) {
+                const remoteSettings = snapshot.data();
+                const localSettings = this.getSettings();
+                const merged = { ...localSettings, ...remoteSettings };
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
+            } else {
+                const localSettings = this.getSettings();
+                await doc.set(localSettings);
+            }
+        } catch (err) {
+            console.warn('Fehler beim Synchronisieren der Einstellungen aus Firestore:', err);
+        }
     }
 
     // Changelog helper methods

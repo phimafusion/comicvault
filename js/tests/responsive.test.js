@@ -1,4 +1,7 @@
-import { setupTestEnv, cleanup } from './testHelper.js';
+import { setupTestEnv, cleanup, tick } from './testHelper.js';
+import { renderSubscriptions } from '../views/subscriptions.js';
+import { renderDuplicates, openMergeModal } from '../views/duplicates.js';
+import { db } from '../db.js';
 
 const { expect } = chai;
 
@@ -109,4 +112,58 @@ describe('Responsive Layout & Mobile Menu Tests', () => {
         expect(document.body.classList.contains('mobile-view')).to.equal(initialMobileView);
         expect(localStorage.getItem('comicvault_force_mobile')).to.be.null;
     });
+
+    it('sollte in der Abonnements-Ansicht mobile-fähige Container- und Tabellen-Klassen nutzen', async () => {
+        await db.saveSubscription({ titel: 'Spider-Man Abo', verlag: 'Panini', haendler: 'Comic Shop' });
+        await renderSubscriptions(container);
+        await tick();
+
+        const tableContainer = container.querySelector('.subscriptions-table-container');
+        expect(tableContainer).to.not.be.null;
+
+        const table = container.querySelector('table.subscriptions-table');
+        expect(table).to.not.be.null;
+
+        const firstRowCells = container.querySelectorAll('#subscriptions-body tr td');
+        expect(firstRowCells.length).to.be.at.least(5);
+        expect(firstRowCells[0].getAttribute('data-label')).to.equal('Titel');
+        expect(firstRowCells[1].getAttribute('data-label')).to.equal('Verlag');
+        expect(firstRowCells[2].getAttribute('data-label')).to.equal('Händler');
+        expect(firstRowCells[3].getAttribute('data-label')).to.equal('Status');
+        expect(firstRowCells[4].getAttribute('data-label')).to.equal('Aktionen');
+    });
+
+    it('sollte im Duplikat-Finder mobile-fähige CSS-Klassen für Grids, KPIs und Merge-Table rendern', async () => {
+        await db.saveComic({ titel: 'Batman #1', serie: 'Batman', nummer: 1, verlag: 'DC', format: 'Heft', bestand: 'vorhanden' });
+        await db.saveComic({ titel: 'Batman #1', serie: 'Batman', nummer: 1, verlag: 'DC', format: 'Heft', bestand: 'vorhanden' });
+
+        await renderDuplicates(container);
+        await tick();
+
+        const kpiGrid = container.querySelector('.duplicates-kpi-grid');
+        expect(kpiGrid).to.not.be.null;
+
+        const pairHeader = container.querySelector('.duplicates-pair-header');
+        expect(pairHeader).to.not.be.null;
+
+        const comparisonGrid = container.querySelector('.duplicate-comparison-grid');
+        expect(comparisonGrid).to.not.be.null;
+
+        const specDetails = container.querySelectorAll('.duplicate-spec-details');
+        expect(specDetails.length).to.be.at.least(2);
+
+        // Prüfen, dass kein invalider inline @media Style mehr existiert
+        const comparisonElem = container.querySelector('.duplicate-comparison-grid');
+        expect(comparisonElem.getAttribute('style') || '').to.not.include('@media');
+
+        // Merge Modal öffnen
+        const mergeBtn = container.querySelector('.btn-open-merge-pair');
+        if (mergeBtn) {
+            mergeBtn.click();
+            await tick();
+            const mergeTable = document.querySelector('table.merge-fields-table');
+            expect(mergeTable).to.not.be.null;
+        }
+    });
 });
+

@@ -162,7 +162,7 @@ export async function renderDuplicates(container) {
             </div>
 
             <!-- KPI Cards -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 24px;">
+            <div class="duplicates-kpi-grid">
                 <div class="stats-card" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
                     <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Mögliche Duplikate</div>
                     <div style="font-size: 1.8rem; font-weight: 800; color: var(--primary-color); margin-top: 4px;">${candidates.length}</div>
@@ -306,7 +306,7 @@ function renderPairCard(pair, isIgnoredView) {
 
     return `
         <div class="duplicate-pair-card" data-key="${key}" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 12px;">
+            <div class="duplicates-pair-header">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; ${badgeClass}">
                         ${badgeLabel}
@@ -332,7 +332,7 @@ function renderPairCard(pair, isIgnoredView) {
             </div>
 
             <!-- Comparison Grid -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; @media (max-width: 768px) { grid-template-columns: 1fr; }">
+            <div class="duplicate-comparison-grid">
                 ${renderComicComparisonBox(comicA, comicB, 'A', isIgnoredView, key)}
                 ${renderComicComparisonBox(comicB, comicA, 'B', isIgnoredView, key)}
             </div>
@@ -367,7 +367,7 @@ function renderComicComparisonBox(comic, otherComic, label, isIgnoredView, pairK
             </div>
 
             <!-- Details -->
-            <div style="font-size: 0.78rem; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; color: var(--text-secondary); background: rgba(255, 255, 255, 0.02); padding: 10px; border-radius: 6px; margin-bottom: 12px; flex: 1;">
+            <div class="duplicate-spec-details">
                 <div><strong>Format:</strong> <span style="${diffFormat ? 'color: var(--warning);' : ''}">${escapeHTML(comic.format || '-')}</span></div>
                 <div><strong>Bestand:</strong> <span style="${diffBestand ? 'color: var(--warning);' : ''}">${escapeHTML(comic.bestand || '-')}</span></div>
                 <div><strong>Gekauft:</strong> ${displayDate(comic.kaufdatum) || '-'}</div>
@@ -476,18 +476,20 @@ export function openMergeModal(pair) {
             </div>
         </div>
 
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-            <thead>
-                <tr style="text-align: left; background: rgba(255, 255, 255, 0.05); font-size: 0.85rem;">
-                    <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">Feld</th>
-                    <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">Eintrag A</th>
-                    <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">Eintrag B</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${rowsHtml}
-            </tbody>
-        </table>
+        <div class="merge-table-container">
+            <table class="merge-fields-table" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <thead>
+                    <tr style="text-align: left; background: rgba(255, 255, 255, 0.05); font-size: 0.85rem;">
+                        <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">Feld</th>
+                        <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">Eintrag A</th>
+                        <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">Eintrag B</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+        </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 12px;">
             <button class="btn btn-secondary" id="btn-cancel-merge">Abbrechen</button>

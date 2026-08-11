@@ -1422,3 +1422,274 @@ body.mobile-view .view-toggle-btn {
     text-align: center !important;
 }
 
+/* --- Subscriptions (Abos) Mobile Responsiveness --- */
+.subscriptions-table-container {
+    flex-direction: column;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    padding: 0;
+    background: var(--bg-card);
+}
+
+@media (max-width: 768px) {
+    .subscriptions-table thead {
+        display: none;
+    }
+    
+    .subscriptions-table, 
+    .subscriptions-table tbody, 
+    .subscriptions-table tr, 
+    .subscriptions-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .subscriptions-table tr.subscription-row {
+        margin-bottom: 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 14px;
+        background: var(--bg-card);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .subscriptions-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0 !important;
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+        text-align: right;
+    }
+
+    .subscriptions-table td:last-child {
+        border-bottom: none;
+        padding-top: 12px !important;
+        justify-content: flex-end;
+    }
+
+    .subscriptions-table td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-align: left;
+        margin-right: 12px;
+    }
+
+    .subscriptions-table td[data-label="Titel"] {
+        font-size: 1.05rem;
+        color: var(--primary-color);
+    }
+}
+
+body.mobile-view .subscriptions-table thead {
+    display: none !important;
+}
+
+body.mobile-view .subscriptions-table, 
+body.mobile-view .subscriptions-table tbody, 
+body.mobile-view .subscriptions-table tr, 
+body.mobile-view .subscriptions-table td {
+    display: block !important;
+    width: 100% !important;
+}
+
+body.mobile-view .subscriptions-table tr.subscription-row {
+    margin-bottom: 12px !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 10px !important;
+    padding: 14px !important;
+    background: var(--bg-card) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+body.mobile-view .subscriptions-table td {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 8px 0 !important;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.08) !important;
+    text-align: right !important;
+}
+
+body.mobile-view .subscriptions-table td:last-child {
+    border-bottom: none !important;
+    padding-top: 12px !important;
+    justify-content: flex-end !important;
+}
+
+body.mobile-view .subscriptions-table td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: left;
+    margin-right: 12px;
+}
+
+/* --- Duplicate Finder Mobile Responsiveness --- */
+.duplicate-comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.duplicates-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 24px;
+}
+
+.duplicates-pair-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.duplicate-spec-details {
+    font-size: 0.78rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.02);
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    flex: 1;
+}
+
+@media (max-width: 768px) {
+    .duplicate-comparison-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .duplicates-pair-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .duplicates-pair-header > div {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+@media (max-width: 600px) {
+    .duplicates-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .duplicate-spec-details {
+        grid-template-columns: 1fr;
+    }
+}
+
+body.mobile-view .duplicate-comparison-grid {
+    grid-template-columns: 1fr !important;
+}
+
+body.mobile-view .duplicates-pair-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+}
+
+body.mobile-view .duplicates-pair-header > div {
+    width: 100% !important;
+    justify-content: space-between !important;
+}
+
+body.mobile-view .duplicates-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+}
+
+body.mobile-view .duplicate-spec-details {
+    grid-template-columns: 1fr !important;
+}
+
+/* --- Merge Modal Table Mobile Responsiveness --- */
+@media (max-width: 768px) {
+    .merge-fields-table thead {
+        display: none;
+    }
+
+    .merge-fields-table,
+    .merge-fields-table tbody,
+    .merge-fields-table tr,
+    .merge-fields-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .merge-fields-table tr {
+        margin-bottom: 14px;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 12px;
+        background: var(--bg-card);
+    }
+
+    .merge-fields-table td {
+        padding: 6px 0 !important;
+        border: none !important;
+    }
+
+    .merge-fields-table td:first-child {
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: var(--primary-color);
+        border-bottom: 1px dashed var(--border-color) !important;
+        padding-bottom: 8px !important;
+        margin-bottom: 8px;
+    }
+}
+
+body.mobile-view .merge-fields-table thead {
+    display: none !important;
+}
+
+body.mobile-view .merge-fields-table,
+body.mobile-view .merge-fields-table tbody,
+body.mobile-view .merge-fields-table tr,
+body.mobile-view .merge-fields-table td {
+    display: block !important;
+    width: 100% !important;
+}
+
+body.mobile-view .merge-fields-table tr {
+    margin-bottom: 14px !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 10px !important;
+    padding: 12px !important;
+    background: var(--bg-card) !important;
+}
+
+body.mobile-view .merge-fields-table td {
+    padding: 6px 0 !important;
+    border: none !important;
+}
+
+body.mobile-view .merge-fields-table td:first-child {
+    font-weight: 700 !important;
+    font-size: 0.9rem !important;
+    color: var(--primary-color) !important;
+    border-bottom: 1px dashed var(--border-color) !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 8px !important;
+}
+
+

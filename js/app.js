@@ -36,8 +36,9 @@ export class App {
         });
 
         // Firebase Auth Listener
-        onAuthStateChanged((user) => {
+        onAuthStateChanged(async (user) => {
             if (user) {
+                await db.syncSettingsFromFirestore();
                 this.showApp();
             } else {
                 this.showLogin();
