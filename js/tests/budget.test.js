@@ -1,4 +1,4 @@
-import { calculateBudgetStats, calculateMultiYearStats } from '../views/budget.js';
+import { calculateBudgetStats, calculateMultiYearStats, calculatePrognosisStats } from '../views/budget.js';
 
 const { expect } = chai;
 
@@ -146,6 +146,60 @@ describe('ComicVault Budget & Kostenanalyse Berechnungs-Tests', () => {
             expect(yr2025.delta).to.equal(2365.50); // 2380.00 - 14.50
             expect(yr2025.expensesByType['Comic']).to.equal(8.00);
             expect(yr2025.expensesByType['Manga']).to.equal(6.50);
+        });
+    });
+
+    describe('Budget-Prognosen & Trends (calculatePrognosisStats)', () => {
+        it('sollte Hochrechnung, YTD-Ausgaben und Vorjahresvergleich korrekt berechnen', () => {
+            // Referenzdatum: 28. Februar 2026 (2 abgelaufene Monate: Jan, Feb)
+            const refDate = new Date(2026, 1, 28);
+            const prognosis = calculatePrognosisStats(mockComics, mockBudgets, defaultTypes, 2026, refDate);
+
+            expect(prognosis.targetYear).to.equal(2026);
+            expect(prognosis.spentYTD).to.equal(102.50); // Jan (25) + Feb (77.50)
+            expect(prognosis.avgMonthlySpend).to.be.above(0);
+
+            // Monatlicher Trend: 12 Monate
+            expect(prognosis.monthlyTrend.length).to.equal(12);
+            expect(prognosis.monthlyTrend[0].isElapsed).to.be.true;
+            expect(prognosis.monthlyTrend[1].isCurrent).to.be.true;
+            expect(prognosis.monthlyTrend[2].isProjected).to.be.true;
+        });
+
+        it('sollte historische Saison-Faktoren auf Zukunftsmonate anwenden', () => {
+            // Referenzdatum: 31. August 2026 (8 abgelaufene Monate)
+            const refDate = new Date(2026, 7, 31);
+            
+            // Vorjahresdaten 2025 mit deutlicher Weihnachtsspitze im Dezember (Index 11)
+            const customComics = [
+                { id: 'c1', typ: 'Comic', preis: 100.00, kaufdatum: '2025-01-10' },
+                { id: 'c2', typ: 'Comic', preis: 300.00, kaufdatum: '2025-12-15' }, // 3x des Monatsdurchschnitts im Dez
+                { id: 'c3', typ: 'Comic', preis: 100.00, kaufdatum: '2026-01-10' },
+                { id: 'c4', typ: 'Comic', preis: 100.00, kaufdatum: '2026-02-10' }
+            ];
+
+            const prognosis = calculatePrognosisStats(customComics, {}, defaultTypes, 2026, refDate);
+            const decTrend = prognosis.monthlyTrend[11]; // Dezember
+            const sepTrend = prognosis.monthlyTrend[8];  // September
+
+            // Dezember sollte aufgrund des Vorjahresmusters höher geschätzt werden als September
+            expect(decTrend.projectedExpense).to.be.above(sepTrend.projectedExpense);
+        });
+
+        it('sollte für den laufenden aktiven Monat den verbleibenden Monatsanteil hochrechnen', () => {
+            // Referenzdatum: 11. August 2026
+            const refDate = new Date(2026, 7, 11);
+            const customComics = [
+                { id: 'c1', typ: 'Comic', preis: 91.60, kaufdatum: '2026-08-05' }
+            ];
+
+            const prognosis = calculatePrognosisStats(customComics, {}, defaultTypes, 2026, refDate);
+            const augTrend = prognosis.monthlyTrend[7]; // August
+
+            expect(augTrend.isCurrent).to.be.true;
+            expect(augTrend.actualExpenses).to.equal(91.60);
+            // Die Hochrechnung für August muss höher sein als die 91.60 €, da noch 20 Tage ausstehen!
+            expect(augTrend.projectedExpense).to.be.above(91.60);
         });
     });
 });

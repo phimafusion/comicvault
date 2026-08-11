@@ -1,4 +1,4 @@
-const CACHE_NAME = 'comicvault-v13';
+const CACHE_NAME = 'comicvault-v14';
 const ASSETS = [
   './',
   './index.html',
@@ -14,6 +14,7 @@ const ASSETS = [
   './js/services/importExportService.js',
   './js/services/statsService.js',
   './js/views/budget.js',
+  './js/views/budgetTemplates.js',
   './js/views/aiInsights.js',
   './js/views/changelog.js',
   './js/views/collection.js',
