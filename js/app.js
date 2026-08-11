@@ -105,22 +105,19 @@ export class App {
                 if (view) this.navigate(view);
                 
                 // Close sidebar on mobile navigation
-                if (this.sidebar) this.sidebar.classList.remove('open');
-                if (this.sidebarOverlay) this.sidebarOverlay.classList.remove('open');
+                this.closeSidebar();
             });
         });
 
         if (this.btnMenuToggle) {
             this.btnMenuToggle.addEventListener('click', () => {
-                if (this.sidebar) this.sidebar.classList.toggle('open');
-                if (this.sidebarOverlay) this.sidebarOverlay.classList.toggle('open');
+                this.toggleSidebar();
             });
         }
 
         if (this.btnBottomMenu) {
             this.btnBottomMenu.addEventListener('click', () => {
-                if (this.sidebar) this.sidebar.classList.toggle('open');
-                if (this.sidebarOverlay) this.sidebarOverlay.classList.toggle('open');
+                this.toggleSidebar();
             });
         }
 
@@ -136,8 +133,7 @@ export class App {
 
         if (this.sidebarOverlay) {
             this.sidebarOverlay.addEventListener('click', () => {
-                if (this.sidebar) this.sidebar.classList.remove('open');
-                if (this.sidebarOverlay) this.sidebarOverlay.classList.remove('open');
+                this.closeSidebar();
             });
         }
 
@@ -231,6 +227,18 @@ export class App {
                 }
             });
         }
+    }
+
+    toggleSidebar(forceState) {
+        if (!this.sidebar) return;
+        const isOpen = forceState !== undefined ? forceState : !this.sidebar.classList.contains('open');
+        this.sidebar.classList.toggle('open', isOpen);
+        if (this.sidebarOverlay) this.sidebarOverlay.classList.toggle('open', isOpen);
+        document.body.classList.toggle('sidebar-open', isOpen);
+    }
+
+    closeSidebar() {
+        this.toggleSidebar(false);
     }
 
     showApp() {

@@ -165,5 +165,10 @@ describe('Responsive Layout & Mobile Menu Tests', () => {
             expect(mergeTable).to.not.be.null;
         }
     });
+
+    it('sollte sicherstellen, dass das Sidebar Navigationselement im DOM existiert', () => {
+        const sidebar = container.querySelector('.sidebar');
+        expect(sidebar).to.not.be.null;
+    });
 });
 
