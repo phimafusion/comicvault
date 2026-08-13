@@ -4,7 +4,12 @@ import { parseCurrency } from '../utils.js';
 import { formatCurrency, renderHistoricalRow, getBudgetViewHtml } from './budgetTemplates.js';
 
 // Reine Berechnungsfunktion für Budgetstatistiken (isoliert testbar)
-export function calculateBudgetStats(comics, budgets, types, selectedYear) {
+export function calculateBudgetStats(comics, budgets, budgetTopUps, types, selectedYear) {
+    if (Array.isArray(budgetTopUps)) {
+        selectedYear = types;
+        types = budgetTopUps;
+        budgetTopUps = {};
+    }
     const targetYear = parseInt(selectedYear, 10);
     const months = [];
     
@@ -19,10 +24,17 @@ export function calculateBudgetStats(comics, budgets, types, selectedYear) {
         });
         expensesByType["Sonstige"] = 0;
         
-        let monthBudget = 200.00; // Standardbudget
+        let baseBudget = 200.00; // Standardbudget
         if (budgets && budgets[targetYear] && budgets[targetYear][monthKey] !== undefined) {
-            monthBudget = Number(budgets[targetYear][monthKey]);
+            baseBudget = Number(budgets[targetYear][monthKey]);
         }
+
+        let topUp = 0.00;
+        if (budgetTopUps && budgetTopUps[targetYear] && budgetTopUps[targetYear][monthKey] !== undefined) {
+            topUp = Number(budgetTopUps[targetYear][monthKey]) || 0.00;
+        }
+        
+        const monthBudget = baseBudget + topUp;
         
         months.push({
             monthIndex: i,
@@ -30,6 +42,8 @@ export function calculateBudgetStats(comics, budgets, types, selectedYear) {
             monthLabel,
             expensesByType,
             totalExpenses: 0,
+            baseBudget,
+            topUp,
             budget: monthBudget,
             delta: 0,
             monthlyDelta: 0,
@@ -77,9 +91,14 @@ export function calculateBudgetStats(comics, budgets, types, selectedYear) {
 }
 
 // Reine Berechnungsfunktion für die historische Jahresübersicht (isoliert testbar)
-export function calculateMultiYearStats(comics, budgets, types, sortedYears) {
+export function calculateMultiYearStats(comics, budgets, budgetTopUps, types, sortedYears) {
+    if (Array.isArray(budgetTopUps)) {
+        sortedYears = types;
+        types = budgetTopUps;
+        budgetTopUps = {};
+    }
     return sortedYears.map(year => {
-        const monthsData = calculateBudgetStats(comics, budgets, types, year);
+        const monthsData = calculateBudgetStats(comics, budgets, budgetTopUps, types, year);
         
         const expensesByType = {};
         types.forEach(t => { expensesByType[t] = 0; });
@@ -111,10 +130,16 @@ export function calculateMultiYearStats(comics, budgets, types, sortedYears) {
 }
 
 // Reine Berechnungsfunktion für Budget-Prognosen & Trends (isoliert testbar)
-export function calculatePrognosisStats(comics, budgets, types, selectedYear, referenceDate = new Date()) {
+export function calculatePrognosisStats(comics, budgets, budgetTopUps, types, selectedYear, referenceDate = new Date()) {
+    if (Array.isArray(budgetTopUps)) {
+        referenceDate = selectedYear || new Date();
+        selectedYear = types;
+        types = budgetTopUps;
+        budgetTopUps = {};
+    }
     const targetYear = parseInt(selectedYear, 10);
-    const monthsData = calculateBudgetStats(comics, budgets, types, targetYear);
-    const prevYearMonthsData = calculateBudgetStats(comics, budgets, types, targetYear - 1);
+    const monthsData = calculateBudgetStats(comics, budgets, budgetTopUps, types, targetYear);
+    const prevYearMonthsData = calculateBudgetStats(comics, budgets, budgetTopUps, types, targetYear - 1);
 
     const refYear = referenceDate.getFullYear();
     const refMonth = referenceDate.getMonth(); // 0-11
@@ -276,6 +301,9 @@ export async function renderBudget(container) {
         if (!settings.budgets) {
             settings.budgets = {};
         }
+        if (!settings.budgetTopUps) {
+            settings.budgetTopUps = {};
+        }
         let budgetsChanged = false;
         sortedYears.forEach(year => {
             if (!settings.budgets[year]) {
@@ -283,6 +311,14 @@ export async function renderBudget(container) {
                 for (let i = 1; i <= 12; i++) {
                     const monthKey = String(i).padStart(2, '0');
                     settings.budgets[year][monthKey] = 200.00;
+                }
+                budgetsChanged = true;
+            }
+            if (!settings.budgetTopUps[year]) {
+                settings.budgetTopUps[year] = {};
+                for (let i = 1; i <= 12; i++) {
+                    const monthKey = String(i).padStart(2, '0');
+                    settings.budgetTopUps[year][monthKey] = 0.00;
                 }
                 budgetsChanged = true;
             }
@@ -295,7 +331,7 @@ export async function renderBudget(container) {
         
         // Struktur rendern
         function drawView() {
-            const monthsData = calculateBudgetStats(comics, settings.budgets, types, selectedYear);
+            const monthsData = calculateBudgetStats(comics, settings.budgets, settings.budgetTopUps, types, selectedYear);
             monthlyExpensesData = monthsData.map(m => m.totalExpenses);
             
             // Jahressummen für das ausgewählte Jahr berechnen
@@ -316,10 +352,10 @@ export async function renderBudget(container) {
             });
             
             // Daten für die historische Jahresübersicht berechnen
-            const yearsSummaryData = calculateMultiYearStats(comics, settings.budgets, types, sortedYears);
+            const yearsSummaryData = calculateMultiYearStats(comics, settings.budgets, settings.budgetTopUps, types, sortedYears);
             
             // Prognose-Daten berechnen
-            const prognosisData = calculatePrognosisStats(comics, settings.budgets, types, selectedYear);
+            const prognosisData = calculatePrognosisStats(comics, settings.budgets, settings.budgetTopUps, types, selectedYear);
 
             container.innerHTML = getBudgetViewHtml({
                 sortedYears,
@@ -345,25 +381,33 @@ export async function renderBudget(container) {
         function updateLiveCalculations() {
             let cumulativeDelta = 0;
             let cumulativeBudget = 0;
-            let totalBudget = 0;
+            let totalBaseBudget = 0;
+            let totalTopUp = 0;
+            let totalEffectiveBudget = 0;
             
             for (let i = 0; i < 12; i++) {
                 const monthKey = String(i + 1).padStart(2, '0');
-                const input = container.querySelector(`.budget-input[data-month-key="${monthKey}"]`);
-                if (!input) continue;
+                const baseInput = container.querySelector(`.budget-input[data-month-key="${monthKey}"]`);
+                const topupInput = container.querySelector(`.topup-input[data-month-key="${monthKey}"]`);
+                if (!baseInput) continue;
 
-                const budgetValue = parseFloat(input.value) || 0;
-                totalBudget += budgetValue;
+                const baseValue = parseCurrency(baseInput.value) || 0;
+                const topUpValue = topupInput ? (parseCurrency(topupInput.value) || 0) : 0;
+                const effectiveBudgetValue = baseValue + topUpValue;
+
+                totalBaseBudget += baseValue;
+                totalTopUp += topUpValue;
+                totalEffectiveBudget += effectiveBudgetValue;
                 
                 const totalExpenses = (monthlyExpensesData && monthlyExpensesData[i]) ? monthlyExpensesData[i] : 0;
                 const cumulativeBudgetCell = container.querySelector(`.cumulative-budget-cell[data-month-key="${monthKey}"]`);
                 const deltaMonatCell = container.querySelector(`.delta-monat-cell[data-month-key="${monthKey}"]`);
                 const deltaCell = container.querySelector(`.delta-jahr-cell[data-month-key="${monthKey}"]`);
                 
-                const monthlyDelta = budgetValue - totalExpenses;
+                const monthlyDelta = effectiveBudgetValue - totalExpenses;
                 cumulativeDelta += monthlyDelta;
-                cumulativeBudget += budgetValue;
-                
+                cumulativeBudget += effectiveBudgetValue;
+
                 if (cumulativeBudgetCell) {
                     cumulativeBudgetCell.textContent = formatCurrency(cumulativeBudget, currency);
                 }
@@ -389,18 +433,23 @@ export async function renderBudget(container) {
                 }
             }
             
-            const totalBudgetCell = container.querySelector('#total-budget-cell');
-            if (totalBudgetCell) {
-                totalBudgetCell.textContent = formatCurrency(totalBudget, currency);
+            const totalBaseBudgetCell = container.querySelector('#total-base-budget-cell');
+            if (totalBaseBudgetCell) {
+                totalBaseBudgetCell.textContent = formatCurrency(totalBaseBudget, currency);
+            }
+
+            const totalTopupCell = container.querySelector('#total-topup-cell');
+            if (totalTopupCell) {
+                totalTopupCell.textContent = formatCurrency(totalTopUp, currency);
             }
             
             const totalCumulativeBudgetCell = container.querySelector('#total-cumulative-budget-cell');
             if (totalCumulativeBudgetCell) {
-                totalCumulativeBudgetCell.textContent = formatCurrency(totalBudget, currency);
+                totalCumulativeBudgetCell.textContent = formatCurrency(totalEffectiveBudget, currency);
             }
             
             const totalExpensesSum = (monthlyExpensesData || []).reduce((a, b) => a + b, 0);
-            const totalDeltaMonat = totalBudget - totalExpensesSum;
+            const totalDeltaMonat = totalEffectiveBudget - totalExpensesSum;
             const totalDeltaMonatCell = container.querySelector('#total-delta-monat-cell');
             if (totalDeltaMonatCell) {
                 totalDeltaMonatCell.textContent = formatCurrency(totalDeltaMonat, currency);
@@ -447,18 +496,32 @@ export async function renderBudget(container) {
                 if (!currentSettings.budgets[selectedYear]) {
                     currentSettings.budgets[selectedYear] = {};
                 }
+                if (!currentSettings.budgetTopUps) {
+                    currentSettings.budgetTopUps = {};
+                }
+                if (!currentSettings.budgetTopUps[selectedYear]) {
+                    currentSettings.budgetTopUps[selectedYear] = {};
+                }
                 
-                inputs.forEach(input => {
+                const baseInputs = container.querySelectorAll('.budget-input');
+                baseInputs.forEach(input => {
                     const monthKey = input.dataset.monthKey;
-                    const val = parseFloat(input.value) || 0;
+                    const val = parseCurrency(input.value) || 0;
                     currentSettings.budgets[selectedYear][monthKey] = val;
+                });
+
+                const topupInputs = container.querySelectorAll('.topup-input');
+                topupInputs.forEach(input => {
+                    const monthKey = input.dataset.monthKey;
+                    const val = parseCurrency(input.value) || 0;
+                    currentSettings.budgetTopUps[selectedYear][monthKey] = val;
                 });
                 
                 db.saveSettings(currentSettings);
                 
                 // Historische Tabelle aktualisieren, ohne das Haupt-DOM neu aufzubauen (um Focus-Verlust zu vermeiden)
                 const updatedSettings = db.getSettings();
-                const yearsSummaryData = calculateMultiYearStats(comics, updatedSettings.budgets, types, sortedYears);
+                const yearsSummaryData = calculateMultiYearStats(comics, updatedSettings.budgets, updatedSettings.budgetTopUps, types, sortedYears);
                 
                 const tbody = container.querySelector('#historical-budget-tbody');
                 if (tbody) {
@@ -479,8 +542,10 @@ export async function renderBudget(container) {
             }
 
             // Live-Berechnung bei Tastendruck/Eingabe und Auto-Save bei Fokus-Verlust/Änderung
-            const inputs = container.querySelectorAll('.budget-input');
-            inputs.forEach(input => {
+            const baseInputs = container.querySelectorAll('.budget-input');
+            const topupInputs = container.querySelectorAll('.topup-input');
+            
+            [...baseInputs, ...topupInputs].forEach(input => {
                 input.addEventListener('input', () => {
                     updateLiveCalculations();
                 });

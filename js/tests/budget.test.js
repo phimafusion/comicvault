@@ -79,6 +79,31 @@ describe('ComicVault Budget & Kostenanalyse Berechnungs-Tests', () => {
             expect(stats[2].budget).to.equal(200.00); // Standardwert, da nicht gemockt
         });
 
+        it('sollte Aufstockungen (budgetTopUps) korrekt zum Basis-Budget addieren und Deltas anpassen', () => {
+            const mockTopUps = {
+                2026: {
+                    "01": 50.00, // 200 Base + 50 TopUp = 250 € effektives Budget
+                    "02": 30.00  // 150 Base + 30 TopUp = 180 € effektives Budget
+                }
+            };
+            const stats = calculateBudgetStats(mockComics, mockBudgets, mockTopUps, defaultTypes, 2026);
+
+            // Jan: Base 200, TopUp 50 -> Budget 250, Ausgaben 25 -> Monthly Delta = +225, Cumulative Budget = 250
+            expect(stats[0].baseBudget).to.equal(200.00);
+            expect(stats[0].topUp).to.equal(50.00);
+            expect(stats[0].budget).to.equal(250.00);
+            expect(stats[0].monthlyDelta).to.equal(225.00);
+            expect(stats[0].cumulativeBudget).to.equal(250.00);
+
+            // Feb: Base 150, TopUp 30 -> Budget 180, Ausgaben 77.50 -> Monthly Delta = +102.50 -> Cumulative Delta = 225 + 102.50 = 327.50
+            expect(stats[1].baseBudget).to.equal(150.00);
+            expect(stats[1].topUp).to.equal(30.00);
+            expect(stats[1].budget).to.equal(180.00);
+            expect(stats[1].monthlyDelta).to.equal(102.50);
+            expect(stats[1].delta).to.equal(327.50);
+            expect(stats[1].cumulativeBudget).to.equal(430.00);
+        });
+
         it('sollte das kumulierte Delta, das monatliche Delta und das kumulierte Budget über das Kalenderjahr hinweg korrekt berechnen', () => {
             const stats = calculateBudgetStats(mockComics, mockBudgets, defaultTypes, 2026);
             
@@ -146,6 +171,18 @@ describe('ComicVault Budget & Kostenanalyse Berechnungs-Tests', () => {
             expect(yr2025.delta).to.equal(2365.50); // 2380.00 - 14.50
             expect(yr2025.expensesByType['Comic']).to.equal(8.00);
             expect(yr2025.expensesByType['Manga']).to.equal(6.50);
+        });
+
+        it('sollte Summen über mehrere Jahre inkl. Aufstockungen korrekt berechnen', () => {
+            const sortedYears = [2026, 2025];
+            const mockTopUps = {
+                2026: { "01": 100.00 } // +100 € im Jan 2026
+            };
+            const multiYearStats = calculateMultiYearStats(mockComics, mockBudgets, mockTopUps, defaultTypes, sortedYears);
+            
+            const yr2026 = multiYearStats[0];
+            expect(yr2026.totalBudget).to.equal(2450.00); // 2350 base + 100 topup
+            expect(yr2026.delta).to.equal(2297.50); // 2450 - 152.50
         });
     });
 

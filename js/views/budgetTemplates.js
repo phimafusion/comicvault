@@ -1,4 +1,4 @@
-import { escapeHTML } from '../utils.js';
+import { escapeHTML, formatNumber } from '../utils.js';
 
 // Hilfsfunktion zum Formatieren von Währungen im deutschen Format
 export function formatCurrency(amount, currencySymbol) {
@@ -59,7 +59,8 @@ export function getBudgetViewHtml({ sortedYears, selectedYear, types, currency, 
                             ${types.map(t => `<th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">${escapeHTML(t)}</th>`).join('')}
                             <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">Sonstige</th>
                             <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">Gesamt</th>
-                            <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem; width: 150px;">Budget</th>
+                            <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem; width: 140px;">Budget</th>
+                            <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem; width: 140px;">Aufstockung (+)</th>
                             <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">Delta Monat</th>
                             <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem; width: 150px;">Budget Jahr</th>
                             <th style="padding: 14px 16px; font-family: var(--font-display); font-weight: 700; color: var(--text-primary); text-align: right; font-size: 0.95rem;">Delta Jahr</th>
@@ -75,8 +76,14 @@ export function getBudgetViewHtml({ sortedYears, selectedYear, types, currency, 
                                 <td style="padding: 14px 16px; text-align: right; font-weight: 600; color: var(--text-primary);">${formatCurrency(m.totalExpenses, currency)}</td>
                                 <td style="padding: 8px 16px; text-align: right;">
                                     <div style="display: inline-flex; align-items: center; gap: 4px; justify-content: flex-end; width: 100%;">
-                                        <input type="number" step="any" min="0" class="form-control budget-input" data-month-key="${m.monthKey}" value="${m.budget.toFixed(2)}" style="width: 90px; text-align: right; padding: 6px 12px; font-family: var(--font-primary); font-weight: 500;">
-                                        <span style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 500;">${currency}</span>
+                                        <input type="text" inputmode="decimal" class="form-control budget-input" data-month-key="${m.monthKey}" value="${formatNumber(m.baseBudget !== undefined ? m.baseBudget : m.budget, 2)}" style="width: 80px; text-align: right; padding: 6px 10px; font-family: var(--font-primary); font-weight: 500;">
+                                        <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">${currency}</span>
+                                    </div>
+                                </td>
+                                <td style="padding: 8px 16px; text-align: right;">
+                                    <div style="display: inline-flex; align-items: center; gap: 4px; justify-content: flex-end; width: 100%;">
+                                        <input type="text" inputmode="decimal" class="form-control topup-input" data-month-key="${m.monthKey}" value="${formatNumber(m.topUp || 0, 2)}" style="width: 80px; text-align: right; padding: 6px 10px; font-family: var(--font-primary); font-weight: 500;">
+                                        <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">${currency}</span>
                                     </div>
                                 </td>
                                 <td class="delta-monat-cell" data-month-key="${m.monthKey}" style="padding: 14px 16px; text-align: right; font-weight: 600; transition: var(--transition);"></td>
@@ -90,7 +97,8 @@ export function getBudgetViewHtml({ sortedYears, selectedYear, types, currency, 
                             ${types.map(t => `<td style="padding: 14px 16px; text-align: right; color: var(--text-primary);">${formatCurrency(totalByType[t], currency)}</td>`).join('')}
                             <td style="padding: 14px 16px; text-align: right; color: var(--text-primary);">${formatCurrency(totalByType["Sonstige"], currency)}</td>
                             <td style="padding: 14px 16px; text-align: right; color: var(--text-primary);">${formatCurrency(overallExpenses, currency)}</td>
-                            <td id="total-budget-cell" style="padding: 14px 16px; text-align: right; color: var(--text-primary); font-family: var(--font-primary);"></td>
+                            <td id="total-base-budget-cell" style="padding: 14px 16px; text-align: right; color: var(--text-primary); font-family: var(--font-primary);"></td>
+                            <td id="total-topup-cell" style="padding: 14px 16px; text-align: right; color: var(--text-primary); font-family: var(--font-primary);"></td>
                             <td id="total-delta-monat-cell" style="padding: 14px 16px; text-align: right; font-weight: 700; transition: var(--transition);"></td>
                             <td id="total-cumulative-budget-cell" style="padding: 14px 16px; text-align: right; color: var(--text-primary); font-family: var(--font-primary); font-weight: 700;"></td>
                             <td id="total-delta-cell" style="padding: 14px 16px; text-align: right; font-weight: 700; transition: var(--transition);"></td>
