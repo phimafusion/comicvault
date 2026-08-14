@@ -1,4 +1,4 @@
-const CACHE_NAME = 'comicvault-v15';
+const CACHE_NAME = 'comicvault-v16';
 const ASSETS = [
   './',
   './index.html',
@@ -13,6 +13,7 @@ const ASSETS = [
   './js/components/star-rating.js',
   './js/services/importExportService.js',
   './js/services/statsService.js',
+  './js/services/randomPickService.js',
   './js/views/budget.js',
   './js/views/budgetTemplates.js',
   './js/views/aiInsights.js',
@@ -25,6 +26,8 @@ const ASSETS = [
   './js/views/settings.js',
   './js/views/stats.js',
   './js/views/wishlist.js',
+  './js/views/randomPick.js',
+  './js/views/randomPick/randomPickTemplates.js',
   './js/views/collection/templates.js',
   './js/views/collection/columnManager.js',
   './js/views/collection/fieldConfig.js',
