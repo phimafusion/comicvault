@@ -91,7 +91,7 @@ describe('Random Picker Tests', () => {
 
             const drawBtn = container.querySelector('#btn-draw-random-comic');
             expect(drawBtn).to.not.be.null;
-            expect(drawBtn.textContent).to.contain('ZUFÄLLIGEN BAND ZIEHEN');
+            expect(drawBtn.textContent).to.contain('ROULETTE STARTEN');
         });
 
         it('sollte beim Klick auf den Ziehen-Button eine Gewinner-Karte rendern', async () => {
@@ -106,7 +106,7 @@ describe('Random Picker Tests', () => {
 
             const winnerCard = container.querySelector('.winner-card');
             expect(winnerCard).to.not.be.null;
-            expect(winnerCard.textContent).to.contain('DEIN ZUFALLSPICK');
+            expect(winnerCard.textContent).to.contain('Dein Pick');
             expect(winnerCard.textContent).to.contain('Test Comic #1');
             expect(winnerCard.textContent).to.contain('#1');
             expect(winnerCard.textContent).to.contain('10.05.2026');
