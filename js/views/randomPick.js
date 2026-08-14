@@ -92,10 +92,11 @@ export async function renderRandomPick(container, appInstance) {
         const interval = setInterval(() => {
             const tempComic = eligibleComics[Math.floor(Math.random() * eligibleComics.length)];
             resultContainer.innerHTML = `
-                <div class="details-card" style="padding: 36px 24px; text-align: center; border-radius: 16px; border: 2px solid var(--primary-color); background: rgba(99, 102, 241, 0.08); transition: all 0.1s;">
-                    <div style="font-size: 2.5rem; margin-bottom: 8px;">🎲</div>
-                    <h3 style="font-size: 1.4rem; font-weight: 700; color: var(--primary-color); font-family: var(--font-display);">${tempComic.titel || 'Comic'}</h3>
-                    <div style="color: var(--text-secondary); font-size: 0.9rem;">${tempComic.serie || ''} ${tempComic.nummer ? '#' + tempComic.nummer : ''}</div>
+                <div style="padding: 48px 24px; text-align: center; border-radius: 24px; border: 2px solid rgba(99, 102, 241, 0.5); background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%); backdrop-filter: blur(12px); box-shadow: 0 10px 40px rgba(99, 102, 241, 0.2), inset 0 0 20px rgba(99, 102, 241, 0.1); transition: all 0.05s;">
+                    <div style="font-size: 3.5rem; margin-bottom: 16px; filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.5)); animation: spin 0.2s linear infinite;">🎲</div>
+                    <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
+                    <h3 style="font-size: 1.8rem; font-weight: 900; color: #ffffff; font-family: var(--font-display); letter-spacing: -0.5px;">${tempComic.titel || 'Comic'}</h3>
+                    <div style="color: var(--primary-color); font-weight: 700; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 8px;">${tempComic.serie || ''} ${tempComic.nummer ? '#' + tempComic.nummer : ''}</div>
                 </div>
             `;
             flashes++;

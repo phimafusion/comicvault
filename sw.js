@@ -1,4 +1,4 @@
-const CACHE_NAME = 'comicvault-v18';
+const CACHE_NAME = 'comicvault-v19';
 const ASSETS = [
   './',
   './index.html',
