@@ -294,7 +294,14 @@ export class App {
                 renderStats(this.viewContainer);
                 break;
             case 'random-pick':
-                renderRandomPick(this.viewContainer, this);
+                renderRandomPick(this.viewContainer, this).catch(err => {
+                    console.error("Error in renderRandomPick:", err);
+                    this.viewContainer.innerHTML = `<div style="padding: 30px; text-align: center; color: var(--danger);">
+                        <i class="fa-solid fa-triangle-exclamation fa-3x" style="margin-bottom: 16px;"></i>
+                        <h3>Fehler beim Laden des Random Pickers</h3>
+                        <p>${err.message}</p>
+                    </div>`;
+                });
                 break;
             case 'budget':
                 renderBudget(this.viewContainer);
