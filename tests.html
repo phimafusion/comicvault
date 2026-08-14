@@ -440,138 +440,122 @@
         });
     </script>
 
-    <!-- Test Suites -->
-    <script type="module" src="./js/tests/utils.test.js?v=15"></script>
-    <script type="module" src="./js/tests/ui.test.js?v=15"></script>
-    <script type="module" src="./js/tests/autocomplete.test.js?v=15"></script>
-    <script type="module" src="./js/tests/bulkdelete.test.js?v=15"></script>
-    <script type="module" src="./js/tests/bulkedit.test.js?v=15"></script>
-    <script type="module" src="./js/tests/import.test.js?v=15"></script>
-    <script type="module" src="./js/tests/changelog.test.js?v=15"></script>
-    <script type="module" src="./js/tests/responsive.test.js?v=15"></script>
-    <script type="module" src="./js/tests/theme.test.js?v=15"></script>
-    <script type="module" src="./js/tests/wishlist.test.js?v=15"></script>
-    <script type="module" src="./js/tests/stats.test.js?v=15"></script>
-    <script type="module" src="./js/tests/pwa.test.js?v=15"></script>
-    <script type="module" src="./js/tests/budget.test.js?v=15"></script>
-    <script type="module" src="./js/tests/dateFilters.test.js?v=15"></script>
-    <script type="module" src="./js/tests/db.test.js?v=15"></script>
-    <script type="module" src="./js/tests/aiInsights.test.js?v=15"></script>
-    <script type="module" src="./js/tests/subscriptions.test.js?v=15"></script>
-    <script type="module" src="./js/tests/duplicates.test.js?v=15"></script>
-    <script type="module" src="./js/tests/mockup.test.js?v=15"></script>
-    <script type="module">
-        // Run tests
-        const runner = mocha.run();
-
-        // Headless reporter für automatische Tests
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('headless') === 'true') {
-            const failedTestsDetails = [];
-            runner.on('fail', (test, err) => {
-                failedTestsDetails.push({
-                    title: test.fullTitle(),
-                    error: err.message,
-                    stack: err.stack
+    <!-- Main Test Suites Entrypoint -->
+    <script>
+        function initRunner(runner) {
+            // Headless reporter für automatische Tests
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('headless') === 'true') {
+                const failedTestsDetails = [];
+                runner.on('fail', (test, err) => {
+                    failedTestsDetails.push({
+                        title: test.fullTitle(),
+                        error: err.message,
+                        stack: err.stack
+                    });
                 });
+                runner.on('end', () => {
+                    const stats = runner.stats;
+                    fetch('http://localhost:8081/report', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            passes: stats.passes,
+                            failures: stats.failures,
+                            pending: stats.pending,
+                            tests: stats.tests,
+                            duration: stats.duration,
+                            failedTests: failedTestsDetails
+                        })
+                    }).catch(err => console.error('Fehler beim Senden des Testberichts:', err));
+                });
+            }
+
+            const moveStatsBox = () => {
+                const stats = document.getElementById('mocha-stats');
+                if (stats && stats.parentElement !== document.body) {
+                    document.body.appendChild(stats);
+                }
+            };
+
+            runner.on('start', () => {
+                moveStatsBox();
+                
+                const stats = document.getElementById('mocha-stats');
+                if (stats) {
+                    const progressLi = stats.querySelector('.progress');
+                    if (progressLi && !document.getElementById('custom-progress-wrap')) {
+                        progressLi.insertAdjacentHTML('beforeend', `
+                            <div id="custom-progress-wrap" style="width: 100%;">
+                                <div class="custom-progress-header">
+                                    <span>Fortschritt</span>
+                                    <span id="custom-progress-text" style="font-family: 'Outfit', sans-serif; font-weight: 700;">0%</span>
+                                </div>
+                                <div class="custom-progress-container">
+                                    <div id="custom-progress-bar" class="custom-progress-bar"></div>
+                                </div>
+                            </div>
+                        `);
+                    }
+
+                    if (!document.getElementById('btn-rerun-tests-stats')) {
+                        stats.insertAdjacentHTML('beforeend', `
+                            <li style="margin-top: 12px; text-align: center; width: 100%;">
+                                <button id="btn-rerun-tests-stats" style="width: 100%; cursor: pointer; border: 1px solid rgba(129, 140, 248, 0.4); background: rgba(129, 140, 248, 0.2); color: #c7d2fe; padding: 6px 10px; border-radius: 8px; font-weight: 600; font-size: 0.8rem; font-family: 'Inter', sans-serif; transition: all 0.2s ease;">
+                                    <i class="fa-solid fa-rotate-right"></i> Rerun Tests
+                                </button>
+                            </li>
+                        `);
+                    }
+                }
             });
-            runner.on('end', () => {
-                const stats = runner.stats;
-                fetch('http://localhost:8081/report', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        passes: stats.passes,
-                        failures: stats.failures,
-                        pending: stats.pending,
-                        tests: stats.tests,
-                        duration: stats.duration,
-                        failedTests: failedTestsDetails
-                    })
-                }).catch(err => console.error('Fehler beim Senden des Testberichts:', err));
+
+            // Autoscroll to the latest executed test & update custom progress
+            let lastScrollTime = 0;
+            runner.on('test end', () => {
+                moveStatsBox();
+                
+                // Custom progress bar update
+                const total = runner.total || 1;
+                const current = runner.stats.tests || 0;
+                const percent = Math.min(100, Math.round((current / total) * 100));
+                
+                const pb = document.getElementById('custom-progress-bar');
+                const pt = document.getElementById('custom-progress-text');
+                if (pb && pt) {
+                    pb.style.width = percent + '%';
+                    pt.textContent = percent + '%';
+                    
+                    if (runner.stats.failures > 0) {
+                        pb.style.background = '#ef4444'; // Red if failed
+                        pt.style.color = '#fca5a5';
+                    } else if (percent === 100) {
+                        pb.style.background = '#10b981'; // Green if 100% and no failures
+                        pt.style.color = '#6ee7b7';
+                    }
+                }
+                
+                const now = Date.now();
+                if (now - lastScrollTime > 80) { // Throttle to prevent scroll jitter and improve performance
+                    const tests = document.querySelectorAll('#mocha .test');
+                    if (tests.length > 0) {
+                        const lastTest = tests[tests.length - 1];
+                        lastTest.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                    lastScrollTime = now;
+                }
             });
         }
-
-        const moveStatsBox = () => {
-            const stats = document.getElementById('mocha-stats');
-            if (stats && stats.parentElement !== document.body) {
-                document.body.appendChild(stats);
-            }
-        };
-
-        runner.on('start', () => {
-            moveStatsBox();
-            
-            const stats = document.getElementById('mocha-stats');
-            if (stats) {
-                const progressLi = stats.querySelector('.progress');
-                if (progressLi && !document.getElementById('custom-progress-wrap')) {
-                    progressLi.insertAdjacentHTML('beforeend', `
-                        <div id="custom-progress-wrap" style="width: 100%;">
-                            <div class="custom-progress-header">
-                                <span>Fortschritt</span>
-                                <span id="custom-progress-text" style="font-family: 'Outfit', sans-serif; font-weight: 700;">0%</span>
-                            </div>
-                            <div class="custom-progress-container">
-                                <div id="custom-progress-bar" class="custom-progress-bar"></div>
-                            </div>
-                        </div>
-                    `);
-                }
-
-                if (!document.getElementById('btn-rerun-tests-stats')) {
-                    stats.insertAdjacentHTML('beforeend', `
-                        <li style="margin-top: 12px; text-align: center; width: 100%;">
-                            <button id="btn-rerun-tests-stats" style="width: 100%; cursor: pointer; border: 1px solid rgba(129, 140, 248, 0.4); background: rgba(129, 140, 248, 0.2); color: #c7d2fe; padding: 6px 10px; border-radius: 8px; font-weight: 600; font-size: 0.8rem; font-family: 'Inter', sans-serif; transition: all 0.2s ease;">
-                                <i class="fa-solid fa-rotate-right"></i> Rerun Tests
-                            </button>
-                        </li>
-                    `);
-                }
-            }
-        });
-
-        // Autoscroll to the latest executed test & update custom progress
-        let lastScrollTime = 0;
-        runner.on('test end', () => {
-            moveStatsBox();
-            
-            // Custom progress bar update
-            const total = runner.total || 1;
-            const current = runner.stats.tests || 0;
-            const percent = Math.min(100, Math.round((current / total) * 100));
-            
-            const pb = document.getElementById('custom-progress-bar');
-            const pt = document.getElementById('custom-progress-text');
-            if (pb && pt) {
-                pb.style.width = percent + '%';
-                pt.textContent = percent + '%';
-                
-                if (runner.stats.failures > 0) {
-                    pb.style.background = '#ef4444'; // Red if failed
-                    pt.style.color = '#fca5a5';
-                } else if (percent === 100) {
-                    pb.style.background = '#10b981'; // Green if 100% and no failures
-                    pt.style.color = '#6ee7b7';
-                }
-            }
-            
-            const now = Date.now();
-            if (now - lastScrollTime > 80) { // Throttle to prevent scroll jitter and improve performance
-                const tests = document.querySelectorAll('#mocha .test');
-                if (tests.length > 0) {
-                    const lastTest = tests[tests.length - 1];
-                    lastTest.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-                lastScrollTime = now;
-            }
-        });
+        window.initRunner = initRunner;
 
         // Event-Listener für Rerun-Buttons (Header & Floating Box)
         document.addEventListener('click', (e) => {
             const rerunBtn = e.target.closest('#btn-rerun-tests, #btn-rerun-tests-stats');
             if (rerunBtn) {
-                window.location.reload();
+                const url = new URL(window.location.href);
+                url.searchParams.delete('grep');
+                url.searchParams.set('t', Date.now());
+                window.location.href = url.pathname + url.search;
                 return;
             }
 
@@ -581,5 +565,7 @@
             }
         });
     </script>
+
+    <script type="module" src="./js/tests/allTests.js?v=25"></script>
 </body>
 </html>

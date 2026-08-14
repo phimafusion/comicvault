@@ -10,6 +10,7 @@ import { renderSettings } from './views/settings.js';
 import { renderChangelog } from './views/changelog.js';
 import { renderAiInsights } from './views/aiInsights.js';
 import { renderDuplicates, cleanupDuplicates } from './views/duplicates.js';
+import { renderRandomPick } from './views/randomPick.js';
 import { openModal } from './views/form.js';
 
 export class App {
@@ -291,6 +292,9 @@ export class App {
                 break;
             case 'stats':
                 renderStats(this.viewContainer);
+                break;
+            case 'random-pick':
+                renderRandomPick(this.viewContainer, this);
                 break;
             case 'budget':
                 renderBudget(this.viewContainer);
