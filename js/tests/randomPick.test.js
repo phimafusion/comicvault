@@ -1,7 +1,7 @@
 import { setupTestEnv, cleanup, tick } from './testHelper.js';
 import { filterComicsForPick, pickRandomComic, calculatePickSmartInsight } from '../services/randomPickService.js';
 import { renderRandomPick } from '../views/randomPick.js';
-import * as db from '../db.js';
+import { db } from '../db.js';
 
 const { expect } = chai;
 

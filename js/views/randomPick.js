@@ -1,4 +1,4 @@
-import * as db from '../db.js';
+import { db } from '../db.js';
 import { filterComicsForPick, pickRandomComic, calculatePickSmartInsight } from '../services/randomPickService.js';
 import { renderRandomPickLayout, renderWinnerCard, renderInitialSlotState } from './randomPick/randomPickTemplates.js';
 import { showToast } from '../utils.js';

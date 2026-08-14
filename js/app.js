@@ -210,7 +210,7 @@ export class App {
         if (this.btnOpenTestsuite) {
             this.btnOpenTestsuite.addEventListener('click', () => {
                 if (this.testsuiteIframe) {
-                    this.testsuiteIframe.src = './tests.html?v=27&t=' + Date.now();
+                    this.testsuiteIframe.src = './tests.html?v=22&t=' + Date.now();
                 }
                 if (this.testsuiteModal) {
                     this.testsuiteModal.style.display = 'flex';
