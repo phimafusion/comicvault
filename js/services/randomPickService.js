@@ -4,10 +4,10 @@ import { formatCurrency } from '../utils.js';
 /**
  * Filtert Comics basierend auf den Kriterien des Zufallspick-Generators.
  */
-export function filterComicsForPick(allComics, { stack = 'unread', verlag = 'all', typ = 'all' } = {}) {
+export function filterComicsForPick(allComics, { stack = 'unread', verlag = 'all', typ = 'all', sequentialOnly = false } = {}) {
     if (!Array.isArray(allComics)) return [];
 
-    return allComics.filter(c => {
+    let filtered = allComics.filter(c => {
         // 1. Stapel-Filter
         if (stack === 'unread') {
             if (c.bestand !== 'vorhanden' || c.gelesen === true || c.gelesen_am) return false;
@@ -32,6 +32,39 @@ export function filterComicsForPick(allComics, { stack = 'unread', verlag = 'all
 
         return true;
     });
+
+    // Option: Nur den jeweils nächsten ungelesenen Band einer Serie vorschlagen
+    if (sequentialOnly) {
+        const lowestUnreadPerSeries = new Map();
+        
+        // Zuerst die niedrigste ungelesene Nummer für jede Serie im gesamten (physischen) Bestand ermitteln
+        for (const c of allComics) {
+            if (c.serie && c.bestand === 'vorhanden' && (!c.gelesen && !c.gelesen_am)) {
+                // Konvertiere die Nummer in eine Zahl (z.B. "1", "01", "12 / 13" -> 1, 1, 12)
+                const num = parseFloat(String(c.nummer).replace(',', '.'));
+                if (!isNaN(num)) {
+                    if (!lowestUnreadPerSeries.has(c.serie) || num < lowestUnreadPerSeries.get(c.serie)) {
+                        lowestUnreadPerSeries.set(c.serie, num);
+                    }
+                }
+            }
+        }
+        
+        filtered = filtered.filter(c => {
+            if (!c.serie) return true; // Einzelbände sind okay
+            const num = parseFloat(String(c.nummer).replace(',', '.'));
+            if (isNaN(num)) return true; // Ohne Nummer okay
+            
+            const lowestUnread = lowestUnreadPerSeries.get(c.serie);
+            // Wenn diese Nummer größer ist als die niedrigste ungelesene, wegfiltern
+            if (lowestUnread !== undefined && num > lowestUnread) {
+                return false;
+            }
+            return true;
+        });
+    }
+
+    return filtered;
 }
 
 /**

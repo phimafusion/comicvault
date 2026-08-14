@@ -6,6 +6,7 @@ import { showToast } from '../utils.js';
 let currentStack = 'unread';
 let currentVerlag = 'all';
 let currentTyp = 'all';
+let currentSequential = true;
 let lastPickedComic = null;
 
 /**
@@ -25,7 +26,8 @@ export async function renderRandomPick(container, appInstance) {
     let eligibleComics = filterComicsForPick(allComics, {
         stack: currentStack,
         verlag: currentVerlag,
-        typ: currentTyp
+        typ: currentTyp,
+        sequentialOnly: currentSequential
     });
     let smartInsightHtml = calculatePickSmartInsight(eligibleComics, currentStack, currencySymbol);
 
@@ -33,13 +35,15 @@ export async function renderRandomPick(container, appInstance) {
     container.innerHTML = renderRandomPickLayout({
         activeStack: currentStack,
         selectedVerlag: currentVerlag,
-        selectedTyp: currentTyp
+        selectedTyp: currentTyp,
+        sequentialOnly: currentSequential
     }, publishers, types, eligibleComics.length, smartInsightHtml);
 
     // DOM-Elemente cachen
     const stackSelect = container.querySelector('#pick-stack-select');
     const verlagSelect = container.querySelector('#pick-verlag-select');
     const typSelect = container.querySelector('#pick-typ-select');
+    const seqCheckbox = container.querySelector('#pick-sequential-checkbox');
     const drawBtn = container.querySelector('#btn-draw-random-comic');
     const resultContainer = container.querySelector('#random-pick-result-container');
     const countBadge = container.querySelector('#eligible-count-badge');
@@ -50,12 +54,14 @@ export async function renderRandomPick(container, appInstance) {
         currentStack = stackSelect ? stackSelect.value : 'unread';
         currentVerlag = verlagSelect ? verlagSelect.value : 'all';
         currentTyp = typSelect ? typSelect.value : 'all';
+        currentSequential = seqCheckbox ? seqCheckbox.checked : true;
 
         const comics = await db.getAllComics() || [];
         eligibleComics = filterComicsForPick(comics, {
             stack: currentStack,
             verlag: currentVerlag,
-            typ: currentTyp
+            typ: currentTyp,
+            sequentialOnly: currentSequential
         });
 
         smartInsightHtml = calculatePickSmartInsight(eligibleComics, currentStack, currencySymbol);
@@ -80,6 +86,7 @@ export async function renderRandomPick(container, appInstance) {
     stackSelect?.addEventListener('change', updateEligible);
     verlagSelect?.addEventListener('change', updateEligible);
     typSelect?.addEventListener('change', updateEligible);
+    seqCheckbox?.addEventListener('change', updateEligible);
 
     // Ziehungs-Funktion mit Slot-Machine Animation
     const executeDraw = () => {
