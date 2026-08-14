@@ -440,8 +440,33 @@
         });
     </script>
 
-    <!-- Main Test Suites Entrypoint -->
-    <script>
+    <!-- Test Suites -->
+    <script type="module" src="./js/tests/utils.test.js?v=26"></script>
+    <script type="module" src="./js/tests/ui.test.js?v=26"></script>
+    <script type="module" src="./js/tests/autocomplete.test.js?v=26"></script>
+    <script type="module" src="./js/tests/bulkdelete.test.js?v=26"></script>
+    <script type="module" src="./js/tests/bulkedit.test.js?v=26"></script>
+    <script type="module" src="./js/tests/import.test.js?v=26"></script>
+    <script type="module" src="./js/tests/changelog.test.js?v=26"></script>
+    <script type="module" src="./js/tests/responsive.test.js?v=26"></script>
+    <script type="module" src="./js/tests/theme.test.js?v=26"></script>
+    <script type="module" src="./js/tests/wishlist.test.js?v=26"></script>
+    <script type="module" src="./js/tests/stats.test.js?v=26"></script>
+    <script type="module" src="./js/tests/pwa.test.js?v=26"></script>
+    <script type="module" src="./js/tests/budget.test.js?v=26"></script>
+    <script type="module" src="./js/tests/dateFilters.test.js?v=26"></script>
+    <script type="module" src="./js/tests/db.test.js?v=26"></script>
+    <script type="module" src="./js/tests/aiInsights.test.js?v=26"></script>
+    <script type="module" src="./js/tests/subscriptions.test.js?v=26"></script>
+    <script type="module" src="./js/tests/duplicates.test.js?v=26"></script>
+    <script type="module" src="./js/tests/mockup.test.js?v=26"></script>
+    <script type="module" src="./js/tests/randomPick.test.js?v=26"></script>
+
+    <!-- Mocha Execution Module -->
+    <script type="module">
+        const runner = mocha.run();
+        initRunner(runner);
+
         function initRunner(runner) {
             // Headless reporter für automatische Tests
             const urlParams = new URLSearchParams(window.location.search);
@@ -546,7 +571,6 @@
                 }
             });
         }
-        window.initRunner = initRunner;
 
         // Event-Listener für Rerun-Buttons (Header & Floating Box)
         document.addEventListener('click', (e) => {
@@ -565,7 +589,5 @@
             }
         });
     </script>
-
-    <script type="module" src="./js/tests/allTests.js?v=25"></script>
 </body>
 </html>
