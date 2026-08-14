@@ -21,21 +21,34 @@ export function renderRandomPickLayout({ activeStack = 'unread', selectedVerlag 
                 <div>${smartInsightHtml}</div>
             </div>
 
-            <!-- Filter-Panel (Compact) -->
-            <div class="details-card" style="padding: 20px; border-radius: 16px; margin-bottom: 24px; background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3);">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px;">
-                    <span style="font-weight: 700; font-size: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <!-- Checkbox Option (Standalone Above Filters) -->
+            <div style="background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(10px); padding: 14px 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <input type="checkbox" id="pick-sequential-checkbox" style="width: 20px; height: 20px; accent-color: var(--primary-color); cursor: pointer;" ${sequentialOnly ? 'checked' : ''}>
+                    <label for="pick-sequential-checkbox" style="font-size: 0.95rem; color: var(--text-primary); cursor: pointer; user-select: none;">
+                        <strong>Logische Reihenfolge:</strong> Nur jeweils den <u>nächsten ungelesenen Band</u> einer Serie in den Topf werfen
+                    </label>
+                </div>
+            </div>
+
+            <!-- Filter-Panel (Fixed Layout without details-card) -->
+            <div style="display: flex; flex-direction: column; padding: 24px; border-radius: 16px; margin-bottom: 24px; background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 10px 30px -10px rgba(0,0,0,0.3);">
+                
+                <!-- Filter Header -->
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+                    <span style="font-weight: 700; font-size: 1.1rem; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
                         <i class="fa-solid fa-sliders" style="color: var(--primary-color);"></i> Filter
                     </span>
-                    <span id="eligible-count-badge" class="badge" style="background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); padding: 4px 12px; border-radius: 16px; font-size: 0.85rem; font-weight: 600;">
+                    <span id="eligible-count-badge" class="badge" style="background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.3); padding: 6px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: 700; white-space: nowrap;">
                         ${totalEligible} Bände im Topf
                     </span>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                <!-- Filter Dropdowns -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
                     <div>
-                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px; text-transform: uppercase;">Kategorie</label>
-                        <select id="pick-stack-select" class="form-control" style="width: 100%; border-radius: 8px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); padding: 8px 12px; font-size: 0.9rem;">
+                        <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Kategorie</label>
+                        <select id="pick-stack-select" class="form-control" style="width: 100%; border-radius: 10px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); padding: 10px 14px; font-size: 0.95rem; color: var(--text-primary);">
                             <option value="unread" ${activeStack === 'unread' ? 'selected' : ''}>⏳ Lesestapel</option>
                             <option value="vorhanden" ${activeStack === 'vorhanden' ? 'selected' : ''}>📦 Gesamter Bestand</option>
                             <option value="wunschliste" ${activeStack === 'wunschliste' ? 'selected' : ''}>⭐ Wunschliste</option>
@@ -44,27 +57,19 @@ export function renderRandomPickLayout({ activeStack = 'unread', selectedVerlag 
                         </select>
                     </div>
                     <div>
-                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px; text-transform: uppercase;">Verlag</label>
-                        <select id="pick-verlag-select" class="form-control" style="width: 100%; border-radius: 8px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); padding: 8px 12px; font-size: 0.9rem;">
+                        <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Verlag</label>
+                        <select id="pick-verlag-select" class="form-control" style="width: 100%; border-radius: 10px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); padding: 10px 14px; font-size: 0.95rem; color: var(--text-primary);">
                             <option value="all" ${selectedVerlag === 'all' ? 'selected' : ''}>Alle Verlage</option>
                             ${publishers.map(v => `<option value="${escapeHTML(v)}" ${selectedVerlag === v ? 'selected' : ''}>${escapeHTML(v)}</option>`).join('')}
                         </select>
                     </div>
                     <div>
-                        <label style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 6px; text-transform: uppercase;">Format</label>
-                        <select id="pick-typ-select" class="form-control" style="width: 100%; border-radius: 8px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); padding: 8px 12px; font-size: 0.9rem;">
+                        <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Format</label>
+                        <select id="pick-typ-select" class="form-control" style="width: 100%; border-radius: 10px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); padding: 10px 14px; font-size: 0.95rem; color: var(--text-primary);">
                             <option value="all" ${selectedTyp === 'all' ? 'selected' : ''}>Alle Formate</option>
                             ${types.map(t => `<option value="${escapeHTML(t)}" ${selectedTyp === t ? 'selected' : ''}>${escapeHTML(t)}</option>`).join('')}
                         </select>
                     </div>
-                </div>
-
-                <!-- Checkbox Option -->
-                <div style="background: rgba(0, 0, 0, 0.15); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                    <input type="checkbox" id="pick-sequential-checkbox" style="width: 18px; height: 18px; accent-color: var(--primary-color); cursor: pointer;" ${sequentialOnly ? 'checked' : ''}>
-                    <label for="pick-sequential-checkbox" style="font-size: 0.9rem; color: var(--text-primary); cursor: pointer; user-select: none;">
-                        <strong>Logische Reihenfolge:</strong> Nur jeweils den <u>nächsten ungelesenen Band</u> einer Serie in den Topf werfen
-                    </label>
                 </div>
 
                 <!-- Spin Button -->
@@ -72,19 +77,21 @@ export function renderRandomPickLayout({ activeStack = 'unread', selectedVerlag 
                     <button id="btn-draw-random-comic" class="btn" style="
                         background: linear-gradient(135deg, var(--primary-color) 0%, #8b5cf6 100%);
                         color: #ffffff;
-                        font-weight: 800;
-                        font-size: 1.1rem;
-                        padding: 12px 36px;
+                        font-family: var(--font-display);
+                        font-weight: 900;
+                        font-size: 1.2rem;
+                        padding: 14px 42px;
                         border-radius: 100px;
                         border: 1px solid rgba(255, 255, 255, 0.2);
-                        box-shadow: 0 8px 20px -4px rgba(99, 102, 241, 0.4);
+                        box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.5);
                         cursor: pointer;
                         display: inline-flex;
                         align-items: center;
                         gap: 12px;
                         text-transform: uppercase;
+                        letter-spacing: 0.5px;
                     " ${totalEligible === 0 ? 'disabled' : ''}>
-                        <i class="fa-solid fa-dice-five"></i> ZIEHEN
+                        <i class="fa-solid fa-dice-five" style="font-size: 1.4rem;"></i> ROULETTE STARTEN
                     </button>
                 </div>
             </div>
