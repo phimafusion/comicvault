@@ -256,3 +256,35 @@ export function getWishlistChangedFields(oldData, newData) {
     });
     return diffs;
 }
+
+export function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    
+    toast.innerHTML = '';
+    
+    const icon = document.createElement('i');
+    icon.style.marginRight = '8px';
+    if (type === 'success') {
+        icon.className = 'fa-solid fa-circle-check';
+        toast.style.background = 'rgba(16, 185, 129, 0.95)';
+    } else if (type === 'error') {
+        icon.className = 'fa-solid fa-circle-exclamation';
+        toast.style.background = 'rgba(239, 68, 68, 0.95)';
+    } else if (type === 'info') {
+        icon.className = 'fa-solid fa-circle-info';
+        toast.style.background = 'rgba(99, 102, 241, 0.95)';
+    } else {
+        icon.className = 'fa-solid fa-circle-check';
+    }
+    
+    toast.appendChild(icon);
+    toast.appendChild(document.createTextNode(message));
+    
+    toast.classList.add('show');
+    
+    if (toast.timeoutId) clearTimeout(toast.timeoutId);
+    toast.timeoutId = setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
+}
