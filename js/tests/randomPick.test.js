@@ -82,8 +82,8 @@ describe('Random Picker Tests', () => {
             cleanup();
         });
 
-        it('sollte die Random-Picker-View im DOM rendern', () => {
-            renderRandomPick(container, testEnv.appInstance);
+        it('sollte die Random-Picker-View im DOM rendern', async () => {
+            await renderRandomPick(container, testEnv.appInstance);
 
             const title = container.querySelector('h2');
             expect(title).to.not.be.null;
@@ -95,7 +95,7 @@ describe('Random Picker Tests', () => {
         });
 
         it('sollte beim Klick auf den Ziehen-Button eine Gewinner-Karte rendern', async () => {
-            renderRandomPick(container, testEnv.appInstance);
+            await renderRandomPick(container, testEnv.appInstance);
 
             const drawBtn = container.querySelector('#btn-draw-random-comic');
             expect(drawBtn).to.not.be.null;

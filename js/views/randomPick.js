@@ -11,10 +11,10 @@ let lastPickedComic = null;
 /**
  * Initialisiert und rendert die Random-Picker-View.
  */
-export function renderRandomPick(container, appInstance) {
+export async function renderRandomPick(container, appInstance) {
     if (!container) return;
 
-    const allComics = db.getComics() || [];
+    const allComics = await db.getAllComics() || [];
 
     // Verlage & Formate für Filter extrahieren
     const publishers = [...new Set(allComics.map(c => c.verlag).filter(Boolean))].sort();
@@ -46,12 +46,13 @@ export function renderRandomPick(container, appInstance) {
     const insightBadge = container.querySelector('#pick-smart-insight-badge');
 
     // Filter-Update Funktion
-    const updateEligible = () => {
+    const updateEligible = async () => {
         currentStack = stackSelect ? stackSelect.value : 'unread';
         currentVerlag = verlagSelect ? verlagSelect.value : 'all';
         currentTyp = typSelect ? typSelect.value : 'all';
 
-        eligibleComics = filterComicsForPick(db.getComics() || [], {
+        const comics = await db.getAllComics() || [];
+        eligibleComics = filterComicsForPick(comics, {
             stack: currentStack,
             verlag: currentVerlag,
             typ: currentTyp
