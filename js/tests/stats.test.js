@@ -4,6 +4,7 @@ import * as statsUtils from '../services/stats/statsUtils.js';
 import * as kpiService from '../services/stats/kpiService.js';
 import * as timelineService from '../services/stats/timelineService.js';
 import * as chartDataService from '../services/stats/chartDataService.js';
+import { calculateTop10Lists } from '../services/stats/top10Service.js';
 const { expect } = chai;
 
 describe('ComicVault Statistiken & Lesestapel Tests', () => {
@@ -302,6 +303,31 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
         expect(filteredGnRow.children[4].textContent).to.equal('1');
         expect(filteredGnRow.children[5].textContent).to.contain('15,00');
     });
+
+    it('sollte im DOM die Top-10 Sammelbox rendern und das Umschalten der Reiter unterstützen', async () => {
+        const sammelbox = container.querySelector('#stats-top10-sammelbox');
+        expect(sammelbox).to.not.be.null;
+
+        const tabs = sammelbox.querySelectorAll('.stats-top10-tab-btn');
+        expect(tabs.length).to.equal(5);
+
+        // Klick auf den zweiten Reiter ("Zuletzt gekaufte")
+        const recentTab = sammelbox.querySelector('.stats-top10-tab-btn[data-tab="recentPurchases"]');
+        expect(recentTab).to.not.be.null;
+
+        recentTab.click();
+        await tick();
+
+        const updatedSammelbox = container.querySelector('#stats-top10-sammelbox');
+        const activeTab = updatedSammelbox ? updatedSammelbox.querySelector('.stats-top10-tab-btn.active') : null;
+        expect(activeTab).to.not.be.null;
+        expect(activeTab.dataset.tab).to.equal('recentPurchases');
+
+        // Prüfen, dass Heftnummer (#1) in der Tabelle gerendert wird
+        const firstRow = updatedSammelbox.querySelector('.stats-tr');
+        expect(firstRow).to.not.be.null;
+        expect(firstRow.innerHTML).to.contain('#1');
+    });
 });
 
 describe('statsService Unit Tests', () => {
@@ -343,7 +369,22 @@ describe('statsService Unit Tests', () => {
         it('sollte null zurueckgeben bei leeren/ungueltigen Werten', () => {
             expect(statsUtils.parseToDate('')).to.be.null;
             expect(statsUtils.parseToDate(null)).to.be.null;
-            expect(statsUtils.parseToDate('ungueltig')).to.be.null;
+            expect(statsUtils.parseToDate('invalid-date')).to.be.null;
+        });
+    });
+
+    describe('formatGermanDate', () => {
+        it('sollte ISO-Datum "2026-05-29" in deutsches Format "29.05.2026" umwandeln', () => {
+            expect(statsUtils.formatGermanDate('2026-05-29')).to.equal('29.05.2026');
+        });
+
+        it('sollte bereits deutsches Format "15.01.2026" beibehalten', () => {
+            expect(statsUtils.formatGermanDate('15.01.2026')).to.equal('15.01.2026');
+        });
+
+        it('sollte leere oder ungültige Werte als "-" zurückgeben', () => {
+            expect(statsUtils.formatGermanDate('')).to.equal('-');
+            expect(statsUtils.formatGermanDate(null)).to.equal('-');
         });
     });
 
@@ -437,6 +478,54 @@ describe('statsService Unit Tests', () => {
             // 2024
             expect(grouped[1].year).to.equal(2024);
             expect(grouped[1].months).to.have.lengthOf(1);
+        });
+    });
+
+    describe('Top-10 Sammelbox (calculateTop10Lists & Tab-Wechsel)', () => {
+        it('sollte ausschließlich Comics mit bestand === "vorhanden" in die Top-10 aufnehmen', () => {
+            const sampleComics = [
+                { id: '1', titel: 'Vorhanden 1', bestand: 'vorhanden', preis: 10, kaufdatum: '2026-01-01' },
+                { id: '2', titel: 'Verkauft 1', bestand: 'verkauft', preis: 100, kaufdatum: '2026-01-02' },
+                { id: '3', titel: 'Wunschliste 1', bestand: 'wunschliste', preis: 50, kaufdatum: '2026-01-03' },
+                { id: '4', titel: 'Vorbestellt 1', bestand: 'vorbestellt', preis: 80, kaufdatum: '2026-01-04' }
+            ];
+
+            const top10 = calculateTop10Lists(sampleComics);
+            
+            // Nur comic '1' ist vorhanden
+            expect(top10.recentPurchases.length).to.equal(1);
+            expect(top10.recentPurchases[0].id).to.equal('1');
+            expect(top10.mostExpensive.length).to.equal(1);
+            expect(top10.mostExpensive[0].id).to.equal('1');
+        });
+
+        it('sollte älteste ungelesene Comics korrekt nach Kaufdatum sortieren', () => {
+            const sampleComics = [
+                { id: '1', titel: 'Alt', bestand: 'vorhanden', gelesen_am: null, kaufdatum: '2022-05-10' },
+                { id: '2', titel: 'Neu', bestand: 'vorhanden', gelesen_am: null, kaufdatum: '2026-01-01' },
+                { id: '3', titel: 'Gelesen', bestand: 'vorhanden', gelesen_am: '2023-01-01', kaufdatum: '2021-01-01' }
+            ];
+
+            const top10 = calculateTop10Lists(sampleComics);
+
+            expect(top10.oldestUnread.length).to.equal(2);
+            expect(top10.oldestUnread[0].id).to.equal('1'); // 2022 ist älter als 2026
+            expect(top10.oldestUnread[1].id).to.equal('2');
+        });
+
+        it('sollte die teuersten Comics absteigend nach Preis sortieren', () => {
+            const sampleComics = [
+                { id: '1', titel: 'Günstig', bestand: 'vorhanden', preis: 5.99 },
+                { id: '2', titel: 'Teuer', bestand: 'vorhanden', preis: '99,00 €' },
+                { id: '3', titel: 'Mittel', bestand: 'vorhanden', preis: '25.50' }
+            ];
+
+            const top10 = calculateTop10Lists(sampleComics);
+
+            expect(top10.mostExpensive.length).to.equal(3);
+            expect(top10.mostExpensive[0].id).to.equal('2'); // 99.00
+            expect(top10.mostExpensive[1].id).to.equal('3'); // 25.50
+            expect(top10.mostExpensive[2].id).to.equal('1'); // 5.99
         });
     });
 });

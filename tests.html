@@ -371,7 +371,12 @@
     <div class="header-container">
         <h1 class="header-title">ComicVault Test Runner</h1>
         <p class="header-subtitle">In-Browser Unit Tests mit Mocha & Chai</p>
-        <a href="index.html" class="back-link" id="btn-back-to-app"><i class="fa-solid fa-arrow-left"></i> Zurück zur App</a>
+        <div style="display: inline-flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center;">
+            <a href="index.html" class="back-link" id="btn-back-to-app"><i class="fa-solid fa-arrow-left"></i> Zurück zur App</a>
+            <button class="back-link" id="btn-rerun-tests" style="cursor: pointer; border: 1px solid rgba(192, 132, 252, 0.4); background: rgba(192, 132, 252, 0.15); color: #e9d5ff;">
+                <i class="fa-solid fa-rotate-right"></i> Tests erneut ausführen (Rerun)
+            </button>
+        </div>
     </div>
 
     <!-- Mocha output div -->
@@ -436,25 +441,25 @@
     </script>
 
     <!-- Test Suites -->
-    <script type="module" src="./js/tests/utils.test.js?v=8"></script>
-    <script type="module" src="./js/tests/ui.test.js?v=8"></script>
-    <script type="module" src="./js/tests/autocomplete.test.js?v=8"></script>
-    <script type="module" src="./js/tests/bulkdelete.test.js?v=8"></script>
-    <script type="module" src="./js/tests/bulkedit.test.js?v=8"></script>
-    <script type="module" src="./js/tests/import.test.js?v=8"></script>
-    <script type="module" src="./js/tests/changelog.test.js?v=8"></script>
-    <script type="module" src="./js/tests/responsive.test.js?v=8"></script>
-    <script type="module" src="./js/tests/theme.test.js?v=8"></script>
-    <script type="module" src="./js/tests/wishlist.test.js?v=8"></script>
-    <script type="module" src="./js/tests/stats.test.js?v=8"></script>
-    <script type="module" src="./js/tests/pwa.test.js?v=8"></script>
-    <script type="module" src="./js/tests/budget.test.js?v=8"></script>
-    <script type="module" src="./js/tests/dateFilters.test.js?v=8"></script>
-    <script type="module" src="./js/tests/db.test.js?v=8"></script>
-    <script type="module" src="./js/tests/aiInsights.test.js?v=8"></script>
-    <script type="module" src="./js/tests/subscriptions.test.js?v=8"></script>
-    <script type="module" src="./js/tests/duplicates.test.js?v=8"></script>
-    <script type="module" src="./js/tests/mockup.test.js?v=8"></script>
+    <script type="module" src="./js/tests/utils.test.js?v=15"></script>
+    <script type="module" src="./js/tests/ui.test.js?v=15"></script>
+    <script type="module" src="./js/tests/autocomplete.test.js?v=15"></script>
+    <script type="module" src="./js/tests/bulkdelete.test.js?v=15"></script>
+    <script type="module" src="./js/tests/bulkedit.test.js?v=15"></script>
+    <script type="module" src="./js/tests/import.test.js?v=15"></script>
+    <script type="module" src="./js/tests/changelog.test.js?v=15"></script>
+    <script type="module" src="./js/tests/responsive.test.js?v=15"></script>
+    <script type="module" src="./js/tests/theme.test.js?v=15"></script>
+    <script type="module" src="./js/tests/wishlist.test.js?v=15"></script>
+    <script type="module" src="./js/tests/stats.test.js?v=15"></script>
+    <script type="module" src="./js/tests/pwa.test.js?v=15"></script>
+    <script type="module" src="./js/tests/budget.test.js?v=15"></script>
+    <script type="module" src="./js/tests/dateFilters.test.js?v=15"></script>
+    <script type="module" src="./js/tests/db.test.js?v=15"></script>
+    <script type="module" src="./js/tests/aiInsights.test.js?v=15"></script>
+    <script type="module" src="./js/tests/subscriptions.test.js?v=15"></script>
+    <script type="module" src="./js/tests/duplicates.test.js?v=15"></script>
+    <script type="module" src="./js/tests/mockup.test.js?v=15"></script>
     <script type="module">
         // Run tests
         const runner = mocha.run();
@@ -513,6 +518,16 @@
                         </div>
                     `);
                 }
+
+                if (!document.getElementById('btn-rerun-tests-stats')) {
+                    stats.insertAdjacentHTML('beforeend', `
+                        <li style="margin-top: 12px; text-align: center; width: 100%;">
+                            <button id="btn-rerun-tests-stats" style="width: 100%; cursor: pointer; border: 1px solid rgba(129, 140, 248, 0.4); background: rgba(129, 140, 248, 0.2); color: #c7d2fe; padding: 6px 10px; border-radius: 8px; font-weight: 600; font-size: 0.8rem; font-family: 'Inter', sans-serif; transition: all 0.2s ease;">
+                                <i class="fa-solid fa-rotate-right"></i> Rerun Tests
+                            </button>
+                        </li>
+                    `);
+                }
             }
         });
 
@@ -552,8 +567,14 @@
             }
         });
 
-        // Toggle failures-only filter when clicking the failures element inside stats box
+        // Event-Listener für Rerun-Buttons (Header & Floating Box)
         document.addEventListener('click', (e) => {
+            const rerunBtn = e.target.closest('#btn-rerun-tests, #btn-rerun-tests-stats');
+            if (rerunBtn) {
+                window.location.reload();
+                return;
+            }
+
             const failuresLi = e.target.closest('#mocha-stats .failures');
             if (failuresLi) {
                 document.body.classList.toggle('filter-failures-only');

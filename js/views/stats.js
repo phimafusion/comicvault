@@ -4,6 +4,7 @@ import { parseToDate, isComicInTimeframe, filterComicsByDropdowns } from '../ser
 import { calculateKPIs, calculateTypeStats, calculateReadingChallenge, calculateHighlights } from '../services/stats/kpiService.js';
 import { calculateTimelineData, calculateInventoryTBRDevelopment, groupTBRDataByYear, getEarlyComics } from '../services/stats/timelineService.js';
 import { calculateDistributionData, calculateTopLists } from '../services/stats/chartDataService.js';
+import { calculateTop10Lists } from '../services/stats/top10Service.js';
 import {
     renderKPICards,
     renderTypeStatsTable,
@@ -11,6 +12,7 @@ import {
     renderTopPublishersTable,
     renderTopSeriesTable,
     renderInventoryTBRTable,
+    renderTop10Sammelbox,
     renderStatsMultiSelect,
     renderTimeframeSelect,
     renderDebugContainerContent
@@ -26,6 +28,9 @@ let activeStatsFilters = {
     serie: [],
     zeitraum: 'all'
 };
+
+let activeTop10TabKey = 'oldestUnread';
+let cachedTop10Data = null;
 
 let statsCharts = {};
 let statsEventsAttached = false;
@@ -223,6 +228,11 @@ export async function renderStats(container) {
             </div>
         </div>
 
+        <!-- Top-10 Sammelbox (Excel-Style Reiter für vorhandenen Bestand) -->
+        <div id="stats-top10-container">
+            <!-- Wird von updateStats() / renderTop10Sammelbox() befüllt -->
+        </div>
+
         <!-- Top Verlage & Serien -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;" class="stats-tables-grid">
             <div class="details-card" style="flex-direction: column; padding: 24px;">
@@ -349,6 +359,19 @@ function attachStatsEvents() {
             renderStats(container);
         });
     }
+
+    // Top-10 Sammelbox Tab-Wechsel (Excel-Style Reiter)
+    const top10Container = document.getElementById('stats-top10-container');
+    if (top10Container) {
+        top10Container.addEventListener('click', (e) => {
+            const btn = e.target.closest('.stats-top10-tab-btn');
+            if (btn && btn.dataset.tab) {
+                activeTop10TabKey = btn.dataset.tab;
+                const currencySymbol = db.getSettings().currency || '€';
+                top10Container.innerHTML = renderTop10Sammelbox(cachedTop10Data, activeTop10TabKey, currencySymbol);
+            }
+        });
+    }
 }
 
 export function cleanupStats() {
@@ -456,6 +479,13 @@ async function updateStats() {
     const seriesTable = document.getElementById('table-top-series');
     if (seriesTable) {
         seriesTable.innerHTML = renderTopSeriesTable(topSeries);
+    }
+
+    // Top-10 Sammelbox füllen (aus allComics -> Physischer Bestand 'vorhanden', unbeeinflusst von Filtern)
+    cachedTop10Data = calculateTop10Lists(allComics);
+    const top10Container = document.getElementById('stats-top10-container');
+    if (top10Container) {
+        top10Container.innerHTML = renderTop10Sammelbox(cachedTop10Data, activeTop10TabKey, currencySymbol);
     }
 
     // TBR Table füllen (aus allComics, unbeeinflusst von Filtern)

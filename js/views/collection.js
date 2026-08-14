@@ -258,7 +258,7 @@ const handleCollectionClick = (e) => {
     const btnApply = e.target.closest('.btn-date-filter-apply');
     if (btnApply) {
         const key = btnApply.dataset.key;
-        const dropdown = document.getElementById(`dropdown-${key}`);
+        const dropdown = btnApply.closest('.multi-select-dropdown') || document.getElementById(`dropdown-${key}`);
         const startInput = dropdown.querySelector(`.date-filter-input[data-bound="Start"]`);
         const endInput = dropdown.querySelector(`.date-filter-input[data-bound="End"]`);
         
@@ -268,7 +268,7 @@ const handleCollectionClick = (e) => {
         dropdown.style.display = 'none';
         
         // Button-Text aktualisieren
-        const trigger = document.querySelector(`.multi-select-trigger[data-key="${key}"]`);
+        const trigger = dropdown.closest('.filter-group-container')?.querySelector('.multi-select-trigger') || document.querySelector(`.multi-select-trigger[data-key="${key}"]`);
         if (trigger) {
             const label = key === 'kaufdatum' ? 'Gekauft' : 'Gelesen (Datum)';
             const isActive = startInput.value !== '' || endInput.value !== '';
@@ -297,7 +297,7 @@ const handleCollectionClick = (e) => {
     const btnReset = e.target.closest('.btn-date-filter-reset');
     if (btnReset) {
         const key = btnReset.dataset.key;
-        const dropdown = document.getElementById(`dropdown-${key}`);
+        const dropdown = btnReset.closest('.multi-select-dropdown') || document.getElementById(`dropdown-${key}`);
         const startInput = dropdown.querySelector(`.date-filter-input[data-bound="Start"]`);
         const endInput = dropdown.querySelector(`.date-filter-input[data-bound="End"]`);
         
@@ -310,7 +310,7 @@ const handleCollectionClick = (e) => {
         dropdown.style.display = 'none';
         
         // Button-Text aktualisieren
-        const trigger = document.querySelector(`.multi-select-trigger[data-key="${key}"]`);
+        const trigger = dropdown.closest('.filter-group-container')?.querySelector('.multi-select-trigger') || document.querySelector(`.multi-select-trigger[data-key="${key}"]`);
         if (trigger) {
             const label = key === 'kaufdatum' ? 'Gekauft' : 'Gelesen (Datum)';
             trigger.querySelector('span').textContent = label;

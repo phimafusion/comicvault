@@ -1,4 +1,5 @@
 import { escapeHTML, renderStars, formatCurrency, formatNumber } from '../../utils.js';
+import { formatGermanDate } from '../../services/stats/statsUtils.js';
 
 export function renderKPICards({ totalComics, totalValue, readPercent, tbrCount, tbrValue }, currencySymbol) {
     return `
@@ -301,4 +302,134 @@ export function renderDebugContainerContent(earlyComics) {
         </div>
     `;
 }
+
+// Renderfunktion für die Top-10 Sammelbox mit Excel-Style Reitern (Reine Bestands-Statistiken)
+export function renderTop10Sammelbox(top10Data = {}, activeTabKey = 'oldestUnread', currencySymbol = '€') {
+    const tabs = [
+        { key: 'oldestUnread', label: '⏳ 10 Älteste ungelesene', subtitle: 'Die am längsten ungelesenen Bände in deinem physischen Bestand (TBR-Klassiker)' },
+        { key: 'recentPurchases', label: '🛍️ 10 Zuletzt gekaufte', subtitle: 'Deine aktuellsten Neuzugänge im Regal' },
+        { key: 'mostExpensive', label: '💸 10 Teuerste Comics', subtitle: 'Die wertvollsten Einzelbände deiner physischen Sammlung' },
+        { key: 'topRated', label: '⭐ 10 Bestbewertete', subtitle: 'Deine persönlichen Top-Bewertungen und Highlights' },
+        { key: 'oldestRead', label: '📜 10 Älteste gelesene', subtitle: 'Bände im Bestand, die du schon am längsten besitzt & gelesen hast' }
+    ];
+
+    const currentTab = tabs.find(t => t.key === activeTabKey) || tabs[0];
+    const items = (top10Data && top10Data[activeTabKey]) ? top10Data[activeTabKey] : [];
+
+    return `
+        <div class="details-card table-card" style="flex-direction: column; padding: 24px; margin-bottom: 24px;" id="stats-top10-sammelbox">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 16px;">
+                <div>
+                    <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 6px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-table-cells" style="color: var(--primary-color);"></i>
+                        <span>Top-10 Sammelbox (Physischer Bestand)</span>
+                    </h3>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">
+                        ${currentTab.subtitle} &nbsp;•&nbsp; <strong>Hinweis:</strong> Bezieht sich immer auf den vorhandenen Bestand und wird von oberen Filtern nicht beeinflusst.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Glassmorphism Tab Bar Track -->
+            <div style="display: inline-flex; gap: 6px; padding: 6px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; backdrop-filter: blur(10px); flex-wrap: wrap; margin-bottom: 20px; box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);">
+                ${tabs.map(t => {
+                    const isActive = t.key === activeTabKey;
+                    return `
+                        <button class="stats-top10-tab-btn ${isActive ? 'active' : ''}" data-tab="${t.key}" style="
+                            font-family: var(--font-primary, 'Inter', sans-serif);
+                            font-size: 0.85rem;
+                            font-weight: ${isActive ? '700' : '500'};
+                            padding: 9px 16px;
+                            border-radius: 10px;
+                            cursor: pointer;
+                            outline: none;
+                            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 6px;
+                            ${isActive ? `
+                                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                                color: #ffffff;
+                                border: 1px solid rgba(255, 255, 255, 0.25);
+                                box-shadow: 0 4px 15px -1px rgba(99, 102, 241, 0.45), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+                                transform: translateY(0);
+                            ` : `
+                                background: transparent;
+                                color: var(--text-secondary, #94a3b8);
+                                border: 1px solid transparent;
+                            `}
+                        " onmouseover="if(!this.classList.contains('active')){this.style.background='rgba(255,255,255,0.06)';this.style.color='#f8fafc';}" onmouseout="if(!this.classList.contains('active')){this.style.background='transparent';this.style.color='var(--text-secondary, #94a3b8)';}">
+                            ${t.label}
+                        </button>
+                    `;
+                }).join('')}
+            </div>
+
+            <!-- Tabellen-Inhalt -->
+            <div style="overflow-x: auto; width: 100%; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                <table class="stats-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; min-width: 700px;">
+                    <thead>
+                        <tr style="background-color: var(--bg-main); border-bottom: 2px solid var(--border-color);">
+                            <th style="padding: 12px 16px; width: 50px; text-align: center;">#</th>
+                            <th style="padding: 12px 16px;">Titel & Serie</th>
+                            <th style="padding: 12px 16px; width: 70px; text-align: center;">Nr.</th>
+                            <th style="padding: 12px 16px;">Verlag</th>
+                            <th style="padding: 12px 16px;">Format / Typ</th>
+                            <th style="padding: 12px 16px; text-align: center;">Kaufdatum</th>
+                            <th style="padding: 12px 16px; text-align: right;">Preis</th>
+                            <th style="padding: 12px 16px; text-align: right;">${activeTabKey === 'topRated' ? 'Bewertung' : (activeTabKey === 'oldestRead' ? 'Gelesen am' : 'Status')}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${items.length === 0 ? `
+                            <tr>
+                                <td colspan="8" style="padding: 24px; text-align: center; color: var(--text-secondary);">
+                                    Keine Comics für diese Kategorie im vorhandenen Bestand gefunden.
+                                </td>
+                            </tr>
+                        ` : items.map((c, index) => {
+                            const priceNum = Number(c.preis);
+                            const displayPrice = !isNaN(priceNum) && c.preis !== null ? formatCurrency(priceNum, currencySymbol) : '-';
+                            const title = escapeHTML(c.titel || 'Unbenannt');
+                            const serie = c.serie ? escapeHTML(c.serie) : '';
+                            const displayNum = (c.nummer !== undefined && c.nummer !== null && c.nummer !== '') ? `#${escapeHTML(String(c.nummer))}` : '-';
+
+                            const verlag = c.verlag ? escapeHTML(c.verlag) : '-';
+                            const typ = escapeHTML(c.typ || c.format || '-');
+                            const kaufdatum = formatGermanDate(c.kaufdatum);
+
+                            let extraInfo = '-';
+                            if (activeTabKey === 'topRated') {
+                                extraInfo = c.bewertung ? `<span style="color: var(--warning); font-weight: 700;">★ ${c.bewertung}/10</span>` : '-';
+                            } else if (activeTabKey === 'oldestRead') {
+                                extraInfo = c.gelesen_am ? formatGermanDate(c.gelesen_am) : '-';
+                            } else {
+                                extraInfo = c.gelesen_am 
+                                    ? `<span style="color: var(--success); font-size: 0.8rem; font-weight: 600;">✓ Gelesen</span>` 
+                                    : `<span style="color: var(--warning); font-size: 0.8rem; font-weight: 600;">Ungelesen</span>`;
+                            }
+
+                            return `
+                                <tr style="border-bottom: 1px solid var(--border-color);" class="stats-tr">
+                                    <td style="padding: 12px 16px; text-align: center; font-weight: 700; color: var(--primary-color);">${index + 1}</td>
+                                    <td style="padding: 12px 16px;">
+                                        <div style="font-weight: 600; color: var(--text-primary);">${title}</div>
+                                        ${serie ? `<div style="font-size: 0.8rem; color: var(--text-secondary);">${serie}</div>` : ''}
+                                    </td>
+                                    <td style="padding: 12px 16px; text-align: center; font-weight: 600; color: var(--text-primary);">${displayNum}</td>
+                                    <td style="padding: 12px 16px; color: var(--text-secondary);">${verlag}</td>
+                                    <td style="padding: 12px 16px; color: var(--text-secondary);">${typ}</td>
+                                    <td style="padding: 12px 16px; text-align: center; color: var(--text-secondary);">${kaufdatum}</td>
+                                    <td style="padding: 12px 16px; text-align: right; font-weight: 600; color: var(--text-primary);">${displayPrice}</td>
+                                    <td style="padding: 12px 16px; text-align: right;">${extraInfo}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+}
+
 

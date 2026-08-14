@@ -30,6 +30,17 @@ export function parseToDate(dateStr) {
     return isNaN(d.getTime()) ? null : d;
 }
 
+// Hilfsfunktion zur Formatierung eines Datums in deutsches Format (DD.MM.YYYY)
+export function formatGermanDate(dateStr) {
+    if (!dateStr) return '-';
+    const d = parseToDate(dateStr);
+    if (!d) return String(dateStr);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}.${month}.${year}`;
+}
+
 // Hilfsfunktion zur Überprüfung, ob ein Datum in einem Zeitraum liegt
 export function checkDateInRange(dateStr, timeframe) {
     const d = parseToDate(dateStr);
