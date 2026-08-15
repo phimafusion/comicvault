@@ -186,6 +186,19 @@
     }
 }
 
+.multi-select-dropdown {
+    max-width: calc(100vw - 32px) !important;
+    box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+    .multi-select-dropdown {
+        left: 0 !important;
+        right: auto !important;
+        max-width: calc(100vw - 32px) !important;
+    }
+}
+
 .form-group {
     display: flex;
     flex-direction: column;
