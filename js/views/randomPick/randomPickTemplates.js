@@ -169,7 +169,7 @@ export function renderWinnerCard(comic, currencySymbol = '€') {
                 `}
             </div>
 
-            <div style="display: grid; grid-template-columns: 180px 1fr; gap: 24px; align-items: start;">
+            <div class="winner-card-grid">
                 ${coverHtml}
 
                 <div style="display: flex; flex-direction: column; height: 100%;">

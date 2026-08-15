@@ -126,7 +126,7 @@ export function generateFormHtml(comic = {}, isWishlist = false, s = {}, default
             </div>
 
             <div class="form-group full-width">
-                <div style="display: grid; grid-template-columns: 0.7fr 0.7fr 0.7fr 1.9fr; gap: 20px;">
+                <div class="form-limitation-grid">
                     <div class="form-group">
                         <label class="form-label">Limitierung</label>
                         <select name="limitierung" class="form-control">
@@ -272,7 +272,7 @@ export function generateBulkFormHtml(c = {}, diffFields = new Set(), s = {}) {
             </div>
 
             <div class="form-group full-width">
-                <div style="display: grid; grid-template-columns: 0.7fr 0.7fr 0.7fr 1.9fr; gap: 20px;">
+                <div class="form-limitation-grid">
                     <div class="form-group">
                         <label class="form-label">Limitierung</label>
                         <select name="limitierung" class="form-control">

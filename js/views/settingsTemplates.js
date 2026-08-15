@@ -139,7 +139,7 @@ export function getSettingsHtml(settings) {
                 <div class="collapsible-content" style="display: flex; flex-direction: column; width: 100%; margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
                     <p style="color: var(--text-secondary); margin-bottom: 16px; margin-top: 0;">Verwalte die vordefinierten Werte für die Autovervollständigung.</p>
                     
-                    <div style="display: grid; grid-template-columns: minmax(180px, 200px) 1fr; gap: 20px; width: 100%;">
+                    <div class="settings-layout-grid">
                         <div class="form-group">
                             <label class="form-label">Datenfeld auswählen</label>
                             <select id="settings-suggestion-field" class="form-control">

@@ -170,5 +170,28 @@ describe('Responsive Layout & Mobile Menu Tests', () => {
         const sidebar = container.querySelector('.sidebar');
         expect(sidebar).to.not.be.null;
     });
+
+    it('sollte Formulare, Winner-Cards und Settings-Grids mit responsiven Klassen ohne harter 4-Spalten Inline-Grids rendern', () => {
+        // Formular-Templates prüfen
+        import('../views/form/templates.js').then(module => {
+            const html = module.generateFormHtml({});
+            expect(html).to.include('form-limitation-grid');
+            expect(html).to.not.include('grid-template-columns: 0.7fr 0.7fr 0.7fr 1.9fr');
+        });
+
+        // Winner-Card Template prüfen
+        import('../views/randomPick/randomPickTemplates.js').then(module => {
+            const winnerHtml = module.renderWinnerCard({ id: '1', titel: 'Test', nummer: 1, kaufdatum: '2026-01-01' });
+            expect(winnerHtml).to.include('winner-card-grid');
+            expect(winnerHtml).to.not.include('grid-template-columns: 180px 1fr');
+        });
+
+        // Settings-Template prüfen
+        import('../views/settingsTemplates.js').then(module => {
+            const settingsHtml = module.renderSettingsTemplate({});
+            expect(settingsHtml).to.include('settings-layout-grid');
+            expect(settingsHtml).to.not.include('grid-template-columns: minmax(180px, 200px) 1fr');
+        });
+    });
 });
 
