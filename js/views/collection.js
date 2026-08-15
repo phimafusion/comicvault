@@ -123,7 +123,7 @@ export async function renderCollection(container) {
             </div>
         </div>
         
-        <div id="collection-grid" style="max-width: 100%; overflow-x: auto; box-sizing: border-box;">
+        <div id="collection-grid" style="max-width: 100%; box-sizing: border-box;">
             <!-- Items injected here -->
         </div>
     `;
