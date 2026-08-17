@@ -83,11 +83,8 @@ export function calculateHighlights(kpiComics, allComics, timeframe) {
             if (readDate) {
                 const yr = readDate.getFullYear();
                 const mon = readDate.getMonth();
-                // Januar 2023 als Platzhalter ignorieren
-                if (!(yr === 2023 && mon === 0)) {
-                    const mKey = `${yr}-${String(mon + 1).padStart(2, '0')}`;
-                    readMonths[mKey] = (readMonths[mKey] || 0) + 1;
-                }
+                const mKey = `${yr}-${String(mon + 1).padStart(2, '0')}`;
+                readMonths[mKey] = (readMonths[mKey] || 0) + 1;
             }
         }
 

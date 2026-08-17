@@ -55,11 +55,7 @@ export function calculateTimelineData(filteredComics, timeframe) {
         
         const read = validStockComics.filter(c => {
             if (!c.gelesen_am) return false;
-            let rDate = parseToDate(c.gelesen_am);
-            // Januar 2023 als Platzhalter oder unparsbare Daten durch Kaufdatum ersetzen, damit gelesene Comics konsistent als gelesen gezählt werden
-            if (!rDate || (rDate.getFullYear() === 2023 && rDate.getMonth() === 0)) {
-                rDate = parseToDate(c.kaufdatum || c.created_at);
-            }
+            const rDate = parseToDate(c.gelesen_am) || parseToDate(c.kaufdatum || c.created_at);
             return rDate && rDate <= endOfMonth;
         }).length;
         
