@@ -42,6 +42,22 @@ describe('PWA (Progressive Web App) Integration Tests', () => {
         expect(themeMeta.getAttribute('content')).to.equal('#6d28d9');
     });
 
+    it('sollte ein Content-Security-Policy (CSP) meta-Tag in index.html haben', async () => {
+        const response = await fetch('./index.html');
+        expect(response.ok).to.be.true;
+        const htmlText = await response.text();
+        
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlText, 'text/html');
+        
+        const cspMeta = doc.querySelector('meta[http-equiv="Content-Security-Policy"]');
+        expect(cspMeta).to.not.be.null;
+        const content = cspMeta.getAttribute('content');
+        expect(content).to.include("default-src 'self'");
+        expect(content).to.include("https://www.gstatic.com");
+        expect(content).to.include("https://cdnjs.cloudflare.com");
+    });
+
     it('sollte eine valide manifest.json Datei bereitstellen', async () => {
         const response = await fetch('./manifest.json');
         expect(response.ok).to.be.true;
