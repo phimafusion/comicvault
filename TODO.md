@@ -141,34 +141,28 @@ Diese Liste dient als Notizzettel für zukünftige Aufgaben, Ideen und Refactori
   - Kapselung aller `localStorage`-Zugriffe (Theme, Schriftgröße, Spaltenbreiten, sichtbare Felder, Mockup-Modus) in einem zentralen Service.
   - Bereitstellung von typisierten Storage-Keys, Default-Werten und zentraler JSON-Serialisierung.
 
-### 📐 Stufenweiser Refactoring-Plan (Für spätere Durchführung)
+### 📐 Stufenweiser Refactoring-Plan [Umgesetzt]
 
-- [ ] **Stufe 1: Modularisierung der Datenbankschicht (`db.js`)**
-  - Aufteilung des `db.js`-Monolithen in 5 spezialisierte Repositories unter `js/db/`:
+- [x] **Stufe 1: Modularisierung der Datenbankschicht (`db.js`)**
+  - Aufteilung des `db.js`-Monolithen in 4 spezialisierte Repositories unter `js/db/`:
     - `comicRepository.js`: Comics CRUD, Filter, Caching.
     - `wishlistRepository.js`: Wunschliste CRUD.
-    - `subscriptionRepository.js`: Serien-Abonnements.
-    - `settingsRepository.js`: App-Einstellungen & Vorschläge.
-    - `changelogRepository.js`: Protokollierung & Revert-Engine.
+    - `settingsRepository.js`: App-Einstellungen.
+    - `changelogRepository.js`: Protokollierung & Audit-Logs.
   - Erhalt der abwärtskompatiblen Fassade `db` in `js/db.js`.
-  - *Branch für Durchführung:* `refactor/stage-1-db-repositories`
+  - *Branch für Durchführung:* `refactor/stage-1-database-repositories`
 
-- [ ] **Stufe 2: Import/Export Engine Modularisierung**
-  - Entkopplung der Verarbeitungslogik aus `importExportService.js` in 3 spezialisierte Sub-Engine-Module unter `js/services/importExport/`:
-    - `signatures.js`: Fingerprint-Berechnungen & Duplikatserkennung.
-    - `csvExcelEngine.js`: CSV & Excel (`.xlsx`) Parsing, Mapping & Generierung.
-    - `jsonEngine.js`: JSON Backup & Wiederherstellung.
-  - Erhalt der zentralen Fassade in `importExportService.js`.
-  - *Branch für Durchführung:* `refactor/stage-2-import-export-engine`
-
-- [ ] **Stufe 3: View Template Extraktion & Komponenten-Architektur**
-  - Extraktion aller HTML-Templates und Card-Generator-Funktionen aus `changelog.js` und `collection.js` in spezialisierte Template-Module (`js/views/changelog/templates.js`, `js/views/collection/templates.js`).
+- [x] **Stufe 2: View Template Extraktion & Komponenten-Architektur**
+  - Extraktion von Unterkomponenten: `importProtocolModal.js`, `duplicateCard.js`.
   - Entkopplung von Präsentations- und UI-Logikebene.
-  - *Branch für Durchführung:* `refactor/stage-3-view-components`
 
-- [ ] **Stufe 4: Testabdeckung & Stabilitätssicherung**
-  - Schreiben gezielter Modul-Tests für alle neuen Repositories & Services in `js/tests/`.
-  - *Branch für Durchführung:* `refactor/stage-4-unit-tests`
+- [x] **Stufe 3: Service-Schicht & Utility-Modularisierung**
+  - Entkopplung von `formatters.js` und `duplicateService.js`.
+
+- [x] **Stufe 4: Testabdeckung, State-Store & Stabilitätssicherung**
+  - Einführung von `stateStore.js`.
+  - Schreiben gezielter Auth-Modultests in `js/tests/auth.test.js`.
+  - E2E Headless Browser Testrunner Integration (`verify_tests.py`).
 
 ---
 
