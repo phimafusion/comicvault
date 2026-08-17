@@ -25,7 +25,7 @@ Dieses Dokument dient als zentrale Entwicklungs-Roadmap, Refactoring-Protokoll u
 - [x] CSP `<meta>` Header in [`index.html`](file:///c:/Users/phili/Documents/GitHub/comicvault/index.html) ergänzen (Beschränkung auf trusted CDNs & origin)
 
 ### 🔗 3. Subresource Integrity (SRI) für CDN-Links (`[Low]`)
-- [ ] `integrity` und `crossorigin` Attribute in [`index.html`](file:///c:/Users/phili/Documents/GitHub/comicvault/index.html) für FontAwesome & Firebase SDKs einbinden
+- [x] `integrity` und `crossorigin` Attribute in [`index.html`](file:///c:/Users/phili/Documents/GitHub/comicvault/index.html) für FontAwesome & Firebase SDKs einbinden
 
 ### 🧪 4. Import & Firebase Absicherung (`[Low]`)
 - [x] Firestore Security Rules in Firebase Console abgleichen (`request.auth.uid == userId` – ✅ **Perfekt & sicher konfiguriert**)

@@ -58,6 +58,25 @@ describe('PWA (Progressive Web App) Integration Tests', () => {
         expect(content).to.include("https://cdnjs.cloudflare.com");
     });
 
+    it('sollte Subresource Integrity (SRI) Attribute bei externen CDN-Links in index.html enthalten', async () => {
+        const response = await fetch('./index.html');
+        expect(response.ok).to.be.true;
+        const htmlText = await response.text();
+        
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlText, 'text/html');
+        
+        const fontAwesome = doc.querySelector('link[href*="cdnjs.cloudflare.com/ajax/libs/font-awesome"]');
+        expect(fontAwesome).to.not.be.null;
+        expect(fontAwesome.getAttribute('integrity')).to.include('sha512-');
+        expect(fontAwesome.getAttribute('crossorigin')).to.equal('anonymous');
+
+        const xlsxScript = doc.querySelector('script[src*="cdn.jsdelivr.net/npm/xlsx"]');
+        expect(xlsxScript).to.not.be.null;
+        expect(xlsxScript.getAttribute('integrity')).to.include('sha512-');
+        expect(xlsxScript.getAttribute('crossorigin')).to.equal('anonymous');
+    });
+
     it('sollte eine valide manifest.json Datei bereitstellen', async () => {
         const response = await fetch('./manifest.json');
         expect(response.ok).to.be.true;
