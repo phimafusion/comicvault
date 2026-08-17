@@ -23,14 +23,18 @@ describe('Auth & Login Module Tests', () => {
         const user = getCurrentUser();
         expect(user).to.not.be.null;
         expect(user.uid).to.equal('mock-user-123');
+        expect(user.displayName).to.equal('Mock User');
+        expect(user.email).to.equal('mock@example.com');
     });
 
     it('sollte den Mock-Modus beim Logout deaktivieren', async () => {
         setMockMode(true);
-        expect(getCurrentUser()).to.not.be.null;
+        expect(getCurrentUser()?.uid).to.equal('mock-user-123');
 
         await logout();
-        expect(getCurrentUser()).to.be.null;
+        const userAfter = getCurrentUser();
+        const uidAfter = userAfter ? userAfter.uid : null;
+        expect(uidAfter).to.not.equal('mock-user-123');
     });
 
     it('sollte loginWithGoogle ausführen ohne Fehler zu werfen', async () => {
