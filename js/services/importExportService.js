@@ -221,6 +221,292 @@ export function generateCSV(items, isWishlist = false) {
     return [header, ...rows].join('\n');
 }
 
+// Pre-Import Analysis for CSV/Excel
+export async function analyzeCSVImport({
+    rows,
+    onProgress,
+    onLogNew,
+    onLogUpdated,
+    onLogSkipped,
+    isAborted
+}) {
+    const existingComics = await db.getAllComics({ forceServer: true });
+    const idMap = new Map();
+    const contentMap = new Map();
+    const coreMap = new Map();
+
+    existingComics.forEach(ex => {
+        if (ex.id) idMap.set(ex.id, ex);
+        contentMap.set(getExactSignature(ex), ex);
+        
+        const coreKey = getCoreSignature(ex);
+        if (!coreMap.has(coreKey)) coreMap.set(coreKey, []);
+        coreMap.get(coreKey).push(ex);
+    });
+
+    const total = rows.length;
+    let current = 0;
+    let newCount = 0;
+    let updatedCount = 0;
+    let skipCount = 0;
+    const plannedOps = [];
+
+    for (const row of rows) {
+        if (isAborted && isAborted()) break;
+
+        const hasTitleOrSerie = row['Titel'] || row['titel'] || row['Serie'] || row['serie'] || row['Comic Titel'] || row['Name'] || row['Reihe'];
+        if (hasTitleOrSerie) {
+            const comicData = mapRowToComic(row);
+
+            let duplicate = null;
+            let contentKey = getExactSignature(comicData);
+
+            if (comicData.id) {
+                duplicate = idMap.get(comicData.id);
+            } else {
+                duplicate = contentMap.get(contentKey);
+                if (!duplicate) {
+                    const coreKey = getCoreSignature(comicData);
+                    const coreMatches = coreMap.get(coreKey);
+                    if (coreMatches && coreMatches.length > 0) {
+                        duplicate = coreMatches.find(c => !c._importUsedTemp);
+                    }
+                }
+            }
+
+            if (duplicate) {
+                duplicate._importUsedTemp = true;
+                const changedFields = getChangedFields(duplicate, comicData);
+                if (changedFields.length === 0) {
+                    skipCount++;
+                    if (onLogSkipped) onLogSkipped(comicData);
+                } else {
+                    updatedCount++;
+                    comicData.id = duplicate.id;
+                    plannedOps.push({ type: 'updateComic', item: comicData });
+                    if (onLogUpdated) onLogUpdated(comicData, duplicate, changedFields);
+                }
+            } else {
+                newCount++;
+                plannedOps.push({ type: 'newComic', item: comicData });
+                if (onLogNew) onLogNew(comicData);
+            }
+        }
+        current++;
+        if (onProgress) {
+            onProgress(current, total, newCount, updatedCount, skipCount, 'comics');
+        }
+    }
+
+    existingComics.forEach(ex => delete ex._importUsedTemp);
+
+    return { total, newCount, updatedCount, skipCount, plannedOps };
+}
+
+// Pre-Import Analysis for JSON
+export async function analyzeJSONImport({
+    comicsToImport = [],
+    wishlistToImport = [],
+    clearFirst = false,
+    onProgress,
+    onLogNew,
+    onLogUpdated,
+    onLogSkipped,
+    isAborted
+}) {
+    const total = comicsToImport.length + wishlistToImport.length;
+    let current = 0;
+    let newCount = 0;
+    let updatedCount = 0;
+    let skipCount = 0;
+    const plannedOps = [];
+
+    if (clearFirst) {
+        for (const comic of comicsToImport) {
+            if (isAborted && isAborted()) break;
+            newCount++;
+            plannedOps.push({ type: 'newComic', item: comic });
+            if (onLogNew) onLogNew(comic, false);
+            current++;
+            if (onProgress) onProgress(current, total, newCount, 0, 0, 'comics');
+        }
+        for (const wish of wishlistToImport) {
+            if (isAborted && isAborted()) break;
+            newCount++;
+            plannedOps.push({ type: 'newWish', item: wish });
+            if (onLogNew) onLogNew(wish, true);
+            current++;
+            if (onProgress) onProgress(current, total, newCount, 0, 0, 'wishlist');
+        }
+        return {
+            total,
+            newCount,
+            updatedCount: 0,
+            skipCount: 0,
+            plannedOps,
+            comics: { total: comicsToImport.length, newCount: comicsToImport.length, updatedCount: 0, skipCount: 0 },
+            wishlist: { total: wishlistToImport.length, newCount: wishlistToImport.length, updatedCount: 0, skipCount: 0 }
+        };
+    }
+
+    const [existingComics, existingWishlist] = await Promise.all([
+        db.getAllComics({ forceServer: true }),
+        db.getWishlist()
+    ]);
+
+    const idMap = new Map();
+    const contentMap = new Map();
+    const coreMap = new Map();
+
+    existingComics.forEach(ex => {
+        if (ex.id) idMap.set(ex.id, ex);
+        contentMap.set(getExactSignature(ex), ex);
+        const coreKey = getCoreSignature(ex);
+        if (!coreMap.has(coreKey)) coreMap.set(coreKey, []);
+        coreMap.get(coreKey).push(ex);
+    });
+
+    const wishIdMap = new Map();
+    const wishContentMap = new Map();
+    const wishCoreMap = new Map();
+
+    existingWishlist.forEach(ex => {
+        if (ex.id) wishIdMap.set(ex.id, ex);
+        wishContentMap.set(getWishlistExactSignature(ex), ex);
+        const coreKey = getWishlistCoreSignature(ex);
+        if (!wishCoreMap.has(coreKey)) wishCoreMap.set(coreKey, []);
+        wishCoreMap.get(coreKey).push(ex);
+    });
+
+    for (const comic of comicsToImport) {
+        if (isAborted && isAborted()) break;
+
+        let duplicate = null;
+        let contentKey = getExactSignature(comic);
+
+        if (comic.id) {
+            duplicate = idMap.get(comic.id);
+        } else {
+            duplicate = contentMap.get(contentKey);
+            if (!duplicate) {
+                const coreKey = getCoreSignature(comic);
+                const coreMatches = coreMap.get(coreKey);
+                if (coreMatches && coreMatches.length > 0) {
+                    duplicate = coreMatches.find(c => !c._importUsedTemp);
+                }
+            }
+        }
+
+        if (duplicate) {
+            duplicate._importUsedTemp = true;
+            const changedFields = getChangedFields(duplicate, comic);
+            if (changedFields.length === 0) {
+                skipCount++;
+                if (onLogSkipped) onLogSkipped(comic, false);
+            } else {
+                updatedCount++;
+                const comicData = { ...duplicate, ...comic, id: duplicate.id };
+                if (duplicate.bild && !comic.bild) comicData.bild = duplicate.bild;
+                if (duplicate.created_at && !comic.created_at) comicData.created_at = duplicate.created_at;
+                plannedOps.push({ type: 'updateComic', item: comicData });
+                if (onLogUpdated) onLogUpdated(comic, duplicate, changedFields, false);
+            }
+        } else {
+            newCount++;
+            plannedOps.push({ type: 'newComic', item: comic });
+            if (onLogNew) onLogNew(comic, false);
+        }
+
+        current++;
+        if (onProgress) {
+            onProgress(current, total, newCount, updatedCount, skipCount, 'comics');
+        }
+    }
+
+    for (const wish of wishlistToImport) {
+        if (isAborted && isAborted()) break;
+
+        let duplicate = null;
+        let contentKey = getWishlistExactSignature(wish);
+
+        if (wish.id) {
+            duplicate = wishIdMap.get(wish.id);
+        } else {
+            duplicate = wishContentMap.get(contentKey);
+            if (!duplicate) {
+                const coreKey = getWishlistCoreSignature(wish);
+                const coreMatches = wishCoreMap.get(coreKey);
+                if (coreMatches && coreMatches.length > 0) {
+                    duplicate = coreMatches.find(w => !w._importUsedTemp);
+                }
+            }
+        }
+
+        if (duplicate) {
+            duplicate._importUsedTemp = true;
+            const changedFields = getWishlistChangedFields(duplicate, wish);
+            if (changedFields.length === 0) {
+                skipCount++;
+                if (onLogSkipped) onLogSkipped(wish, true);
+            } else {
+                updatedCount++;
+                const wishData = { ...duplicate, ...wish, id: duplicate.id };
+                if (duplicate.created_at && !wish.created_at) wishData.created_at = duplicate.created_at;
+                plannedOps.push({ type: 'updateWish', item: wishData });
+                if (onLogUpdated) onLogUpdated(wish, duplicate, changedFields, true);
+            }
+        } else {
+            newCount++;
+            plannedOps.push({ type: 'newWish', item: wish });
+            if (onLogNew) onLogNew(wish, true);
+        }
+
+        current++;
+        if (onProgress) {
+            onProgress(current, total, newCount, updatedCount, skipCount, 'wishlist');
+        }
+    }
+
+    existingComics.forEach(ex => delete ex._importUsedTemp);
+    existingWishlist.forEach(ex => delete ex._importUsedTemp);
+
+    return {
+        total,
+        newCount,
+        updatedCount,
+        skipCount,
+        plannedOps,
+        comics: { total: comicsToImport.length, newCount, updatedCount, skipCount },
+        wishlist: { total: wishlistToImport.length, newCount, updatedCount, skipCount }
+    };
+}
+
+// Execution Engine for Planned Imports
+export async function executeImportPlan({ plannedOps = [], clearFirst = false, onProgress, isAborted }) {
+    if (clearFirst) {
+        await db.clearAllData();
+    }
+
+    const total = plannedOps.length;
+    let current = 0;
+
+    for (const op of plannedOps) {
+        if (isAborted && isAborted()) break;
+
+        if (op.type === 'newComic' || op.type === 'updateComic') {
+            await db.saveComic(op.item);
+        } else if (op.type === 'newWish' || op.type === 'updateWish') {
+            await db.saveWish(op.item);
+        }
+        current++;
+        if (onProgress) {
+            onProgress(current, total);
+        }
+    }
+
+    return { success: true, executedCount: current };
+}
+
 // Import Processing Engine for CSV/Excel
 export async function importCSVData({
     rows,

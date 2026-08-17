@@ -124,9 +124,21 @@ describe('JSON Import Feature Tests', () => {
             writable: true
         });
 
+        const previewPromise = new Promise(resolve => container.addEventListener('import-preview-ready', resolve, { once: true }));
         const importPromise = new Promise(resolve => container.addEventListener('import-completed', resolve, { once: true }));
         // Trigger click which starts reader
         btnImport.click();
+        await previewPromise;
+
+        // Check confirmation overlay appears
+        const logOverlay = document.getElementById('import-log-overlay');
+        expect(logOverlay.style.display).to.equal('flex');
+        expect(document.getElementById('sum-new').textContent).to.equal('1 neu');
+        expect(document.getElementById('sum-updated').textContent).to.equal('1 updates');
+        expect(document.getElementById('sum-skipped').textContent).to.equal('1 übersprungen');
+
+        const btnProceed = document.getElementById('btn-proceed-import');
+        btnProceed.click();
 
         // Wait for async reader and import processing loops
         await importPromise;
@@ -150,6 +162,45 @@ describe('JSON Import Feature Tests', () => {
         expect(logUpdated.innerHTML).to.contain('Preis');
         expect(logUpdated.innerHTML).to.contain('19,99 €');
         expect(logUpdated.innerHTML).to.contain('24,99 €');
+    });
+
+    it('sollte den Import nicht durchführen, wenn im Bestätigungs-Modal Abbrechen geklickt wird', async () => {
+        const importData = [
+            {
+                titel: 'Wolverine: Weapon X',
+                serie: 'Wolverine',
+                nummer: 1,
+                verlag: 'Marvel',
+                format: 'Softcover',
+                sprache: 'Deutsch'
+            }
+        ];
+
+        const fileInput = container.querySelector('#import-json-file');
+        const btnImport = container.querySelector('#btn-import-json');
+
+        const mockFile = new File([JSON.stringify(importData)], 'wolverine.json', { type: 'application/json' });
+        
+        Object.defineProperty(fileInput, 'files', {
+            value: [mockFile],
+            writable: true
+        });
+
+        const previewPromise = new Promise(resolve => container.addEventListener('import-preview-ready', resolve, { once: true }));
+        const importPromise = new Promise(resolve => container.addEventListener('import-completed', resolve, { once: true }));
+        btnImport.click();
+        await previewPromise;
+
+        const logOverlay = document.getElementById('import-log-overlay');
+        expect(logOverlay.style.display).to.equal('flex');
+
+        const btnCancel = document.getElementById('btn-cancel-import');
+        btnCancel.click();
+
+        await importPromise;
+
+        expect(logOverlay.style.display).to.equal('none');
+        expect(savedComics.length).to.equal(0);
     });
 
     it('sollte ein JSON-Backup-Objekt mit Comics und Wunschliste importieren', async () => {
@@ -195,8 +246,13 @@ describe('JSON Import Feature Tests', () => {
             writable: true
         });
 
+        const previewPromise = new Promise(resolve => container.addEventListener('import-preview-ready', resolve, { once: true }));
         const importPromise = new Promise(resolve => container.addEventListener('import-completed', resolve, { once: true }));
         btnImport.click();
+        await previewPromise;
+
+        const btnProceed = document.getElementById('btn-proceed-import');
+        btnProceed.click();
 
         await importPromise;
 
@@ -244,8 +300,13 @@ describe('JSON Import Feature Tests', () => {
             writable: true
         });
 
+        const previewPromise = new Promise(resolve => container.addEventListener('import-preview-ready', resolve, { once: true }));
         const importPromise = new Promise(resolve => container.addEventListener('import-completed', resolve, { once: true }));
         btnImport.click();
+        await previewPromise;
+
+        const btnProceed = document.getElementById('btn-proceed-import');
+        btnProceed.click();
 
         await importPromise;
 
@@ -476,8 +537,13 @@ describe('Excel (XLSX) Import Feature Tests', () => {
             writable: true
         });
 
+        const previewPromise = new Promise(resolve => container.addEventListener('import-preview-ready', resolve, { once: true }));
         const importPromise = new Promise(resolve => container.addEventListener('import-completed', resolve, { once: true }));
         btnImport.click();
+        await previewPromise;
+
+        const btnProceed = document.getElementById('btn-proceed-import');
+        if (btnProceed) btnProceed.click();
 
         // Warte auf asynchrone Verarbeitung
         await importPromise;

@@ -5,8 +5,9 @@ import {
     parseCSV,
     generateXLSX,
     generateCSV,
-    importCSVData,
-    importJSONData
+    analyzeCSVImport,
+    analyzeJSONImport,
+    executeImportPlan
 } from '../services/importExportService.js';
 
 let viewContainer = null;
@@ -105,15 +106,15 @@ export function renderImport(container) {
     `;
     container.innerHTML = html;
 
-    // Log Overlay (initially hidden)
+    // Log & Preview Overlay (initially hidden)
     const logOverlayHtml = `
         <div id="import-log-overlay" class="modal-overlay" style="display: none;">
             <div class="modal-content" style="height: 80vh;">
                 <div class="modal-header">
-                    <h2>Import Protokoll</h2>
+                    <h2><i class="fa-solid fa-magnifying-glass"></i> Import Vorschau & Analyse</h2>
                 </div>
                 <div style="padding: 10px 20px;">
-                    <div id="import-progress-text" style="margin-bottom: 8px;">Starte Import...</div>
+                    <div id="import-progress-text" style="margin-bottom: 8px;">Initialisiere Vorschau & Analyse...</div>
                     <div style="width: 100%; height: 6px; background: var(--border-color); border-radius: 3px; overflow: hidden;">
                         <div id="import-progress-bar" style="width: 0%; height: 100%; background: var(--primary-color); transition: width 0.3s ease;"></div>
                     </div>
@@ -144,8 +145,11 @@ export function renderImport(container) {
                     <span id="sum-skipped" style="color: var(--text-secondary); font-weight: bold;">0 übersprungen</span>
                 </div>
                 <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
-                    <button class="btn btn-danger" id="btn-cancel-import"><i class="fa-solid fa-stop"></i> Import abbrechen</button>
-                    <button class="btn btn-primary" id="btn-confirm-log-overlay" style="display: none;">OK</button>
+                    <button class="btn btn-danger" id="btn-cancel-import"><i class="fa-solid fa-xmark"></i> Abbrechen</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-primary" id="btn-proceed-import" style="display: none;"><i class="fa-solid fa-check"></i> Import jetzt in Datenbank speichern</button>
+                        <button class="btn btn-primary" id="btn-confirm-log-overlay" style="display: none;">OK</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -157,15 +161,6 @@ export function renderImport(container) {
         btnConfirm.addEventListener('click', () => {
             const overlay = container.querySelector('#import-log-overlay');
             if (overlay) overlay.style.display = 'none';
-        });
-    }
-
-    const btnCancel = container.querySelector('#btn-cancel-import');
-    if (btnCancel) {
-        btnCancel.addEventListener('click', () => {
-            importAborted = true;
-            btnCancel.disabled = true;
-            btnCancel.innerHTML = 'Breche ab...';
         });
     }
 
@@ -217,150 +212,277 @@ async function handleUrlImport() {
 
 let importAborted = false;
 
-// CSV Import Logic
-async function handleCSVImport() {
-    const fileInput = document.getElementById('import-csv-file');
-    const statusDiv = document.getElementById('csv-import-status');
+function logNewItem(data, isWishlist, logNewContainer) {
+    const prefix = isWishlist ? '[Wunsch] ' : '';
+    const suffix = isWishlist ? 'Hinzugefügt' : (data.titel || '');
+    const name = isWishlist ? (data.titel || '') : `${data.serie || ''} ${data.nummer ? '#' + data.nummer : ''}`;
+    const safeName = escapeHTML(name);
+    const safeSuffix = escapeHTML(suffix);
+    const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${prefix}${safeName}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${safeSuffix}</span></div>`;
+    logNewContainer.insertAdjacentHTML('beforeend', logLine);
+    if (!window.__TESTING__) {
+        logNewContainer.scrollTop = logNewContainer.scrollHeight;
+    }
+}
+
+function logUpdatedItem(data, oldData, changedFields, isWishlist, logUpdatedContainer) {
+    const prefix = isWishlist ? '[Wunsch] ' : '';
+    const name = isWishlist ? (data.titel || '') : `${data.serie || ''} ${data.nummer ? '#' + data.nummer : ''}`;
+    const details = formatDiff(data, oldData, changedFields);
+    const safeName = escapeHTML(name);
+    const logLine = `
+        <div style="margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <strong style="color: var(--primary-color);">${prefix}${safeName}</strong>
+            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
+                ${details}
+            </div>
+        </div>
+    `;
+    logUpdatedContainer.insertAdjacentHTML('beforeend', logLine);
+    if (!window.__TESTING__) {
+        logUpdatedContainer.scrollTop = logUpdatedContainer.scrollHeight;
+    }
+}
+
+function logSkippedItem(data, isWishlist, logSkippedContainer) {
+    const prefix = isWishlist ? '[Wunsch] ' : '';
+    const suffix = isWishlist ? 'Keine Änderungen' : (data.titel || '');
+    const name = isWishlist ? (data.titel || '') : `${data.serie || ''} ${data.nummer ? '#' + data.nummer : ''}`;
+    const safeName = escapeHTML(name);
+    const safeSuffix = escapeHTML(suffix);
+    const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${prefix}${safeName}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${safeSuffix}</span></div>`;
+    logSkippedContainer.insertAdjacentHTML('beforeend', logLine);
+    if (!window.__TESTING__) {
+        logSkippedContainer.scrollTop = logSkippedContainer.scrollHeight;
+    }
+}
+
+// Unified Workflow for Preview & Confirmation
+async function runImportWorkflow({ parseDataFn, analyzeFn, statusDiv, fileInput }) {
     const progressText = document.getElementById('import-progress-text');
     const progressBar = document.getElementById('import-progress-bar');
-    
     const logOverlay = document.getElementById('import-log-overlay');
     const logNew = document.getElementById('log-new');
     const logUpdated = document.getElementById('log-updated');
     const logSkipped = document.getElementById('log-skipped');
     const btnCancel = document.getElementById('btn-cancel-import');
+    const btnProceed = document.getElementById('btn-proceed-import');
     const btnConfirm = document.getElementById('btn-confirm-log-overlay');
+
+    statusDiv.style.display = 'none';
+    logNew.innerHTML = '';
+    logUpdated.innerHTML = '';
+    logSkipped.innerHTML = '';
+
+    // Show Log Overlay immediately for Preview Phase
+    logOverlay.style.display = 'flex';
+    progressText.innerHTML = 'Initialisiere Vorschau & Analyse...';
+    progressBar.style.width = '0%';
+
+    // Reset Summary Counters
+    document.getElementById('sum-new').textContent = '0 neu';
+    document.getElementById('sum-updated').textContent = '0 updates';
+    document.getElementById('sum-skipped').textContent = '0 übersprungen';
+
+    btnCancel.style.display = 'inline-block';
+    btnCancel.disabled = false;
+    btnCancel.innerHTML = '<i class="fa-solid fa-xmark"></i> Abbrechen';
+    btnProceed.style.display = 'none';
+    btnProceed.disabled = false;
+    btnConfirm.style.display = 'none';
+
+    importAborted = false;
+
+    try {
+        const inputData = await parseDataFn();
+
+        const onProgress = (current, total, newCount, updatedCount, skipCount) => {
+            const percent = Math.round((current / total) * 100);
+            progressBar.style.width = percent + '%';
+            progressText.innerHTML = `Analysiere & erstelle Vorschau: <strong>${current} von ${total}</strong> (${percent}%)`;
+
+            document.getElementById('sum-new').textContent = `${newCount} neu`;
+            document.getElementById('sum-updated').textContent = `${updatedCount} updates`;
+            document.getElementById('sum-skipped').textContent = `${skipCount} übersprungen`;
+        };
+
+        const analysis = await analyzeFn(inputData, {
+            onProgress,
+            onLogNew: (item, isWishlist) => logNewItem(item, isWishlist, logNew),
+            onLogUpdated: (item, oldItem, fields, isWishlist) => logUpdatedItem(item, oldItem, fields, isWishlist, logUpdated),
+            onLogSkipped: (item, isWishlist) => logSkippedItem(item, isWishlist, logSkipped),
+            isAborted: () => importAborted
+        });
+
+        if (importAborted) {
+            progressText.innerHTML = `<i class="fa-solid fa-stop" style="color: var(--danger)"></i> Analyse abgebrochen.`;
+            btnCancel.style.display = 'none';
+            btnConfirm.style.display = 'inline-block';
+            if (viewContainer) viewContainer.dispatchEvent(new CustomEvent('import-completed'));
+            return;
+        }
+
+        progressText.innerHTML = `<i class="fa-solid fa-circle-info" style="color: var(--secondary-color)"></i> Vorschau abgeschlossen (${analysis.newCount} neu, ${analysis.updatedCount} updates, ${analysis.skipCount} übersprungen). Bitte bestätigen:`;
+        progressBar.style.width = '100%';
+        btnProceed.style.display = 'inline-block';
+
+        if (viewContainer) {
+            viewContainer.dispatchEvent(new CustomEvent('import-preview-ready', { detail: analysis }));
+        }
+
+        const handleCancel = () => {
+            cleanup();
+            logOverlay.style.display = 'none';
+            fileInput.value = '';
+            if (viewContainer) viewContainer.dispatchEvent(new CustomEvent('import-completed'));
+        };
+
+        const handleProceed = async () => {
+            cleanup();
+            btnProceed.style.display = 'none';
+            btnCancel.style.display = 'none';
+            progressText.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Speichere in Datenbank...`;
+
+            try {
+                await executeImportPlan({
+                    plannedOps: analysis.plannedOps,
+                    clearFirst: inputData.clearFirst,
+                    onProgress: (current, total) => {
+                        const percent = Math.round((current / total) * 100);
+                        progressBar.style.width = percent + '%';
+                        progressText.innerHTML = `Speichere in Datenbank: <strong>${current} von ${total}</strong> (${percent}%)`;
+                    },
+                    isAborted: () => importAborted
+                });
+
+                progressText.innerHTML = `<i class="fa-solid fa-check" style="color: var(--success)"></i> Import erfolgreich in Datenbank gespeichert!`;
+                btnConfirm.style.display = 'inline-block';
+                fileInput.value = '';
+            } catch (err) {
+                console.error("Save Error:", err);
+                statusDiv.style.display = 'block';
+                statusDiv.innerHTML = `<i class="fa-solid fa-xmark" style="color: var(--danger)"></i> Fehler beim Speichern: ${err.message}`;
+                logOverlay.style.display = 'none';
+            } finally {
+                if (viewContainer) {
+                    viewContainer.dispatchEvent(new CustomEvent('import-completed'));
+                }
+            }
+        };
+
+        const cleanup = () => {
+            btnCancel.removeEventListener('click', handleCancel);
+            btnProceed.removeEventListener('click', handleProceed);
+        };
+
+        btnCancel.addEventListener('click', handleCancel);
+        btnProceed.addEventListener('click', handleProceed);
+
+    } catch (error) {
+        console.error("Import Error:", error);
+        statusDiv.style.display = 'block';
+        statusDiv.innerHTML = `<i class="fa-solid fa-xmark" style="color: var(--danger)"></i> Fehler: ${error.message}`;
+        logOverlay.style.display = 'none';
+        if (viewContainer) viewContainer.dispatchEvent(new CustomEvent('import-completed'));
+    }
+}
+
+// CSV Import Logic
+async function handleCSVImport() {
+    const fileInput = document.getElementById('import-csv-file');
+    const statusDiv = document.getElementById('csv-import-status');
 
     if (!fileInput.files || fileInput.files.length === 0) return alert('Bitte wähle zuerst eine Datei aus.');
 
     const file = fileInput.files[0];
     const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
-    const reader = new FileReader();
 
-    importAborted = false;
+    const parseDataFn = () => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                let rows = [];
+                if (isExcel) {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                } else {
+                    const text = e.target.result;
+                    rows = parseCSV(text);
+                }
+                if (rows.length === 0) throw new Error("Die Datei ist leer oder konnte nicht gelesen werden.");
+                resolve({ rows, clearFirst: false });
+            } catch (err) {
+                reject(err);
+            }
+        };
+        reader.onerror = () => reject(new Error("Fehler beim Lesen der Datei."));
+        if (isExcel) reader.readAsArrayBuffer(file);
+        else reader.readAsText(file);
+    });
 
-    reader.onload = async (e) => {
-        try {
-            let rows = [];
+    const analyzeFn = (inputData, options) => analyzeCSVImport({ rows: inputData.rows, ...options });
 
-            if (isExcel) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-            } else {
+    await runImportWorkflow({ parseDataFn, analyzeFn, statusDiv, fileInput });
+}
+
+// JSON Import Logic
+async function handleJSONImport() {
+    const fileInput = document.getElementById('import-json-file');
+    const statusDiv = document.getElementById('json-import-status');
+
+    if (!fileInput.files || fileInput.files.length === 0) return alert('Bitte wähle zuerst eine Datei aus.');
+
+    const file = fileInput.files[0];
+
+    const parseDataFn = () => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
                 const text = e.target.result;
-                rows = parseCSV(text);
-            }
-
-            if (rows.length === 0) throw new Error("Die Datei ist leer oder konnte nicht gelesen werden.");
-
-            statusDiv.style.display = 'none';
-            logNew.innerHTML = '';
-            logUpdated.innerHTML = '';
-            logSkipped.innerHTML = '';
-            
-            // Show Log Overlay immediately
-            logOverlay.style.display = 'flex';
-            progressText.innerHTML = 'Initialisiere Import...';
-            progressBar.style.width = '0%';
-            
-            // Reset Summary Counters
-            document.getElementById('sum-new').textContent = '0 neu';
-            document.getElementById('sum-updated').textContent = '0 updates';
-            document.getElementById('sum-skipped').textContent = '0 übersprungen';
-            
-            btnCancel.style.display = 'inline-block';
-            btnCancel.disabled = false;
-            btnCancel.innerHTML = '<i class="fa-solid fa-stop"></i> Import abbrechen';
-            btnConfirm.style.display = 'none';
-
-            const onProgress = (current, total, newCount, updatedCount, skipCount) => {
-                const percent = Math.round((current / total) * 100);
-                progressBar.style.width = percent + '%';
-                progressText.innerHTML = `Verarbeite: <strong>${current} von ${total}</strong> (${percent}%)`;
-
-                document.getElementById('sum-new').textContent = `${newCount} neu`;
-                document.getElementById('sum-updated').textContent = `${updatedCount} updates`;
-                document.getElementById('sum-skipped').textContent = `${skipCount} übersprungen`;
-            };
-
-            const onLogNew = (comicData) => {
-                const name = `${comicData.serie || ''} ${comicData.nummer ? '#' + comicData.nummer : ''}`;
-                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${escapeHTML(name)}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${escapeHTML(comicData.titel || '')}</span></div>`;
-                logNew.insertAdjacentHTML('beforeend', logLine);
-                if (!window.__TESTING__) {
-                    logNew.scrollTop = logNew.scrollHeight;
+                const data = JSON.parse(text);
+                
+                let comicsToImport = [];
+                let wishlistToImport = [];
+                let clearFirst = false;
+                
+                if (Array.isArray(data)) {
+                    comicsToImport = data;
+                } else if (data && typeof data === 'object') {
+                    clearFirst = true;
+                    if (Array.isArray(data.comics)) {
+                        comicsToImport = data.comics;
+                    }
+                    if (Array.isArray(data.wishlist)) {
+                        wishlistToImport = data.wishlist;
+                    }
+                    
+                    if (comicsToImport.length === 0 && wishlistToImport.length === 0) {
+                        throw new Error("Das Backup enthält keine Comics oder Wunschlisten-Einträge.");
+                    }
+                } else {
+                    throw new Error("Ungültiges JSON-Format. Die Datei muss ein Array von Comics oder ein Backup-Objekt enthalten.");
                 }
-            };
 
-            const onLogUpdated = (comicData, oldData, changedFields) => {
-                const details = formatDiff(comicData, oldData, changedFields);
-                const name = `${comicData.serie || ''} ${comicData.nummer ? '#' + comicData.nummer : ''}`;
-                const logLine = `
-                    <div style="margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <strong style="color: var(--primary-color);">${escapeHTML(name)}</strong>
-                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
-                            ${details}
-                        </div>
-                    </div>
-                `;
-                logUpdated.insertAdjacentHTML('beforeend', logLine);
-                if (!window.__TESTING__) {
-                    logUpdated.scrollTop = logUpdated.scrollHeight;
-                }
-            };
-
-            const onLogSkipped = (comicData) => {
-                const name = `${comicData.serie || ''} ${comicData.nummer ? '#' + comicData.nummer : ''}`;
-                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${escapeHTML(name)}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${escapeHTML(comicData.titel || '')}</span></div>`;
-                logSkipped.insertAdjacentHTML('beforeend', logLine);
-                if (!window.__TESTING__) {
-                    logSkipped.scrollTop = logSkipped.scrollHeight;
-                }
-            };
-
-            const result = await importCSVData({
-                rows,
-                onProgress,
-                onLogNew,
-                onLogUpdated,
-                onLogSkipped,
-                isAborted: () => importAborted
-            });
-
-            progressText.innerHTML = `<i class="fa-solid fa-check" style="color: var(--success)"></i> Import abgeschlossen.`;
-            if (result.aborted) {
-                progressText.innerHTML = `<i class="fa-solid fa-stop" style="color: var(--danger)"></i> Import abgebrochen.`;
-                const abortMsg = `<div style="color: var(--danger); font-weight: bold; margin-top: 10px;">[ABGEBROCHEN] Import durch Benutzer gestoppt.</div>`;
-                logNew.insertAdjacentHTML('beforeend', abortMsg);
-                logUpdated.insertAdjacentHTML('beforeend', abortMsg);
-                logSkipped.insertAdjacentHTML('beforeend', abortMsg);
+                resolve({ comicsToImport, wishlistToImport, clearFirst });
+            } catch (err) {
+                reject(err);
             }
-            
-            btnCancel.style.display = 'none';
-            btnConfirm.style.display = 'inline-block';
-            
-            fileInput.value = '';
-
-        } catch (error) {
-            console.error("Import Error:", error);
-            statusDiv.style.display = 'block';
-            statusDiv.innerHTML = `<i class="fa-solid fa-xmark" style="color: var(--danger)"></i> Fehler: ${error.message}`;
-            if (logOverlay) logOverlay.style.display = 'none';
-        } finally {
-            if (viewContainer) {
-                viewContainer.dispatchEvent(new CustomEvent('import-completed'));
-            }
-        }
-    };
-
-    if (isExcel) {
-        reader.readAsArrayBuffer(file);
-    } else {
+        };
+        reader.onerror = () => reject(new Error("Fehler beim Lesen der Datei."));
         reader.readAsText(file);
-    }
+    });
+
+    const analyzeFn = (inputData, options) => analyzeJSONImport({
+        comicsToImport: inputData.comicsToImport,
+        wishlistToImport: inputData.wishlistToImport,
+        clearFirst: inputData.clearFirst,
+        ...options
+    });
+
+    await runImportWorkflow({ parseDataFn, analyzeFn, statusDiv, fileInput });
 }
 
 // Export Logic
@@ -394,175 +516,6 @@ function downloadFile(dataStr, filename) {
     document.body.appendChild(a);
     a.click();
     a.remove();
-}
-
-async function handleJSONImport() {
-    const fileInput = document.getElementById('import-json-file');
-    const statusDiv = document.getElementById('json-import-status');
-    const progressText = document.getElementById('import-progress-text');
-    const progressBar = document.getElementById('import-progress-bar');
-    
-    const logOverlay = document.getElementById('import-log-overlay');
-    const logNew = document.getElementById('log-new');
-    const logUpdated = document.getElementById('log-updated');
-    const logSkipped = document.getElementById('log-skipped');
-    const btnCancel = document.getElementById('btn-cancel-import');
-    const btnConfirm = document.getElementById('btn-confirm-log-overlay');
-
-    if (!fileInput.files || fileInput.files.length === 0) return alert('Bitte wähle zuerst eine Datei aus.');
-
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-
-    importAborted = false;
-
-    reader.onload = async (e) => {
-        try {
-            const text = e.target.result;
-            const data = JSON.parse(text);
-            
-            let comicsToImport = [];
-            let wishlistToImport = [];
-            let clearFirst = false;
-            
-            if (Array.isArray(data)) {
-                comicsToImport = data;
-            } else if (data && typeof data === 'object') {
-                clearFirst = true;
-                if (Array.isArray(data.comics)) {
-                    comicsToImport = data.comics;
-                }
-                if (Array.isArray(data.wishlist)) {
-                    wishlistToImport = data.wishlist;
-                }
-                
-                if (comicsToImport.length === 0 && wishlistToImport.length === 0) {
-                    throw new Error("Das Backup enthält keine Comics oder Wunschlisten-Einträge.");
-                }
-            } else {
-                throw new Error("Ungültiges JSON-Format. Die Datei muss ein Array von Comics oder ein Backup-Objekt enthalten.");
-            }
-
-            statusDiv.style.display = 'none';
-            logNew.innerHTML = '';
-            logUpdated.innerHTML = '';
-            logSkipped.innerHTML = '';
-            
-            // Show Log Overlay immediately
-            logOverlay.style.display = 'flex';
-            progressText.innerHTML = 'Initialisiere Import...';
-            progressBar.style.width = '0%';
-
-            if (clearFirst) {
-                progressText.innerHTML = 'Bereite Datenbank vor (alte Daten werden gelöscht)...';
-                await db.clearAllData();
-            }
-            
-            // Reset Summary Counters
-            document.getElementById('sum-new').textContent = '0 neu';
-            document.getElementById('sum-updated').textContent = '0 updates';
-            document.getElementById('sum-skipped').textContent = '0 übersprungen';
-            
-            btnCancel.style.display = 'inline-block';
-            btnCancel.disabled = false;
-            btnCancel.innerHTML = '<i class="fa-solid fa-stop"></i> Import abbrechen';
-            btnConfirm.style.display = 'none';
-
-            const onProgress = (current, total, newCount, updatedCount, skipCount) => {
-                const percent = Math.round((current / total) * 100);
-                progressBar.style.width = percent + '%';
-                progressText.innerHTML = `Verarbeite: <strong>${current} von ${total}</strong> (${percent}%)`;
-
-                document.getElementById('sum-new').textContent = `${newCount} neu`;
-                document.getElementById('sum-updated').textContent = `${updatedCount} updates`;
-                document.getElementById('sum-skipped').textContent = `${skipCount} übersprungen`;
-            };
-
-            const onLogNew = (data, isWishlist) => {
-                const prefix = isWishlist ? '[Wunsch] ' : '';
-                const suffix = isWishlist ? 'Hinzugefügt' : (data.titel || '');
-                const name = isWishlist ? (data.titel || '') : `${data.serie || ''} ${data.nummer ? '#' + data.nummer : ''}`;
-                
-                const safeName = escapeHTML(name);
-                const safeSuffix = escapeHTML(suffix);
-                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${prefix}${safeName}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${safeSuffix}</span></div>`;
-                logNew.insertAdjacentHTML('beforeend', logLine);
-                if (!window.__TESTING__) {
-                    logNew.scrollTop = logNew.scrollHeight;
-                }
-            };
-
-            const onLogUpdated = (data, oldData, changedFields, isWishlist) => {
-                const prefix = isWishlist ? '[Wunsch] ' : '';
-                const name = isWishlist ? (data.titel || '') : `${data.serie || ''} ${data.nummer ? '#' + data.nummer : ''}`;
-                const details = formatDiff(data, oldData, changedFields);
-                const safeName = escapeHTML(name);
-                
-                const logLine = `
-                    <div style="margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <strong style="color: var(--primary-color);">${prefix}${safeName}</strong>
-                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
-                            ${details}
-                        </div>
-                    </div>
-                `;
-                logUpdated.insertAdjacentHTML('beforeend', logLine);
-                if (!window.__TESTING__) {
-                    logUpdated.scrollTop = logUpdated.scrollHeight;
-                }
-            };
-
-            const onLogSkipped = (data, isWishlist) => {
-                const prefix = isWishlist ? '[Wunsch] ' : '';
-                const suffix = isWishlist ? 'Keine Änderungen' : (data.titel || '');
-                const name = isWishlist ? (data.titel || '') : `${data.serie || ''} ${data.nummer ? '#' + data.nummer : ''}`;
-                
-                const safeName = escapeHTML(name);
-                const safeSuffix = escapeHTML(suffix);
-                const logLine = `<div style="margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05);"><strong>${prefix}${safeName}</strong><br><span style="color: var(--text-secondary); font-size: 0.75rem;">${safeSuffix}</span></div>`;
-                logSkipped.insertAdjacentHTML('beforeend', logLine);
-                if (!window.__TESTING__) {
-                    logSkipped.scrollTop = logSkipped.scrollHeight;
-                }
-            };
-
-            const result = await importJSONData({
-                comicsToImport,
-                wishlistToImport,
-                onProgress,
-                onLogNew,
-                onLogUpdated,
-                onLogSkipped,
-                isAborted: () => importAborted
-            });
-
-            progressText.innerHTML = `<i class="fa-solid fa-check" style="color: var(--success)"></i> JSON-Import abgeschlossen.`;
-            if (result.aborted) {
-                progressText.innerHTML = `<i class="fa-solid fa-stop" style="color: var(--danger)"></i> Import abgebrochen.`;
-                const abortMsg = `<div style="color: var(--danger); font-weight: bold; margin-top: 10px;">[ABGEBROCHEN] Import durch Benutzer gestoppt.</div>`;
-                logNew.insertAdjacentHTML('beforeend', abortMsg);
-                logUpdated.insertAdjacentHTML('beforeend', abortMsg);
-                logSkipped.insertAdjacentHTML('beforeend', abortMsg);
-            }
-            
-            btnCancel.style.display = 'none';
-            btnConfirm.style.display = 'inline-block';
-            
-            fileInput.value = '';
-
-        } catch (error) {
-            console.error("JSON Import Error:", error);
-            statusDiv.style.display = 'block';
-            statusDiv.innerHTML = `<i class="fa-solid fa-xmark" style="color: var(--danger)"></i> Fehler: ${error.message}`;
-            if (logOverlay) logOverlay.style.display = 'none';
-        } finally {
-            if (viewContainer) {
-                viewContainer.dispatchEvent(new CustomEvent('import-completed'));
-            }
-        }
-    };
-
-    reader.readAsText(file);
 }
 
 const FIELD_LABELS = {
