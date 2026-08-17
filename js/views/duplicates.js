@@ -341,7 +341,7 @@ function renderPairCard(pair, isIgnoredView) {
 }
 
 function renderComicComparisonBox(comic, otherComic, label, isIgnoredView, pairKey) {
-    const imgUrl = comic.bild || getPlaceholderImage();
+    const imgUrl = escapeHTML(comic.bild || getPlaceholderImage());
 
     const diffTitle = normalizeText(comic.titel) !== normalizeText(otherComic.titel);
     const diffSerie = normalizeText(comic.serie) !== normalizeText(otherComic.serie);
