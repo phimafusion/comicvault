@@ -1,175 +1,85 @@
-# ComicVault - TODO List
+# ComicVault – TODO & Roadmap 🦸‍♂️
 
-Diese Liste dient als Notizzettel für zukünftige Aufgaben, Ideen und Refactorings.
-
----
-
-## 🚀 Zukünftige Features & Ideen
-
-- [x] **[1] Mobiles Design / Responsive / Handy**
-- [ ] **[2] Cover Bilder / Scans**
-  - Bilder suchen und hinzufügen
-  - Bilder anzeigen
-  - Bilder bearbeiten
-  - Bilder löschen
-- [ ] **[4] Barcode-Scanner (ISBN/EAN) & Auto-Fill** über Kamera und offene API (z. B. Google Books / Open Library)
-- [ ] **[5] Wunschzettel-Transfer („In Sammlung verschieben“)** mit Vorausfüllen der Daten
-- [ ] **[6] Erweiterte Lese-Statistiken & Lese-Challenge** (monatliche Trends, Jahresziel-Fortschrittsbalken)
-- [ ] **[7] Preisentwicklung & Wert-Tracker** (Vergleich Kaufpreis vs. aktueller Schätzwert)
-- [ ] **[8] Automatisierte Test-Pipeline (CI/CD via GitHub Actions)**
-  - Ausführung der Mocha-Tests headless (z. B. via Playwright/Puppeteer) bei jedem Pull Request
-- [ ] **[9] Offline-Modus & Progressive Web App (PWA)**
-  - Lokaler Offline-Speicher (IndexedDB) zur Ansicht der Sammlung ohne Internet
-  - Service Worker für schnelles Laden und Offline-Nutzung
-- [ ] **[10] Erweiterter Export & Import**
-  - Filtermöglichkeiten beim Export (z. B. nur bestimmte Verlage oder nur Wunschliste)
-  - Fortschrittsanzeige für sehr große Importe weiter verfeinern
-- [x] **[11] App-Installation auf Mobilgerät** → Als PWA umgesetzt (kein Capacitor/APK)
-  - Umgesetzt via Web App Manifest (`manifest.json`) + Service Worker (`sw.js`)
-  - Installierbar auf Android & iOS direkt aus dem Browser ("Zum Startbildschirm hinzufügen")
-  - In-App-Installations-Prompt über den `beforeinstallprompt`-Event in den Einstellungen hinzugefügt
-  - Service-Worker-Update-Benachrichtigung (Toast "Neu laden") bei neuen Versionen hinzugefügt
-  - Dynamisches Anpassen des `theme-color` Meta-Tags entsprechend dem gewählten Theme zur Einfärbung der Statusleiste
-  - Läuft im Standalone-Modus (kein Browser-Chrome, wie eine native App)
-  - Service Worker cached alle App-Dateien (Cache-First) → schnelles Laden, Offline-fähig
-  - Firestore-Daten bleiben weiterhin live synchronisiert (Firebase läuft über das Netz)
-- [ ] **[12] Teilen-Funktion (Web Share API)** zur nativen Weitergabe von Comics und der Wunschliste auf Mobilgeräten via Messenger, E-Mail etc.
+Dieses Dokument dient als zentrale Entwicklungs-Roadmap, Refactoring-Protokoll und Aufgabenliste für **ComicVault**.
 
 ---
 
-## 🛠️ Performance & Refactoring (Bereits Umgesetzt)
+## 📊 Status Dashboard
 
-- [x] **[12a] collection.js – Event-Delegation statt direkter Listener pro Comic-Item**
-  - *Problem:* `updateGrid()` hängt bei jedem Render 2 Listener × N Comics ans DOM (z. B. 500 Comics = 1.000 Listener, werden nicht aufgeräumt).
-  - *Fix:* 1 delegierter Click-Handler am grid-Container statt `querySelectorAll().forEach(addEventListener)`.
-- [x] **[12b] collection.js – Filter-Optionen in einem statt 5 Durchläufen berechnen**
-  - *Problem:* `renderCollection()` iteriert die Comics-Liste 5× separat (je eine `.map()` für Verlag, Format, Bestand, Quelle, Serie).
-  - *Fix:* Ein einziges `forEach` mit 5 Sets.
-- [x] **[12c] collection.js – Datumsparsen memoisieren**
-  - *Problem:* `parseToDate()` wird bei aktiven Datumsfiltern bei JEDEM `updateGrid()`-Aufruf für jedes Comic neu aufgerufen (mit Regex).
-  - *Fix:* `_kaufdatumDate` und `_gelesenAmDate` einmalig berechnen und am Comic-Objekt cachen.
-- [x] **[12d] stats.js – 6 .map()-Iterationen auf 1 forEach reduzieren**
-  - *Problem:* `renderStats()` berechnet Filter-Optionen mit 6 separaten `.map()-Aufrufen über die gesamte Comics-Liste.
-  - *Fix:* Ein einziges `forEach` mit 6 Sets (gleiche Methode wie 12b).
-- [x] **[12e] CSS & Templates – Auslagern von Inline-Styles in components.css**
-  - *Problem:* `templates.js` (`.list-item`) und `collection.js` (`.list-header`) enthalten lange Inline-Styles (führt zu CSS-Redundanz und `!important` in Media Queries).
-  - *Fix:* Nur dynamische Grid-Spalten inline belassen, restliche Styles in CSS-Klassen überführen und die `!important`-Regeln in den Media Queries bereinigen.
-- [x] **[12f] settings.js – HTML-Templates auslagern**
-  - *Problem:* Große HTML-Templates lagen inline in der View-Datei, was Logik und Präsentation vermischte.
-  - *Fix:* Templates in eine eigene `settingsTemplates.js` extrahiert und in `settings.js` importiert.
+| Bereich | Status | Details |
+| :--- | :--- | :--- |
+| **Testsuite** | 🟢 **216 / 216 Passing** | All unit & integration tests passing 100% green |
+| **PWA & Mobile** | 🟢 **v2.4 Ready** | Standalone PWA, Service Worker Cache v24, Favicon & Superhero Logo |
+| **Architektur** | 🟢 **Refactored** | 4 Repositories (`js/db/`), StateStore, Template Extraktion, Event Delegation |
+| **Sicherheit** | 🟢 **Protected** | XSS Escaping (`escapeHTML`), Audit Changelog, Confirmation Modals |
 
 ---
 
-## 🎨 Redesign (Bereits Umgesetzt)
+## 🚀 Zukünftige Features (Geplante Roadmap)
 
-- [x] **[13] Detailansicht & Rasteransicht**
-  
-  ### 1. Rasteransicht (Grid / Tiles View)
-  - [x] **Cover Art Focus (Seitenverhältnis 2:3)**: Feste Bildhöhen und ein sauberes Porträt-Format.
-  - [x] **Glassmorphic Info-Overlays**: Titel, Serie und Nummer liegen elegant als leicht transparentes, verschwommenes overlay über dem unteren Teil des Bildes.
-  - [x] **Micro-Animations & Hover**: Feiner Zoom des Covers (`transform: scale(1.05)`) und violetter Leuchteffekt bei Hover.
-  - [x] **Smarte Badges**: Status-Pills (z. B. "Ungelesen" / "Vorhanden") werden direkt semi-transparent in die Ecken des Covers projiziert.
-  - [x] **Responsive CSS-Grid**: Dynamische Spaltenaufteilung mittels `grid-template-columns: repeat(auto-fill, minmax(160px, 1fr))` bzw. `minmax(520px, 1fr)` für Details.
- 
-  ### 2. Detailansicht (Detail Card / Detail View)
-  - [x] **Zweispaltiges Premium-Layout**:
-    - *Links (Das Cover):* Großes Cover mit 3D-Bücherrücken-Effekt (Falz, Glanzverlauf und Schattenwurf).
-    - *Rechts (Die Metadaten):* Klare typografische Hierarchie. Großer, markanter Titel in der Schriftart *Outfit*, gefolgt von Sub-Infos.
-  - [x] **Zweispaltige Key-Value-Tabelle**: Technische Daten in ein strukturiertes Grid gepackt mit dezenten, abwechselnden Hintergrundschattierungen.
-  - [x] **Zustands- & Bewertungs-Visualisierung**: Sterne-Bewertungen erhalten eine markante, leuchtende Farbgebung. Farbcodierte Status-Badges für den Zustand (z. B. grün für Mint, rot für Poor).
-  - [x] **Notizblock-Bemerkungsbereich**: Bemerkungen in einer Box im gelblichen Notepad-Stil dargestellt.
-  - [x] **Prominente Aktionsleiste (Action Bar)**: Buttons für "Bearbeiten", "Löschen" und die Schnellaktion "Gelesen" (sofern ungelesen).
- 
-  ### 3. Listenansicht (List View Quick Actions)
-  - [x] **Schnellaktionen pro Zeile**:
-    - Hinzufügen eines kreisrunden, smaragdgrünen "Gelesen"-Buttons mit weißem Haken direkt links neben dem Löschen-Button für ungelesene Bände.
-    - Hover-Effekt: Volle Farbausfüllung, Leuchteffekt (`box-shadow`) und Vergrößerung auf `1.15x`.
+### 📸 1. Cover-Bilder & Scans (`[2]`)
+- [ ] Bildersuche und Upload für Comic-Cover hinzufügen
+- [ ] Responsive Cover-Grid-Vorschau in Detail- & Sammlungsansichten
+- [ ] Cover bearbeiten und löschen
+
+### 📷 2. Barcode-Scanner & Auto-Fill (`[4]`)
+- [ ] Barcode-Scanner (ISBN/EAN) über Smartphone-Kamera (z. B. via QuaggaJS / HTML5-QRCode)
+- [ ] Automatisches Abfragen von Metadaten über freie APIs (z. B. Open Library / Google Books)
+
+### 🤖 3. Automated CI/CD Test Pipeline (`[8]`)
+- [ ] GitHub Actions Workflow (`.github/workflows/test.yml`)
+- [ ] Automatisches Ausführen der 216 Mocha-Tests via Headless Playwright/Chrome bei jedem Push / PR
+- [ ] Build Status Badge im README einbinden
+
+### 📤 4. Native Web Share API (`[12]`)
+- [ ] Teilen-Funktion zur Weitergabe von Comics und Wunschlisten-Einträgen auf Mobilgeräten via Messenger/Mail
 
 ---
 
-## ⚡ Aktuelle Phasen & Refactorings
+## 🛠️ Geplante Refactorings & Code-Qualität
 
-### [14] Phase 3: Test-Performance verbessern (tick() Helper) [Umgesetzt]
-- [x] **Problem**: Mocha-Tests nutzen über 60-mal `await new Promise(r => setTimeout(r, 50))` (oder höher), was die Gesamttestzeit künstlich um mehrere Sekunden verlängert.
-- [x] **Lösung (tick() Helper & PWA Bugfix)**: 
-  - Füge `export function tick(ms = 0) { return new Promise(r => setTimeout(r, ms)); }` in die `js/tests/testHelper.js` ein.
-  - Ersetze alle manuellen `setTimeout`-Pausen in den Testdateien durch `await tick()`. Dadurch löst die Event-Loop direkt auf, ohne 50ms in "Echtzeit" zu warten.
-  - Behebe einen PWA/UI-Bug in `wishlist.js`, indem nicht-abgelaufene Timeouts gelöscht werden (`clearTimeout`), was Race Conditions in schnellen Tests und realer Nutzung verhindert.
-- [x] **Verifikation**: Die Tests in `tests.html` laufen weiterhin fehlerfrei durch, und die Gesamtausführungszeit sank drastisch von 6,5s auf unter 3s.
+### 📦 1. Zentrales Storage Management (`storageService.js` - `[20]`)
+- [ ] Kapselung aller `localStorage`-Zugriffe (Theme, Schriftgröße, Spaltenbreiten, sichtbare Felder, Mockup-Modus) in einem zentralen Service
+- [ ] Typisierte Keys, Default-Werte und sichere JSON-Serialisierung
 
-### [15] Phase 4: XSS-Sicherheitslücken beheben [Umgesetzt]
-- [x] **Problem**: Mehrere Views (`subscriptions.js`, `changelog.js`, `aiInsights.js`, `budget.js`) rendern benutzereigene Daten ungesichert in das DOM (mittels `${var}` in innerHTML), was zu Cross-Site Scripting (XSS) führen kann.
-- [x] **Lösung (escapeHTML-Integration)**:
-  - Importiere `escapeHTML` aus `../utils.js` (bzw. entsprechendem relativen Pfad) in den vier betroffenen Modulen.
-  - Verwende `escapeHTML` für alle potenziell benutzergesteuerten Datenfelder bei der String-Interpolation für das DOM.
-- [x] **Verifikation**:
-  - Füge automatisierte Tests hinzu, die überprüfen, ob Script-Tags in diesen Ansichten sicher escaped werden.
-  - Test-Caching Problem in `tests.html` gelöst.
-  - Manuelle Stichprobe über die Test-Suite (erfolgreich).
-
-### [16] Phase 5: Langsame Integrationstests beschleunigen [Umgesetzt]
-- [x] **Problem**: Einige Integrationstests (insb. JSON-Import-Tests) benötigen über 100 ms pro Test, da sie aufwendige DOM-Rendering-Zyklen auslösen und künstliche Timeouts im Import-Code für UI-Aktualisierungen aufrufen.
-- [x] **Lösung (Event-basierte Synchronisation & Testmodus)**:
-  - Vermeidung von teuren DOM-Reflows (`scrollTop`) bei aktivem `window.__TESTING__`.
-  - Deaktivieren der künstlichen 10ms `setTimeout`-Pausen im Import-Service im Testmodus.
-  - Einführung eines `'import-completed'` Custom Events zur synchronen und deterministischen Fortführung der Tests.
-
-### [17] Phase 6: Mobile Ansichten für Tabellen reparieren [Umgesetzt]
-- [x] **Problem**: Die Tabellen der Wunschliste, der TBR-Entwicklung (Statistiken) und der Budgets waren auf Mobilgeräten extrem gestaucht, ragten über den Bildschirmrand hinaus und wurden abgeschnitten, da `.details-card` mobil Flex-Zentrierung verwendet.
-- [x] **Lösung (Block-Layout & Mindestbreiten)**:
-  - Einführung der CSS-Klasse `.details-card.table-card` mit `display: block !important` und `width: 100% !important`, um das Dehnen des Flex-Containers auf Mobilgeräten zu verhindern.
-  * Zuweisung gesunder Mindestbreiten (`650px` für Wunschliste/Lesestapel, `950px` für Monatsbudget) und Nutzung von `white-space: nowrap !important;` für Geldbeträge, um Zeilenumbrüche zu verhindern.
-  * Dadurch lassen sich alle Tabellen mobil innerhalb der Karte horizontal scrollen.
-- [x] **Verifikation**: Visuelle Prüfung im Mobilmodus und erfolgreicher Durchlauf aller 165 Tests.
-
-### [18] Phase 7: Globale Schriftgrößen-Auswahl in Einstellungen [Umgesetzt]
-- [x] **Problem**: Der Wunsch nach flexibler Schriftgrößen-Ausgabe (z. B. eine kleinere Schriftart für noch kompaktere Mobil- und Tabellendarstellungen).
-- [x] **Lösung (Root-Font-Size-Skalierung)**:
-  - Integration eines Dropdowns für die Schriftgröße ("Klein", "Mittel", "Groß") im Bereich "Design & Themes" in den Einstellungen.
-  - Dynamisches Setzen der Klassen `font-size-small` (14px), `font-size-medium` (16px), `font-size-large` (18px) auf dem `html`-Element beim Laden und Umschalten. Da die App relative Einheiten (`rem`) nutzt, skaliert das gesamte UI nahtlos mit.
-  - Globale Umstellung der `white-space: nowrap !important` Budget-Zellen-Regel auf alle Bildschirmgrößen, um Umbrüche bei Beträgen in allen Fenstergrößen zu unterbinden.
-- [x] **Verifikation**: Visuelle Bestätigung der proportionalen Skalierung und Test-Suite-Durchlauf (168 Tests erfolgreich).
+### 🧩 2. Konsolidierung von Utility-Modulen (`[22]`)
+- [ ] Strukturierung verstreuter Hilfsfunktionen (`utils.js` & `statsUtils.js`) in fokussierte Module (`dateUtils.js`, `formatUtils.js`, `domUtils.js`)
 
 ---
 
-## 🏗️ Geplante Refactorings & Code-Qualität
+## ✅ Bereits Umgesetzte Meilensteine & Refactorings
 
-- [x] **[19] Template-Extraktion (Budget & Stats)**
-  - Extraktion von Inline-HTML-Templates aus `budget.js` in eine eigene `budgetTemplates.js`.
-  - Auslagerung von HTML-Accordion-Tabellen und Trennung der Chart.js-Steuerung in `statsTemplates.js` / `chartController.js` aus `stats.js`.
-- [ ] **[20] Zentrales Storage Management (`storageService.js`)**
-  - Kapselung aller `localStorage`-Zugriffe (Theme, Schriftgröße, Spaltenbreiten, sichtbare Felder, Mockup-Modus) in einem zentralen Service.
-  - Bereitstellung von typisierten Storage-Keys, Default-Werten und zentraler JSON-Serialisierung.
-
-### 📐 Stufenweiser Refactoring-Plan [Umgesetzt]
-
+### 🏛️ 4-Stufen Architektur-Refactoring (Abgeschlossen)
 - [x] **Stufe 1: Modularisierung der Datenbankschicht (`db.js`)**
-  - Aufteilung des `db.js`-Monolithen in 4 spezialisierte Repositories unter `js/db/`:
-    - `comicRepository.js`: Comics CRUD, Filter, Caching.
-    - `wishlistRepository.js`: Wunschliste CRUD.
-    - `settingsRepository.js`: App-Einstellungen.
-    - `changelogRepository.js`: Protokollierung & Audit-Logs.
-  - Erhalt der abwärtskompatiblen Fassade `db` in `js/db.js`.
-  - *Branch für Durchführung:* `refactor/stage-1-database-repositories`
-
-- [x] **Stufe 2: View Template Extraktion & Komponenten-Architektur**
-  - Extraktion von Unterkomponenten: `importProtocolModal.js`, `duplicateCard.js`.
-  - Entkopplung von Präsentations- und UI-Logikebene.
-
+  - Zerlegung in 4 Repositories unter `js/db/`: `comicRepository.js`, `wishlistRepository.js`, `settingsRepository.js`, `changelogRepository.js`.
+  - Facade-Pattern in `db.js` zur Abwärtskompatibilität beibehalten.
+- [x] **Stufe 2: View Template Extraktion & Modale**
+  - Entkopplung von `importProtocolModal.js` und `duplicateCard.js`.
 - [x] **Stufe 3: Service-Schicht & Utility-Modularisierung**
-  - Entkopplung von `formatters.js` und `duplicateService.js`.
-
-- [x] **Stufe 4: Testabdeckung, State-Store & Stabilitätssicherung**
+  - Extraktion von `formatters.js` und `duplicateService.js`.
+- [x] **Stufe 4: State-Store & Auth-Tests**
   - Einführung von `stateStore.js`.
-  - Schreiben gezielter Auth-Modultests in `js/tests/auth.test.js`.
-  - E2E Headless Browser Testrunner Integration (`verify_tests.py`).
+  - Auth-Modultests in `js/tests/auth.test.js`.
+  - Automated Selenium/Chrome Testrunner Verification (`verify_tests.py`).
 
----
+### 📱 PWA & Branding (Abgeschlossen)
+- [x] **PWA Integration (`manifest.json` & `sw.js`)**
+  - Service Worker Caching (Cache-First) & Offline-Fähigkeit.
+  - In-App Installations-Prompt in den Einstellungen.
+- [x] **Superhero Logo & Branding v2.4**
+  - Neues Superhero Vault Shield Logo & `favicon.svg` (Vorschlag C).
+  - Prominentes Splash-Screen Logo auf dem Login-Bildschirm.
+  - Branding Banner Header in den Einstellungen.
+  - Service Worker Cache Upgrade auf `comicvault-v24`.
 
-- [ ] **[22] Konsolidierung von Utility-Modulen**
-  - Zusammenführung und Strukturierung verstreuter Hilfsfunktionen (`utils.js` & `statsUtils.js`) in fokussierte Module (`dateUtils.js`, `formatUtils.js`, `domUtils.js`).
-- [ ] **[23] Headless Test-Runner für CI/CD (GitHub Actions)**
-  - Implementierung eines Headless-Runners (z. B. via Playwright/Puppeteer) für `tests.html`.
-  - Erstellung einer GitHub Actions Workflow-Datei (`.github/workflows/test.yml`) zur automatisierten Ausführung aller Tests bei Pull Requests.
+### 📈 Statistiken & Liniendiagramm-Abgleich (Abgeschlossen)
+- [x] **Liniendiagramm exakt an KPI-Filter angeglichen**
+  - Filterung gültiger Bestands-Comics (`vorhanden`, `vorbestellt`, `verliehen`) im `timelineService.js`.
+  - Entfernen von Jan 2023 Platzhalter-Ausschlüssen in `kpiService.js` und `timelineService.js`.
+  - Neuer Zeitraum-Filter `"currentAndLastYear"` ("Laufendes & letztes Jahr") als Standard gesetzt.
 
-
+### 🔒 Sicherheit & Performance (Abgeschlossen)
+- [x] **XSS-Schutz & Output Escaping** (`escapeHTML` in Subscriptions, Changelog, AI Insights, Budget)
+- [x] **Event-Delegation im Grid** (1 Listener am Container statt N Listener)
+- [x] **1 Durchlauf Filter-Berechnung** (`forEach` mit Sets)
+- [x] **Datumsparsen Memoisierung**
