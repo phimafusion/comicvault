@@ -28,19 +28,19 @@
 <body class="dark-mode">
     <!-- Login Overlay -->
     <div id="login-screen" class="login-overlay">
-        <div class="login-card">
-            <div class="sidebar-header" style="justify-content: center; border: none;">
-                <img src="comicvault_logo.png" alt="ComicVault Logo" class="logo-img">
-                <h1 class="logo-text">ComicVault</h1>
+        <div class="login-card" style="text-align: center; max-width: 420px; padding: 48px 36px;">
+            <div class="splash-logo-container" style="margin-bottom: 24px; display: inline-block; position: relative;">
+                <img src="comicvault_logo.png" alt="ComicVault Logo" class="logo-img splash-logo-img" style="width: 140px; height: 140px; border-radius: 28px; box-shadow: 0 16px 40px rgba(109, 40, 217, 0.5), 0 0 30px rgba(6, 182, 212, 0.3); border: 2px solid rgba(255, 255, 255, 0.2); object-fit: cover;">
             </div>
-            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 24px;">Bitte melde dich an, um auf deine Sammlung zuzugreifen.</p>
-            <button id="btn-google-login" class="btn btn-secondary" style="width: 100%; gap: 12px; margin-top: 24px;">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" alt="Google">
+            <h1 class="logo-text" style="font-size: 2.2rem; font-family: var(--font-display); margin-bottom: 8px; background: linear-gradient(135deg, #a78bfa 0%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">ComicVault</h1>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 28px; font-size: 0.95rem; line-height: 1.5;">Deine digitale Zentrale für Sammlung, Wunschliste & Lesestatistiken.</p>
+            <button id="btn-google-login" class="btn btn-secondary" style="width: 100%; gap: 12px; height: 48px; font-size: 1rem; font-weight: 600; justify-content: center;">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" alt="Google">
                 Mit Google anmelden
             </button>
-            <button id="btn-mockup-login" class="btn btn-secondary" style="width: 100%; gap: 12px; margin-top: 12px;">
+            <button id="btn-mockup-login" class="btn btn-secondary" style="width: 100%; gap: 12px; margin-top: 12px; height: 44px; font-size: 0.88rem; justify-content: center; opacity: 0.85;">
                 <i class="fa-solid fa-vial"></i>
-                Mockup Modus (ohne Login)
+                Mockup-Modus (Ohne Anmeldung)
             </button>
             <p id="login-error" style="color: var(--danger); font-size: 0.85rem; margin-top: 12px; text-align: center; display: none;"></p>
         </div>

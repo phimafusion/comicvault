@@ -4,6 +4,19 @@ export function getSettingsHtml(settings) {
             <h2 class="view-title">Einstellungen</h2>
         </div>
         
+        <!-- App Branding Splash Banner -->
+        <div class="details-card" style="margin-bottom: 24px; padding: 24px; background: linear-gradient(135deg, rgba(109, 40, 217, 0.15) 0%, rgba(14, 165, 233, 0.15) 100%); border: 1px solid var(--primary-color); display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+            <img src="comicvault_logo.png" alt="ComicVault Logo" style="width: 100px; height: 100px; border-radius: 20px; box-shadow: 0 10px 25px rgba(109, 40, 217, 0.4); border: 2px solid rgba(255,255,255,0.15); object-fit: cover;">
+            <div style="flex: 1; min-width: 200px;">
+                <h3 style="font-family: var(--font-display); font-size: 1.8rem; margin: 0 0 6px 0; background: linear-gradient(135deg, #a78bfa 0%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">ComicVault</h3>
+                <p style="color: var(--text-secondary); margin: 0 0 10px 0; font-size: 0.9rem; line-height: 1.4;">Deine digitale Superhelden-Zentrale für Comicsammlung, Wunschliste & Lesestatistiken.</p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                    <span class="badge" style="background: var(--primary-color); color: #fff; font-weight: 600; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem;">v2.4 Superhero Edition</span>
+                    <span class="badge" style="background: rgba(255,255,255,0.08); color: var(--text-secondary); padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; border: 1px solid var(--border-color);"><i class="fa-solid fa-shield-halved" style="color: var(--warning);"></i> Protected Vault</span>
+                </div>
+            </div>
+        </div>
+        
         <div class="details-grid">
             <!-- Sektion: Design & Themes -->
             <div class="details-card collapsible" style="flex-direction: column; border-color: var(--primary-color);">
