@@ -268,6 +268,7 @@ export function renderStatsMultiSelect(key, label, options, activeStatsFilters) 
 
 export function renderTimeframeSelect(years, activeTimeframe) {
     const options = [
+        { value: 'currentAndLastYear', label: 'Laufendes & letztes Jahr' },
         { value: 'all', label: 'Gesamter Zeitraum' },
         { value: 'last6', label: 'Letzte 6 Monate' },
         { value: 'last12', label: 'Letzte 12 Monate' },

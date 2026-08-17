@@ -58,6 +58,9 @@ export function checkDateInRange(dateStr, timeframe) {
     } else if (timeframe === 'thisYear') {
         minDate = new Date(now.getFullYear(), 0, 1);
         maxDate = new Date(now.getFullYear(), 11, 31);
+    } else if (timeframe === 'currentAndLastYear') {
+        minDate = new Date(now.getFullYear() - 1, 0, 1);
+        maxDate = new Date(now.getFullYear(), 11, 31);
     } else if (timeframe === 'lastYear') {
         minDate = new Date(now.getFullYear() - 1, 0, 1);
         maxDate = new Date(now.getFullYear() - 1, 11, 31);

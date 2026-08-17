@@ -26,7 +26,7 @@ let activeStatsFilters = {
     sprache: [],
     typ: [],
     serie: [],
-    zeitraum: 'all'
+    zeitraum: 'currentAndLastYear'
 };
 
 let activeTop10TabKey = 'oldestUnread';
@@ -43,7 +43,7 @@ export async function renderStats(container) {
         sprache: [],
         typ: [],
         serie: [],
-        zeitraum: 'all'
+        zeitraum: 'currentAndLastYear'
     };
     const comics = await db.getAllComics();
     
