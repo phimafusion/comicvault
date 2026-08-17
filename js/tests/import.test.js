@@ -1,4 +1,5 @@
 import { renderImport } from '../views/import.js';
+import { generateCSV, generateXLSX, sanitizeFormulaValue } from '../services/importExportService.js';
 import { setupTestEnv, cleanup, tick } from './testHelper.js';
 import { db } from '../db.js';
 
@@ -596,4 +597,32 @@ describe('Excel (XLSX) Import Feature Tests', () => {
             db.getAllComics = originalGetAllComics;
         }
     });
+
+    describe('CSV / Excel Formula Injection Protection Tests', () => {
+        it('sollte gefaehrliche Formel-Steuerzeichen (=, +, -, @) beim Export mit einem Hochkomma sanitisieren', () => {
+            expect(sanitizeFormulaValue('=1+2')).to.equal("'=1+2");
+            expect(sanitizeFormulaValue('+SUM(A1:A10)')).to.equal("'+SUM(A1:A10)");
+            expect(sanitizeFormulaValue('-100')).to.equal("'-100");
+            expect(sanitizeFormulaValue('@EXEC')).to.equal("'@EXEC");
+            expect(sanitizeFormulaValue('Normaler Titel')).to.equal('Normaler Titel');
+        });
+
+        it('sollte Formeln in Comics-Feldern beim CSV-Export sicher entwerten', () => {
+            const maliciousComics = [
+                {
+                    id: 'xss-1',
+                    titel: '=CMD|\' /C calc\'!A1',
+                    serie: '+SUM(1,2)',
+                    verlag: '@Marvel',
+                    preis: 5.99
+                }
+            ];
+
+            const csv = generateCSV(maliciousComics);
+            expect(csv).to.include("'=CMD|' /C calc'!A1");
+            expect(csv).to.include("'+SUM(1,2)");
+            expect(csv).to.include("'@Marvel");
+        });
+    });
 });
+

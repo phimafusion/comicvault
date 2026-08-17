@@ -148,6 +148,15 @@ export function mapRowToComic(row) {
 }
 
 // Export formatting helpers
+export function sanitizeFormulaValue(val) {
+    if (val === null || val === undefined) return val;
+    if (typeof val !== 'string') return val;
+    if (/^[=+\-@\t\r]/.test(val)) {
+        return "'" + val;
+    }
+    return val;
+}
+
 export function generateXLSX(comics, wishes = null) {
     const workbook = XLSX.utils.book_new();
 
@@ -171,7 +180,7 @@ export function generateXLSX(comics, wishes = null) {
                 if (f === 'variant' || f === 'limitierung') {
                     v = v ? 'Ja' : 'Nein';
                 }
-                row[f] = v;
+                row[f] = sanitizeFormulaValue(v);
             });
             return row;
         });
@@ -187,7 +196,7 @@ export function generateXLSX(comics, wishes = null) {
                 if (f === 'vorbestellt') {
                     v = v ? 'Ja' : 'Nein';
                 }
-                row[f] = v;
+                row[f] = sanitizeFormulaValue(v);
             });
             return row;
         });
@@ -215,6 +224,7 @@ export function generateCSV(items, isWishlist = false) {
         } else if ((f === 'variant' || f === 'limitierung') && !isWishlist) {
             v = v ? 'Ja' : 'Nein';
         }
+        v = sanitizeFormulaValue(v);
         v = String(v).replace(/"/g, '""');
         return (v.includes(';') || v.includes('\n') || v.includes('"')) ? `"${v}"` : v;
     }).join(';'));
