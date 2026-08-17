@@ -39,16 +39,21 @@ export function calculateTimelineData(filteredComics, timeframe) {
         curr.setMonth(curr.getMonth() + 1);
     }
 
+    // Nur physisch vorhandene/vorbestellte/verliehene Comics einbeziehen, analog zu calculateKPIs
+    const validStockComics = filteredComics.filter(c => 
+        ['vorhanden', 'vorbestellt', 'verliehen'].includes(String(c.bestand || 'vorhanden').toLowerCase())
+    );
+
     const timelineData = [];
     months.forEach(m => {
         const endOfMonth = new Date(m.getFullYear(), m.getMonth() + 1, 0, 23, 59, 59, 999);
         
-        const purchased = filteredComics.filter(c => {
+        const purchased = validStockComics.filter(c => {
             const pDate = parseToDate(c.kaufdatum || c.created_at);
             return pDate && pDate <= endOfMonth;
         }).length;
         
-        const read = filteredComics.filter(c => {
+        const read = validStockComics.filter(c => {
             const rDate = parseToDate(c.gelesen_am);
             // Januar 2023 als Platzhalter beim gelesenen Verlauf ignorieren
             if (rDate && rDate.getFullYear() === 2023 && rDate.getMonth() === 0) {

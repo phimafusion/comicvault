@@ -217,6 +217,15 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
         expect(kpiCards[2].firstElementChild.textContent).to.equal('50,00%');
     });
 
+    it('sollte den TBR-Verlauf im Liniendiagramm exakt an den KPI-Filter anpassen', () => {
+        const timelineData = timelineService.calculateTimelineData(mockComics, 'all');
+        const lastTimelineEntry = timelineData[timelineData.length - 1];
+        const kpis = kpiService.calculateKPIs(mockComics, 'all');
+
+        // Der TBR-Endstand des Liniendiagramms muss exakt tbrCount der KPIs entsprechen
+        expect(lastTimelineEntry.tbr).to.equal(kpis.tbrCount);
+    });
+
     it('sollte die Highlights, Averages und Top Listen korrekt berechnen', () => {
         // Ø Preis berechnen: (12.50 + 20.00 + 15.00 + 8.00) / 4 = 55.50 / 4 = 13.88
         const avgPriceEl = container.querySelector('#stats-highlights').firstElementChild;
