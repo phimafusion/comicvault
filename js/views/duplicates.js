@@ -436,8 +436,8 @@ export function openMergeModal(pair) {
             displayA = valA ? renderStars(valA) : '-';
             displayB = valB ? renderStars(valB) : '-';
         } else if (f.key === 'bild') {
-            displayA = valA ? `<img src="${valA}" style="height: 35px; border-radius: 4px;">` : '-';
-            displayB = valB ? `<img src="${valB}" style="height: 35px; border-radius: 4px;">` : '-';
+            displayA = valA ? `<img src="${escapeHTML(valA)}" style="height: 35px; border-radius: 4px;">` : '-';
+            displayB = valB ? `<img src="${escapeHTML(valB)}" style="height: 35px; border-radius: 4px;">` : '-';
         }
 
         const isDifferent = String(valA) !== String(valB);

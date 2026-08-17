@@ -35,7 +35,7 @@ export function renderTile(comic, visibleFields, isSelectModeActive, selectedCom
     
     let imgBlock = '';
     if (visibleFields.tiles.includes('bild')) {
-        const imgUrl = comic.bild || getPlaceholderImage();
+        const imgUrl = escapeHTML(comic.bild || getPlaceholderImage());
         imgBlock = `<div class="comic-cover-container"><img src="${imgUrl}" alt="${escapeHTML(comic.titel)}" class="comic-cover" onerror="this.onerror=null; this.src='${getPlaceholderImage()}';"></div>`;
     }
 
@@ -141,7 +141,7 @@ export function renderListItem(comic, visibleFields, isSelectModeActive, selecte
             case 'bewertung':
                 return `<div data-col="${field.key}" style="${align}">${renderStars(val)}</div>`;
             case 'bild':
-                const imgUrl = comic.bild || getPlaceholderImage();
+                const imgUrl = escapeHTML(comic.bild || getPlaceholderImage());
                 return `<div data-col="${field.key}"><img src="${imgUrl}" style="height: 30px; border-radius: 4px; object-fit: cover;"></div>`;
             case 'variant':
             case 'limitierung':
@@ -206,7 +206,7 @@ export function renderDetailsItem(comic, visibleFields, isSelectModeActive, sele
     
     let imgBlock = '';
     if (visibleFields.details.includes('bild')) {
-        const imgUrl = comic.bild || getPlaceholderImage();
+        const imgUrl = escapeHTML(comic.bild || getPlaceholderImage());
         imgBlock = `
             <div class="details-cover-wrapper">
                 <img src="${imgUrl}" alt="${escapeHTML(comic.titel)}" class="details-cover" onerror="this.onerror=null; this.src='${getPlaceholderImage()}';">

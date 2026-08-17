@@ -478,6 +478,9 @@
         initRunner(runner);
 
         function initRunner(runner) {
+            runner.on('end', () => {
+                window.mochaRunnerEnded = true;
+            });
             // Headless reporter für automatische Tests
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('headless') === 'true') {

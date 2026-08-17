@@ -1,4 +1,5 @@
 import { renderCollection, attachCollectionEvents } from '../views/collection.js';
+import { defaultVisibleFields, renderTile, renderDetailsItem } from '../views/collection/templates.js';
 import { setupTestEnv, cleanup, tick } from './testHelper.js';
 import { db } from '../db.js';
 
@@ -501,7 +502,26 @@ describe('ComicVault Database Caching Tests', () => {
             }
             cleanup();
         });
+
+        it('sollte XSS-Payloads im Bild-Feld (bild) im HTML-Template sicher escapen', () => {
+            const xssComic = { 
+                id: '999', 
+                titel: 'XSS Comic', 
+                serie: 'XSS Serie',
+                bild: 'https://example.com/cover.jpg" onerror="alert(\'XSS-Collection-Bild\')', 
+                bestand: 'vorhanden' 
+            };
+
+            const htmlTile = renderTile(xssComic, defaultVisibleFields, false, new Set());
+            expect(htmlTile).to.include('&quot; onerror=&quot;alert');
+            expect(htmlTile).to.not.include('" onerror="alert');
+
+            const htmlDetails = renderDetailsItem(xssComic, defaultVisibleFields, false, new Set());
+            expect(htmlDetails).to.include('&quot; onerror=&quot;alert');
+            expect(htmlDetails).to.not.include('" onerror="alert');
+        });
     });
 });
+
 
 

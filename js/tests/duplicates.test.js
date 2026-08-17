@@ -164,5 +164,26 @@ describe('ComicVault Duplicate Finder Tests', () => {
             const cards = container.querySelectorAll('.duplicate-pair-card');
             expect(cards.length).to.equal(1);
         });
+
+        it('sollte XSS-Payloads im Bildvergleich (valA/valB) sicher escapen', async () => {
+            const mockComics = [
+                { id: '401', titel: 'XSS Comic A', serie: 'XSS', nummer: '1', verlag: 'DC', format: 'Heft', bild: 'https://example.com/a.jpg" onerror="alert(\'XSS-A\')' },
+                { id: '402', titel: 'XSS Comic B', serie: 'XSS', nummer: '1', verlag: 'DC', format: 'Heft', bild: 'https://example.com/b.jpg" onerror="alert(\'XSS-B\')' }
+            ];
+
+            testEnv = setupTestEnv({ mockComics });
+            container = testEnv.viewContainer;
+
+            await renderDuplicates(container);
+            await tick();
+
+            const imgs = container.querySelectorAll('img');
+            imgs.forEach(img => {
+                const onerrorAttr = img.getAttribute('onerror') || '';
+                expect(onerrorAttr).to.not.include('XSS-A');
+                expect(onerrorAttr).to.not.include('XSS-B');
+            });
+        });
     });
 });
+

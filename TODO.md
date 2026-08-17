@@ -11,7 +11,25 @@ Dieses Dokument dient als zentrale Entwicklungs-Roadmap, Refactoring-Protokoll u
 | **Testsuite** | 🟢 **216 / 216 Passing** | All unit & integration tests passing 100% green |
 | **PWA & Mobile** | 🟢 **v2.4 Ready** | Standalone PWA, Service Worker Cache v24, Favicon & Superhero Logo |
 | **Architektur** | 🟢 **Refactored** | 4 Repositories (`js/db/`), StateStore, Template Extraktion, Event Delegation |
-| **Sicherheit** | 🟢 **Protected** | XSS Escaping (`escapeHTML`), Audit Changelog, Confirmation Modals |
+| **Sicherheit** | 🟡 **Audit Durchgeführt** | DOM-XSS Fixes in Templates, CSP Meta-Tag & SRI Härtung ausstehend |
+
+---
+
+## 🔒 Sicherheits-Audit & Härtung (Offene Aufgaben)
+
+### 🚨 1. DOM-XSS Lücken in Templates beheben (`[High]`)
+- [x] `comic.bild` in [`js/views/collection/templates.js`](file:///c:/Users/phili/Documents/GitHub/comicvault/js/views/collection/templates.js#L145) mit `escapeHTML()` / Sanitizing absichern
+- [x] `valA` und `valB` (Bild-URLs) in [`js/views/duplicates.js`](file:///c:/Users/phili/Documents/GitHub/comicvault/js/views/duplicates.js#L439-L440) vor der HTML-Einbindung bereinigen
+
+### 🛡️ 2. Content Security Policy (CSP) einrichten (`[Medium]`)
+- [ ] CSP `<meta>` Header in [`index.html`](file:///c:/Users/phili/Documents/GitHub/comicvault/index.html) ergänzen (Beschränkung auf trusted CDNs & origin)
+
+### 🔗 3. Subresource Integrity (SRI) für CDN-Links (`[Low]`)
+- [ ] `integrity` und `crossorigin` Attribute in [`index.html`](file:///c:/Users/phili/Documents/GitHub/comicvault/index.html) für FontAwesome & Firebase SDKs einbinden
+
+### 🧪 4. Import & Firebase Absicherung (`[Low]`)
+- [x] Firestore Security Rules in Firebase Console abgleichen (`request.auth.uid == userId` – ✅ **Perfekt & sicher konfiguriert**)
+- [ ] Protection gegen CSV Formula Injection (`=`, `+`, `-`, `@`) beim CSV-Export/Import
 
 ---
 
