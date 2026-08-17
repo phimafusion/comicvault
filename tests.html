@@ -17,6 +17,9 @@
                 }
             });
         }
+        if ('localStorage' in window) {
+            localStorage.removeItem('mock_mode');
+        }
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -462,6 +465,7 @@
         import './js/tests/duplicates.test.js';
         import './js/tests/mockup.test.js';
         import './js/tests/randomPick.test.js';
+        import './js/tests/auth.test.js';
 
         const runner = mocha.run();
         initRunner(runner);
