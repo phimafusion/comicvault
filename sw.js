@@ -1,4 +1,4 @@
-const CACHE_NAME = 'comicvault-v23';
+const CACHE_NAME = 'comicvault-v24';
 const ASSETS = [
   './',
   './index.html',
@@ -33,6 +33,7 @@ const ASSETS = [
   './js/views/collection/fieldConfig.js',
   './js/views/collection/bulkActions.js',
   './favicon.png',
+  './favicon.svg',
   './comicvault_logo.png'
 ];
 
