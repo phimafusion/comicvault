@@ -6,12 +6,16 @@ describe('Auth & Login Module Tests', () => {
 
     afterEach(() => {
         setMockMode(false);
-        localStorage.clear();
+        if ('localStorage' in window) {
+            localStorage.removeItem('mock_mode');
+        }
     });
 
     after(() => {
         setMockMode(false);
-        localStorage.clear();
+        if ('localStorage' in window) {
+            localStorage.removeItem('mock_mode');
+        }
     });
 
     it('sollte den Mock-Modus aktivieren und den Mock-Benutzer zurückgeben', () => {
@@ -30,11 +34,14 @@ describe('Auth & Login Module Tests', () => {
     });
 
     it('sollte loginWithGoogle ausführen ohne Fehler zu werfen', async () => {
+        const origSignIn = firebase.auth().signInWithPopup;
+        firebase.auth().signInWithPopup = async () => ({ user: { uid: 'google-user' } });
+
         try {
             const result = await loginWithGoogle();
-            expect(result).to.have.property('success');
-        } catch (err) {
-            expect(err).to.exist;
+            expect(result.success).to.be.true;
+        } finally {
+            firebase.auth().signInWithPopup = origSignIn;
         }
     });
 });
