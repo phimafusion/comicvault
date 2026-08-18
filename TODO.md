@@ -15,7 +15,18 @@ Dieses Dokument dient als zentrale Entwicklungs-Roadmap, Refactoring-Protokoll u
 
 ---
 
-## 🔒 Sicherheits-Audit & Härtung (Abgeschlossen)
+## 📌 Aktuelle Agenda (Nächste Schritte)
+
+### 1. Testsuite Performance & Styling
+- [ ] **Scroll-Performance beheben:** Ruckeln / Frame-Drops während des Testdurchlaufs beseitigen (Smooth-Scrolling vs. auto/rAF-Drosselung).
+- [ ] **Theme-Integration:** Testsuite-Styling (`tests.html`) an das aktuell gewählte Theme anpassen (z. B. bei *Retro Newsprint* nicht starr im *Vibrant Modern* / Dark-Look bleiben, sondern dynamisch die eingestellten Theme-Farben & Fonts übernehmen).
+
+### 2. Statistiken: Zeitraum-Filter auf Liniendiagramm isolieren
+- [ ] **Entkopplung:** Den Zeitraum-Filter (z. B. *„Laufendes & letztes Jahr“*) ausschließlich auf das Liniendiagramm (*„Lesestapel- & Leseaktivitätsverlauf“*) anwenden.
+- [ ] **UI-Platzierung:** Den Zeitraum-Selektor aus der globalen Filterleiste entfernen und direkt oben rechts in der Card des Liniendiagramms einbinden.
+- [ ] **Konsistente KPIs:** Die KPI-Karten, Typ-Tabellen, Verteilungs-Charts und Highlights über den gesamten gefilterten Bestand (ohne Zeitraum-Verzerrung) berechnen.
+
+---
 
 ### 🚨 1. DOM-XSS Lücken in Templates beheben (`[High]`)
 - [x] `comic.bild` in [`js/views/collection/templates.js`](file:///c:/Users/phili/Documents/GitHub/comicvault/js/views/collection/templates.js#L145) mit `escapeHTML()` / Sanitizing absichern
