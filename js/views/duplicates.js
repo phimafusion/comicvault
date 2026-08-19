@@ -1,6 +1,7 @@
 import { db } from '../db.js';
 import { escapeHTML, displayDate, renderStars, getPlaceholderImage, formatCurrency } from '../utils.js';
 import { openModal } from './form.js';
+import { storageService, STORAGE_KEYS } from '../services/storageService.js';
 
 let activeTab = 'candidates'; // 'candidates' oder 'ignored'
 let activeMatchTypeFilter = 'exact'; // Standardmäßig auf 'exact' gefiltert!
@@ -18,6 +19,16 @@ export function normalizeText(str) {
         .trim();
 }
 
+// Hilfsfunktion: Substring-Matching für Seriennamen
+export function isFuzzySeriesMatch(s1, s2) {
+    if (!s1 || !s2) return false;
+    if (s1 === s2) return true;
+    if (s1.length > 4 && s2.length > 4) {
+        if (s1.includes(s2) || s2.includes(s1)) return true;
+    }
+    return false;
+}
+
 // Prüft, ob zwei Texte ähnlich sind (z. B. Substrings oder hoher Überlappungsgrad)
 export function isSimilarText(str1, str2) {
     const s1 = normalizeText(str1);
@@ -33,14 +44,14 @@ export function isSimilarText(str1, str2) {
 // Liest die Ignorier-Liste (Whitelist) aus den Einstellungen
 export function getIgnoredDuplicatesList() {
     const settings = db.getSettings();
-    return settings.ignoredDuplicates || JSON.parse(localStorage.getItem('comicvault_ignored_duplicates') || '[]');
+    return settings.ignoredDuplicates || storageService.getItem(STORAGE_KEYS.IGNORED_DUPLICATES, []);
 }
 
 // Speichert die Ignorier-Liste (Whitelist)
 export async function saveIgnoredDuplicatesList(list) {
     const settings = db.getSettings();
     settings.ignoredDuplicates = list;
-    localStorage.setItem('comicvault_ignored_duplicates', JSON.stringify(list));
+    storageService.setItem(STORAGE_KEYS.IGNORED_DUPLICATES, list);
     await db.saveSettings(settings);
 }
 

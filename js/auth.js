@@ -1,4 +1,5 @@
 import { firebaseConfig } from './firebase-config.js';
+import { storageService, STORAGE_KEYS } from './services/storageService.js';
 
 // Firebase initialisieren (Compat Modus)
 firebase.initializeApp(firebaseConfig);
@@ -9,14 +10,14 @@ let authCallback = null;
 
 const checkUrlForMock = () => {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('mock') === 'true' || localStorage.getItem('mock_mode') === 'true') {
+    if (urlParams.get('mock') === 'true' || storageService.getString(STORAGE_KEYS.MOCK_MODE) === 'true') {
         setMockMode(true);
     }
 };
 
 export const setMockMode = (active) => {
     if (active) {
-        localStorage.setItem('mock_mode', 'true');
+        storageService.setString(STORAGE_KEYS.MOCK_MODE, 'true');
         mockUser = {
             uid: 'mock-user-123',
             displayName: 'Mock User',
@@ -25,7 +26,7 @@ export const setMockMode = (active) => {
         };
         if (authCallback) authCallback(mockUser);
     } else {
-        localStorage.removeItem('mock_mode');
+        storageService.removeItem(STORAGE_KEYS.MOCK_MODE);
         mockUser = null;
         if (authCallback) authCallback(auth.currentUser);
     }

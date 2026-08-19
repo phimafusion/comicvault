@@ -1,6 +1,6 @@
 import { getCurrentUser } from '../auth.js';
+import { storageService, STORAGE_KEYS } from '../services/storageService.js';
 
-const SETTINGS_KEY = 'comicvault_settings';
 const DEFAULT_SETTINGS = {
     monthlyBudget: 50.00,
     theme: 'dark'
@@ -15,17 +15,13 @@ export const settingsRepository = {
     },
 
     getSettings() {
-        const data = localStorage.getItem(SETTINGS_KEY);
+        const data = storageService.getItem(STORAGE_KEYS.SETTINGS);
         if (!data) return { ...DEFAULT_SETTINGS };
-        try {
-            return { ...DEFAULT_SETTINGS, ...JSON.parse(data) };
-        } catch (e) {
-            return { ...DEFAULT_SETTINGS };
-        }
+        return { ...DEFAULT_SETTINGS, ...data };
     },
 
     async saveSettings(settings) {
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        storageService.setItem(STORAGE_KEYS.SETTINGS, settings);
         const doc = this.getFirestoreDoc();
         if (doc) {
             try {
@@ -45,7 +41,7 @@ export const settingsRepository = {
                 const remoteSettings = snapshot.data();
                 const localSettings = this.getSettings();
                 const merged = { ...localSettings, ...remoteSettings };
-                localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
+                storageService.setItem(STORAGE_KEYS.SETTINGS, merged);
             } else {
                 const localSettings = this.getSettings();
                 await doc.set(localSettings);

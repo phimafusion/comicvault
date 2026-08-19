@@ -8,19 +8,17 @@ Dieses Dokument dient als zentrale Entwicklungs-Roadmap, Refactoring-Protokoll u
 
 | Bereich | Status | Details |
 | :--- | :--- | :--- |
-| **Testsuite** | 🟢 **223 / 223 Passing** | All unit & integration tests passing 100% green |
+| **Testsuite** | 🟢 **232 / 232 Passing** | All unit & integration tests passing 100% green |
 | **PWA & Mobile** | 🟢 **v2.4 Ready** | Standalone PWA, Service Worker Cache v24, Favicon & Superhero Logo |
-| **Architektur** | 🟢 **Refactored** | 4 Repositories (`js/db/`), StateStore, Template Extraktion, Event Delegation |
+| **Architektur** | 🟢 **Refactored** | 4 Repositories (`js/db/`), StorageService, StateStore, Template Extraktion |
 | **Sicherheit** | 🟢 **Vollständig Gehärtet** | DOM-XSS Fixes, CSP Meta-Tag, SRI Hashes & Formula Injection Schutz 100% grün |
 
 ---
 
 ## 📌 Aktuelle Agenda (Nächste Schritte)
 
-### 📊 Statistiken: Zeitraum-Filter auf Liniendiagramm isolieren
-- [ ] **Entkopplung:** Den Zeitraum-Filter (z. B. *„Laufendes & letztes Jahr“*) ausschließlich auf das Liniendiagramm (*„Lesestapel- & Leseaktivitätsverlauf“*) anwenden.
-- [ ] **UI-Platzierung:** Den Zeitraum-Selektor aus der globalen Filterleiste entfernen und direkt oben rechts in der Card des Liniendiagramms einbinden.
-- [ ] **Konsistente KPIs:** Die KPI-Karten, Typ-Tabellen, Verteilungs-Charts und Highlights über den gesamten gefilterten Bestand (ohne Zeitraum-Verzerrung) berechnen.
+### 🧩 1. Konsolidierung von Utility-Modulen (`[22]`)
+- [ ] Strukturierung verstreuter Hilfsfunktionen (`utils.js` & `statsUtils.js`) in fokussierte Module (`dateUtils.js`, `formatUtils.js`, `domUtils.js`)
 
 ---
 
@@ -53,7 +51,7 @@ Dieses Dokument dient als zentrale Entwicklungs-Roadmap, Refactoring-Protokoll u
 
 ### 🤖 3. Automated CI/CD Test Pipeline (`[8]`)
 - [ ] GitHub Actions Workflow (`.github/workflows/test.yml`)
-- [ ] Automatisches Ausführen der 216 Mocha-Tests via Headless Playwright/Chrome bei jedem Push / PR
+- [ ] Automatisches Ausführen der 232 Mocha-Tests via Headless Playwright/Chrome bei jedem Push / PR
 - [ ] Build Status Badge im README einbinden
 
 ### 📤 4. Native Web Share API (`[12]`)
@@ -64,8 +62,9 @@ Dieses Dokument dient als zentrale Entwicklungs-Roadmap, Refactoring-Protokoll u
 ## 🛠️ Geplante Refactorings & Code-Qualität
 
 ### 📦 1. Zentrales Storage Management (`storageService.js` - `[20]`)
-- [ ] Kapselung aller `localStorage`-Zugriffe (Theme, Schriftgröße, Spaltenbreiten, sichtbare Felder, Mockup-Modus) in einem zentralen Service
-- [ ] Typisierte Keys, Default-Werte und sichere JSON-Serialisierung
+- [x] Kapselung aller `localStorage`-Zugriffe (Theme, Schriftgröße, Spaltenbreiten, sichtbare Felder, Mockup-Modus) in einem zentralen Service
+- [x] Typisierte Keys, Default-Werte und sichere JSON-Serialisierung
+- [x] Eigene Testsuite `js/tests/storage.test.js` mit 100% Testabdeckung
 
 ### 🧩 2. Konsolidierung von Utility-Modulen (`[22]`)
 - [ ] Strukturierung verstreuter Hilfsfunktionen (`utils.js` & `statsUtils.js`) in fokussierte Module (`dateUtils.js`, `formatUtils.js`, `domUtils.js`)

@@ -1,5 +1,6 @@
 import { db } from '../db.js';
 import { parseCurrency, escapeHTML, formatCurrency, formatNumber } from '../utils.js';
+import { storageService, STORAGE_KEYS } from '../services/storageService.js';
 
 // Aggregiert statistische Daten über die Comicsammlung für das KI-Prompt
 export function compileCollectionStatsPromptData(comics = [], wishes = []) {
@@ -314,9 +315,9 @@ export async function renderAiInsights(container) {
     const apiKey = settings.geminiApiKey || '';
     
     // Gespeicherte Insights laden
-    let savedInsights = localStorage.getItem('comicvault_ai_insights') || '';
-    let savedSource = localStorage.getItem('comicvault_ai_insights_source') || 'local'; // 'gemini' oder 'local'
-    let savedTimestamp = localStorage.getItem('comicvault_ai_insights_timestamp') || '';
+    let savedInsights = storageService.getString(STORAGE_KEYS.AI_INSIGHTS, '');
+    let savedSource = storageService.getString(STORAGE_KEYS.AI_INSIGHTS_SOURCE, 'local'); // 'gemini' oder 'local'
+    let savedTimestamp = storageService.getString(STORAGE_KEYS.AI_INSIGHTS_TIMESTAMP, '');
     
     // Falls noch nie Insights generiert wurden, laden wir ein initiales lokales Mock-Review
     if (!savedInsights) {
@@ -327,9 +328,9 @@ export async function renderAiInsights(container) {
         savedSource = 'local';
         savedTimestamp = new Date().toLocaleString('de-DE');
         
-        localStorage.setItem('comicvault_ai_insights', savedInsights);
-        localStorage.setItem('comicvault_ai_insights_source', savedSource);
-        localStorage.setItem('comicvault_ai_insights_timestamp', savedTimestamp);
+        storageService.setString(STORAGE_KEYS.AI_INSIGHTS, savedInsights);
+        storageService.setString(STORAGE_KEYS.AI_INSIGHTS_SOURCE, savedSource);
+        storageService.setString(STORAGE_KEYS.AI_INSIGHTS_TIMESTAMP, savedTimestamp);
     }
 
     function drawView() {
@@ -452,9 +453,9 @@ export async function renderAiInsights(container) {
                     savedSource = source;
                     savedTimestamp = new Date().toLocaleString('de-DE');
 
-                    localStorage.setItem('comicvault_ai_insights', savedInsights);
-                    localStorage.setItem('comicvault_ai_insights_source', savedSource);
-                    localStorage.setItem('comicvault_ai_insights_timestamp', savedTimestamp);
+                    storageService.setString(STORAGE_KEYS.AI_INSIGHTS, savedInsights);
+                    storageService.setString(STORAGE_KEYS.AI_INSIGHTS_SOURCE, savedSource);
+                    storageService.setString(STORAGE_KEYS.AI_INSIGHTS_TIMESTAMP, savedTimestamp);
 
                     // 4. View neu zeichnen
                     drawView();

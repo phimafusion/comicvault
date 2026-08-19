@@ -1,10 +1,10 @@
 import { getCurrentUser } from './auth.js';
 import { getChangedFields } from './utils.js';
+import { storageService, STORAGE_KEYS } from './services/storageService.js';
 
 // Firebase Firestore initialisieren
 const dbFirestore = firebase.firestore();
 const storage = firebase.storage();
-const SETTINGS_KEY = 'comicvault_settings';
 
 // Offline Persistence aktivieren: Daten werden in IndexedDB gecacht.
 // Ab dem 2. App-Start erscheint die Sammlung sofort, Firebase sync läuft im Hintergrund.
@@ -451,7 +451,7 @@ class Database {
     }
 
     getSettings() {
-        const settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{"theme": "dark"}');
+        const settings = storageService.getItem(STORAGE_KEYS.SETTINGS, { theme: 'dark' }) || { theme: 'dark' };
         if (!settings.customSuggestions) {
             settings.customSuggestions = {
                 typ: ['Comic', 'Manga', 'Graphic Novel', 'Artbook'],
@@ -479,7 +479,7 @@ class Database {
     }
 
     async saveSettings(settings) {
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        storageService.setItem(STORAGE_KEYS.SETTINGS, settings);
         const doc = this.getSettingsDoc();
         if (doc) {
             try {
@@ -499,7 +499,7 @@ class Database {
                 const remoteSettings = snapshot.data();
                 const localSettings = this.getSettings();
                 const merged = { ...localSettings, ...remoteSettings };
-                localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
+                storageService.setItem(STORAGE_KEYS.SETTINGS, merged);
             } else {
                 const localSettings = this.getSettings();
                 await doc.set(localSettings);

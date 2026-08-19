@@ -12,6 +12,7 @@ import { renderAiInsights } from './views/aiInsights.js';
 import { renderDuplicates, cleanupDuplicates } from './views/duplicates.js';
 import { renderRandomPick } from './views/randomPick.js';
 import { openModal } from './views/form.js';
+import { storageService, STORAGE_KEYS } from './services/storageService.js';
 
 export class App {
     constructor() {
@@ -399,7 +400,7 @@ export class App {
         
         // Listen to window resizing to update mobile view class dynamically if not forced
         window.addEventListener('resize', () => {
-            const isForced = localStorage.getItem('comicvault_force_mobile') === 'true';
+            const isForced = storageService.getString(STORAGE_KEYS.FORCE_MOBILE) === 'true';
             if (!isForced) {
                 this.checkMobileView();
             }
@@ -407,7 +408,7 @@ export class App {
     }
 
     checkMobileView() {
-        const isForced = localStorage.getItem('comicvault_force_mobile') === 'true';
+        const isForced = storageService.getString(STORAGE_KEYS.FORCE_MOBILE) === 'true';
         const isMobileScreen = window.matchMedia('(max-width: 768px)').matches;
         
         const isMobileView = isForced || isMobileScreen;
@@ -428,11 +429,11 @@ export class App {
     }
 
     toggleMobileView() {
-        const isCurrentlyForced = localStorage.getItem('comicvault_force_mobile') === 'true';
+        const isCurrentlyForced = storageService.getString(STORAGE_KEYS.FORCE_MOBILE) === 'true';
         if (isCurrentlyForced) {
-            localStorage.removeItem('comicvault_force_mobile');
+            storageService.removeItem(STORAGE_KEYS.FORCE_MOBILE);
         } else {
-            localStorage.setItem('comicvault_force_mobile', 'true');
+            storageService.setString(STORAGE_KEYS.FORCE_MOBILE, 'true');
         }
         this.checkMobileView();
     }

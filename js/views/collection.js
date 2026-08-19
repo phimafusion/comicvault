@@ -4,6 +4,7 @@ import { FIELD_CONFIG, defaultVisibleFields, renderTile, renderListItem, renderD
 import { initColumnManager, handleDragStart, handleDragEnd, handleDragOver, handleDragLeave, handleDrop, handleMouseDown, handleDblClick, autoFitColumn } from './collection/columnManager.js';
 import { renderFieldConfigOverlay } from './collection/fieldConfig.js';
 import { parseToDate } from '../services/stats/statsUtils.js';
+import { storageService, STORAGE_KEYS } from '../services/storageService.js';
 import {
     isSelectModeActive,
     selectedComicIds,
@@ -34,7 +35,7 @@ let activeFilters = {
 };
 let needsAutoFit = true;
 
-let visibleFields = JSON.parse(localStorage.getItem('comicvault_visible_fields')) || JSON.parse(JSON.stringify(defaultVisibleFields));
+let visibleFields = storageService.getItem(STORAGE_KEYS.VISIBLE_FIELDS, defaultVisibleFields) || JSON.parse(JSON.stringify(defaultVisibleFields));
 if (!visibleFields.columnWidths) visibleFields.columnWidths = {};
 
 export async function renderCollection(container) {
@@ -230,7 +231,7 @@ initColumnManager({
     getVisibleFields: () => visibleFields,
     setVisibleFields: (fields) => {
         visibleFields = fields;
-        localStorage.setItem('comicvault_visible_fields', JSON.stringify(visibleFields));
+        storageService.setItem(STORAGE_KEYS.VISIBLE_FIELDS, visibleFields);
     },
     updateGrid: () => updateGrid()
 });
@@ -345,7 +346,7 @@ const handleCollectionClick = (e) => {
     // Reset Column Widths Click
     if (e.target.closest('#btn-reset-column-widths-direct')) {
         visibleFields.columnWidths = {};
-        localStorage.setItem('comicvault_visible_fields', JSON.stringify(visibleFields));
+        storageService.setItem(STORAGE_KEYS.VISIBLE_FIELDS, visibleFields);
         needsAutoFit = true;
         updateGrid();
         return;
@@ -375,7 +376,7 @@ const handleCollectionClick = (e) => {
         if (btn.id === 'btn-configure-fields') {
             renderFieldConfigOverlay(visibleFields, currentViewType, (newFields) => {
                 visibleFields = newFields;
-                localStorage.setItem('comicvault_visible_fields', JSON.stringify(visibleFields));
+                storageService.setItem(STORAGE_KEYS.VISIBLE_FIELDS, visibleFields);
                 updateGrid();
             });
             return;

@@ -1,10 +1,12 @@
+import { storageService, STORAGE_KEYS } from '../services/storageService.js';
+
 class StateStore {
     constructor() {
         this.state = {
             currentUser: null,
             activeView: 'collection',
             searchQuery: '',
-            theme: localStorage.getItem('comicvault_theme') || 'dark'
+            theme: storageService.getString(STORAGE_KEYS.THEME, 'dark')
         };
         this.listeners = new Set();
     }
