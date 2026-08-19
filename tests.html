@@ -378,9 +378,27 @@
             box-shadow: 0 0 12px rgba(244, 63, 94, 0.4) !important;
         }
         
+        /* Failures Only Filter Styles */
+        body.filter-failures-only #mocha li.test.pass,
+        body.filter-failures-only #mocha li.test.pending {
+            display: none !important;
+        }
+
+        body.filter-failures-only .terminal-body .term-line-pass,
+        body.filter-failures-only .terminal-body .term-line-pending {
+            display: none !important;
+        }
+
         body.filter-failures-only #mocha-stats .failures em {
-            background: rgba(244, 63, 94, 0.3) !important;
-            box-shadow: 0 0 8px rgba(244, 63, 94, 0.5) !important;
+            background: rgba(244, 63, 94, 0.4) !important;
+            box-shadow: 0 0 12px rgba(244, 63, 94, 0.7) !important;
+        }
+
+        body.filter-failures-only #btn-term-filter-failures {
+            color: #f87171 !important;
+            background: rgba(239, 68, 68, 0.25) !important;
+            border-color: rgba(239, 68, 68, 0.5) !important;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.3) !important;
         }
         
         /* Hacker Console / Terminal View Styles */
@@ -633,6 +651,7 @@
                 bash — comicvault-testsuite (x86_64) — 120x35
             </div>
             <div class="terminal-actions">
+                <button id="btn-term-filter-failures" class="term-action-btn" title="Nur Fehlgeschlagene Tests anzeigen / Filter toggeln"><i class="fa-solid fa-filter"></i> <span id="term-filter-text">Nur Fehler</span></button>
                 <button id="btn-term-autoscroll" class="term-action-btn active" title="Autoscroll toggeln"><i class="fa-solid fa-angles-down"></i></button>
                 <button id="btn-term-clear" class="term-action-btn" title="Konsole leeren"><i class="fa-solid fa-trash-can"></i></button>
             </div>
@@ -863,7 +882,7 @@
                     const suiteTitle = test.parent ? test.parent.fullTitle() : '';
                     
                     const line = document.createElement('div');
-                    line.className = 'term-line';
+                    line.className = 'term-line ' + (isPass ? 'term-line-pass' : (isPending ? 'term-line-pending' : 'term-line-fail'));
                     
                     if (isPass) {
                         line.innerHTML = `
@@ -913,6 +932,15 @@
                 if (summaryEl) {
                     const statusColor = isAllGreen ? '#4ade80' : '#f87171';
                     const durationSec = (stats.duration / 1000).toFixed(2);
+                    const isFiltered = document.body.classList.contains('filter-failures-only');
+                    const failureActionsHtml = !isAllGreen ? `
+                        <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button id="btn-summary-toggle-failures" style="cursor: pointer; padding: 6px 14px; background: rgba(239, 68, 68, 0.2); border: 1px solid #f87171; color: #fca5a5; font-family: monospace; border-radius: 6px; font-weight: 700; font-size: 0.85rem; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;">
+                                <i class="fa-solid fa-filter"></i> <span id="summary-filter-btn-label">${isFiltered ? 'Alle Tests anzeigen' : 'Nur Fehler im Terminal anzeigen'}</span>
+                            </button>
+                        </div>
+                    ` : '';
+
                     summaryEl.innerHTML = `
                         <div style="border: 1px solid ${statusColor}; background: rgba(0,0,0,0.65); padding: 16px 20px; border-radius: 8px; font-family: monospace; margin-top: 12px; box-shadow: 0 0 20px ${isAllGreen ? 'rgba(74, 222, 128, 0.15)' : 'rgba(248, 113, 113, 0.15)'};">
                             <div style="color: ${statusColor}; font-weight: 800; font-size: 1.05rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
@@ -924,6 +952,7 @@
                                 Failed: <strong style="color: ${stats.failures > 0 ? '#f87171' : '#fff'};">${stats.failures}</strong> &nbsp;|&nbsp; 
                                 Duration: <strong style="color: #38bdf8;">${durationSec}s</strong>
                             </div>
+                            ${failureActionsHtml}
                         </div>
                     `;
                     const promptLine = document.getElementById('terminal-prompt-line');
@@ -1028,9 +1057,29 @@
                 return;
             }
 
-            const failuresLi = e.target.closest('#mocha-stats .failures');
-            if (failuresLi) {
-                document.body.classList.toggle('filter-failures-only');
+            // Failure Filter Toggle (Terminal Action Button, Summary Card Button, Mocha Stats Badge)
+            const failureFilterTrigger = e.target.closest('#btn-term-filter-failures, #btn-summary-toggle-failures, #mocha-stats .failures');
+            if (failureFilterTrigger) {
+                const isFiltered = document.body.classList.toggle('filter-failures-only');
+                const termFilterBtn = document.getElementById('btn-term-filter-failures');
+                const termFilterText = document.getElementById('term-filter-text');
+                const summaryBtnLabel = document.getElementById('summary-filter-btn-label');
+
+                if (termFilterBtn) {
+                    termFilterBtn.classList.toggle('active', isFiltered);
+                }
+                if (termFilterText) {
+                    termFilterText.textContent = isFiltered ? 'Alle Tests' : 'Nur Fehler';
+                }
+                if (summaryBtnLabel) {
+                    summaryBtnLabel.textContent = isFiltered ? 'Alle Tests anzeigen' : 'Nur Fehler im Terminal anzeigen';
+                }
+
+                const termBody = document.getElementById('terminal-body');
+                if (termBody && isFiltered) {
+                    termBody.scrollTop = 0;
+                }
+                return;
             }
         });
     </script>

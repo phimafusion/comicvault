@@ -553,6 +553,16 @@ describe('ComicVault Datenbank-Caching & Performance-Tests', () => {
 
             settingsContainer.remove();
         });
+
+        it('sollte den Fehlgeschlagene-Tests-Filter auf body umschalten können (filter-failures-only)', () => {
+            expect(document.body.classList.contains('filter-failures-only')).to.be.false;
+
+            document.body.classList.add('filter-failures-only');
+            expect(document.body.classList.contains('filter-failures-only')).to.be.true;
+
+            document.body.classList.remove('filter-failures-only');
+            expect(document.body.classList.contains('filter-failures-only')).to.be.false;
+        });
     });
 });
 
