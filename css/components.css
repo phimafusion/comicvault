@@ -1762,4 +1762,69 @@ body.mobile-view .merge-fields-table td:first-child {
     margin-bottom: 8px !important;
 }
 
+/* ==========================================================================
+   Matrix Film Theme for Testsuite Modal Header (Hacker / Console Mode)
+   ========================================================================== */
+
+#testsuite-modal.matrix-theme .modal-content {
+    border: 1px solid #00ff41 !important;
+    box-shadow: 0 0 35px rgba(0, 255, 65, 0.35), 0 25px 50px rgba(0, 0, 0, 0.95) !important;
+    background: #020703 !important;
+}
+
+#testsuite-modal.matrix-theme .modal-header {
+    background: linear-gradient(90deg, #020a04 0%, #06220e 50%, #020a04 100%) !important;
+    border-bottom: 1px solid #00ff41 !important;
+    box-shadow: 0 2px 12px rgba(0, 255, 65, 0.25) !important;
+    padding: 12px 20px !important;
+    position: relative;
+    overflow: hidden;
+}
+
+#testsuite-modal.matrix-theme .modal-header::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #00ff41, transparent);
+    box-shadow: 0 0 8px #00ff41;
+}
+
+#testsuite-modal.matrix-theme .modal-header h2 {
+    color: #00ff41 !important;
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.8), 0 0 3px #00ff41 !important;
+    font-family: 'Consolas', 'Courier New', monospace !important;
+    font-weight: 700 !important;
+    font-size: 1.05rem !important;
+    letter-spacing: 1px !important;
+    text-transform: uppercase;
+}
+
+#testsuite-modal.matrix-theme .modal-header h2 i {
+    color: #00ff41 !important;
+    filter: drop-shadow(0 0 6px #00ff41) !important;
+}
+
+#testsuite-modal.matrix-theme .modal-header #btn-close-testsuite-modal {
+    border: 1px solid #00ff41 !important;
+    background: rgba(0, 255, 65, 0.12) !important;
+    color: #00ff41 !important;
+    font-family: 'Consolas', 'Courier New', monospace !important;
+    font-weight: 700 !important;
+    font-size: 0.82rem !important;
+    text-shadow: 0 0 5px rgba(0, 255, 65, 0.7) !important;
+    padding: 6px 14px !important;
+    border-radius: 6px !important;
+    transition: all 0.2s ease !important;
+}
+
+#testsuite-modal.matrix-theme .modal-header #btn-close-testsuite-modal:hover {
+    background: #00ff41 !important;
+    color: #020703 !important;
+    box-shadow: 0 0 16px #00ff41 !important;
+    text-shadow: none !important;
+}
+
 

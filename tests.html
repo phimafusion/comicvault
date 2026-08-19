@@ -963,6 +963,15 @@
                     toggleBtn.style.color = '#7dd3fc';
                 }
             }
+
+            try {
+                if (window.parent && window.parent.document) {
+                    const parentModal = window.parent.document.getElementById('testsuite-modal');
+                    if (parentModal) {
+                        parentModal.classList.toggle('matrix-theme', mode === 'console');
+                    }
+                }
+            } catch (err) {}
         }
 
         // Initialen Modus aus Settings / LocalStorage laden

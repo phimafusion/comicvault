@@ -210,11 +210,14 @@ export class App {
 
         if (this.btnOpenTestsuite) {
             this.btnOpenTestsuite.addEventListener('click', () => {
-                if (this.testsuiteIframe) {
-                    this.testsuiteIframe.src = './tests.html?v=22&t=' + Date.now();
-                }
+                const settings = db.getSettings();
+                const mode = settings.testsuiteMode || storageService.getItem(STORAGE_KEYS.TESTSUITE_MODE) || 'console';
                 if (this.testsuiteModal) {
+                    this.testsuiteModal.classList.toggle('matrix-theme', mode !== 'modern');
                     this.testsuiteModal.style.display = 'flex';
+                }
+                if (this.testsuiteIframe) {
+                    this.testsuiteIframe.src = './tests.html?v=23&t=' + Date.now();
                 }
             });
         }

@@ -453,6 +453,7 @@ describe('ComicVault Database Caching Tests', () => {
             await tick();
 
             expect(modal.style.display).to.equal('flex');
+            expect(modal.classList.contains('matrix-theme')).to.be.true; // Matrix film theme for hacker console
             expect(iframe.src).to.include('tests.html');
 
             // Schließen klicken -> Modal schließen und iframe resetten
