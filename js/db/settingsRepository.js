@@ -3,7 +3,8 @@ import { storageService, STORAGE_KEYS } from '../services/storageService.js';
 
 const DEFAULT_SETTINGS = {
     monthlyBudget: 50.00,
-    theme: 'dark'
+    theme: 'dark',
+    testsuiteMode: 'console'
 };
 
 export const settingsRepository = {

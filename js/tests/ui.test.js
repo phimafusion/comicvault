@@ -524,20 +524,29 @@ describe('ComicVault Database Caching Tests', () => {
     });
 
     describe('Settings Testsuite Mode Logic', () => {
-        it('sollte den Testsuite-Modus in den Einstellungen ändern und speichern', async () => {
+        it('sollte den Testsuite-Modus in den Einstellungen auf Hacker-Konsole voreinstellen und ändern können', async () => {
             const settingsContainer = document.createElement('div');
             document.body.appendChild(settingsContainer);
 
             renderSettings(settingsContainer);
             const select = settingsContainer.querySelector('#settings-testsuite-mode');
             expect(select).to.not.be.null;
+            expect(select.value).to.equal('console'); // Standard ist Hacker-Konsole
 
-            // Ändern auf Konsole
+            // Ändern auf Modern UI
+            select.value = 'modern';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            await tick();
+
+            let savedSettings = db.getSettings();
+            expect(savedSettings.testsuiteMode).to.equal('modern');
+
+            // Zurück auf Konsole
             select.value = 'console';
             select.dispatchEvent(new Event('change', { bubbles: true }));
             await tick();
 
-            const savedSettings = db.getSettings();
+            savedSettings = db.getSettings();
             expect(savedSettings.testsuiteMode).to.equal('console');
 
             settingsContainer.remove();

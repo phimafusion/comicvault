@@ -491,14 +491,14 @@
         }
     </style>
 </head>
-<body class="testsuite-view-modern">
+<body class="testsuite-view-console">
     <div class="header-container">
         <h1 class="header-title">ComicVault Test Runner</h1>
         <p class="header-subtitle">In-Browser Unit Tests mit Mocha & Chai</p>
         <div style="display: inline-flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center;">
             <a href="index.html" class="back-link" id="btn-back-to-app"><i class="fa-solid fa-arrow-left"></i> Zurück zur App</a>
-            <button class="back-link" id="btn-toggle-testsuite-view" style="cursor: pointer; border: 1px solid rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.15); color: #7dd3fc;">
-                <i class="fa-solid fa-terminal"></i> <span id="view-mode-label">Hacker-Konsole</span>
+            <button class="back-link" id="btn-toggle-testsuite-view" style="cursor: pointer; border: 1px solid rgba(192, 132, 252, 0.4); background: rgba(192, 132, 252, 0.15); color: #e9d5ff;">
+                <i class="fa-solid fa-palette"></i> <span id="view-mode-label">Modern UI</span>
             </button>
             <button class="back-link" id="btn-rerun-tests" style="cursor: pointer; border: 1px solid rgba(192, 132, 252, 0.4); background: rgba(192, 132, 252, 0.15); color: #e9d5ff;">
                 <i class="fa-solid fa-rotate-right"></i> Tests erneut ausführen (Rerun)
@@ -860,9 +860,9 @@
         if (!currentMode) {
             try {
                 const settings = JSON.parse(localStorage.getItem('comicvault_settings') || '{}');
-                currentMode = settings.testsuiteMode || 'modern';
+                currentMode = settings.testsuiteMode || 'console';
             } catch {
-                currentMode = 'modern';
+                currentMode = 'console';
             }
         }
         applyTestsuiteViewMode(currentMode);
