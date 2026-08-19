@@ -526,6 +526,7 @@ describe('ComicVault Database Caching Tests', () => {
     describe('Settings Testsuite Mode Logic', () => {
         it('sollte den Testsuite-Modus in den Einstellungen auf Hacker-Konsole voreinstellen und ändern können', async () => {
             const settingsContainer = document.createElement('div');
+            settingsContainer.id = 'settings-container';
             document.body.appendChild(settingsContainer);
 
             renderSettings(settingsContainer);

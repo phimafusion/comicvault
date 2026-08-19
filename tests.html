@@ -489,6 +489,24 @@
         body.testsuite-view-modern #terminal-view {
             display: none !important;
         }
+
+        /* Prevent temporary test environment DOM fixtures from flickering on screen */
+        #test-environment-container,
+        #test-container,
+        #test-fixture,
+        #settings-container,
+        #view-container,
+        .test-fixture {
+            position: fixed !important;
+            left: -9999px !important;
+            top: -9999px !important;
+            width: 1200px !important;
+            height: 800px !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            overflow: hidden !important;
+            z-index: -9999 !important;
+        }
     </style>
 </head>
 <body class="testsuite-view-console">

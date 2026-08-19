@@ -148,6 +148,7 @@ export function setupTestEnv(options = {}) {
     // 6. Set up DOM container
     container = document.createElement('div');
     container.id = 'test-environment-container';
+    container.style.cssText = 'position: fixed !important; left: -9999px !important; top: -9999px !important; width: 1200px !important; height: 800px !important; opacity: 0 !important; pointer-events: none !important; overflow: hidden !important; z-index: -9999 !important;';
     container.innerHTML = `
         <div id="login-screen" style="display:none;">
             <button id="btn-google-login"></button>
