@@ -1,6 +1,7 @@
 import { db } from '../db.js';
 import { initAutocomplete } from '../components/autocomplete.js';
 import { escapeHTML } from '../utils.js';
+import { modalService } from '../services/modalService.js';
 
 let selectedSubscriptionIds = new Set();
 let sortBy = 'titel';
@@ -277,9 +278,9 @@ async function openSubscriptionModal(sub = null) {
             closeSubscriptionModal();
             updateSubscriptionsTable();
         });
-    } else {
-        modal.style.display = 'flex';
     }
+
+    modalService.open(modal);
 
     if (sub) {
         document.getElementById('sub-modal-title').textContent = 'Abo bearbeiten';
@@ -343,6 +344,6 @@ async function openSubscriptionModal(sub = null) {
 function closeSubscriptionModal() {
     const modal = document.getElementById('subscription-modal');
     if (modal) {
-        modal.style.display = 'none';
+        modalService.close(modal);
     }
 }

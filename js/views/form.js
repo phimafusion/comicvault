@@ -3,6 +3,7 @@ import { toInputDate, toGermanDate } from '../utils.js';
 import { initAutocomplete } from '../components/autocomplete.js';
 import { initStarRating } from '../components/star-rating.js';
 import { generateFormHtml, generateBulkFormHtml } from './form/templates.js';
+import { modalService } from '../services/modalService.js';
 
 const modal = document.getElementById('comic-modal');
 const form = document.getElementById('comic-form');
@@ -63,8 +64,14 @@ export async function openModal(comic = null, isWishlist = false, options = {}) 
     // Löschen-Button nur beim Bearbeiten zeigen
     btnDelete.style.display = comic ? 'flex' : 'none';
     
-    modal.style.display = 'flex';
-    setTimeout(() => modal.style.opacity = '1', 10);
+    modalService.open(modal, {
+        onClose: () => {
+            form.reset();
+            isBulkEditing = false;
+            bulkEditIds = [];
+            dirtyFields.clear();
+        }
+    });
 }
 
 async function getSuggestions() {
@@ -102,15 +109,8 @@ async function getSuggestions() {
     return suggestions;
 }
 
-function closeModal() {
-    modal.style.opacity = '0';
-    setTimeout(() => {
-        modal.style.display = 'none';
-        form.reset();
-        isBulkEditing = false;
-        bulkEditIds = [];
-        dirtyFields.clear();
-    }, 300);
+export function closeModal() {
+    modalService.close(modal);
 }
 
 btnClose.addEventListener('click', closeModal);
@@ -344,8 +344,14 @@ export async function openBulkEditModal(ids) {
         });
     }
     
-    modal.style.display = 'flex';
-    setTimeout(() => modal.style.opacity = '1', 10);
+    modalService.open(modal, {
+        onClose: () => {
+            form.reset();
+            isBulkEditing = false;
+            bulkEditIds = [];
+            dirtyFields.clear();
+        }
+    });
 }
 
 

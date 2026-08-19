@@ -13,6 +13,7 @@ import { renderDuplicates, cleanupDuplicates } from './views/duplicates.js';
 import { renderRandomPick } from './views/randomPick.js';
 import { openModal } from './views/form.js';
 import { storageService, STORAGE_KEYS } from './services/storageService.js';
+import { modalService } from './services/modalService.js';
 
 export class App {
     constructor() {
@@ -214,7 +215,13 @@ export class App {
                 const mode = settings.testsuiteMode || storageService.getItem(STORAGE_KEYS.TESTSUITE_MODE) || 'console';
                 if (this.testsuiteModal) {
                     this.testsuiteModal.classList.toggle('matrix-theme', mode !== 'modern');
-                    this.testsuiteModal.style.display = 'flex';
+                    modalService.open(this.testsuiteModal, {
+                        onClose: () => {
+                            if (this.testsuiteIframe) {
+                                this.testsuiteIframe.src = 'about:blank';
+                            }
+                        }
+                    });
                 }
                 if (this.testsuiteIframe) {
                     this.testsuiteIframe.src = './tests.html?v=23&t=' + Date.now();
@@ -225,10 +232,7 @@ export class App {
         if (this.btnCloseTestsuiteModal) {
             this.btnCloseTestsuiteModal.addEventListener('click', () => {
                 if (this.testsuiteModal) {
-                    this.testsuiteModal.style.display = 'none';
-                }
-                if (this.testsuiteIframe) {
-                    this.testsuiteIframe.src = 'about:blank';
+                    modalService.close(this.testsuiteModal);
                 }
             });
         }

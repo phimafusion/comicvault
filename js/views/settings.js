@@ -1,6 +1,7 @@
 import { db } from '../db.js';
 import { initAutocomplete } from '../components/autocomplete.js';
 import { getSettingsHtml, getClearDatabaseModalHtml } from './settingsTemplates.js';
+import { modalService } from '../services/modalService.js';
 
 const fontPresets = [
     { name: 'Inter', value: "'Inter', sans-serif" },
@@ -491,37 +492,26 @@ function showClearDatabaseModal() {
     if (existing) existing.remove();
 
     const modalHtml = getClearDatabaseModalHtml();
-
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 
     const modal = document.getElementById('db-clear-confirm-modal');
-    // Sanfter Fade-In
-    setTimeout(() => {
-        modal.style.opacity = '1';
-    }, 10);
-
     const closeBtn = document.getElementById('db-clear-modal-close');
     const cancelBtn = document.getElementById('db-clear-modal-cancel');
     const confirmBtn = document.getElementById('db-clear-modal-confirm');
     const confirmInput = document.getElementById('db-clear-confirm-input');
 
-    const handleKeyDown = (e) => {
-        if (e.key === 'Escape') {
-            closeModal();
-        }
-    };
-
     const closeModal = () => {
-        modal.style.opacity = '0';
-        document.removeEventListener('keydown', handleKeyDown);
-        setTimeout(() => {
-            modal.remove();
-        }, 200);
+        modalService.close(modal);
     };
 
     closeBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
-    document.addEventListener('keydown', handleKeyDown);
+
+    modalService.open(modal, {
+        onClose: () => {
+            if (document.body.contains(modal)) modal.remove();
+        }
+    });
 
     confirmInput.addEventListener('input', (e) => {
         const val = e.target.value;

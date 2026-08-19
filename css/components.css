@@ -47,6 +47,10 @@
 }
 
 /* Modal */
+body.modal-open {
+    overflow: hidden !important;
+}
+
 .modal-overlay {
     position: fixed;
     top: 0;
