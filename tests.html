@@ -41,13 +41,26 @@
     <!-- Mocha styles -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mocha/10.2.0/mocha.min.css" integrity="sha512-K2SeadvFVe9lYFodeleJaoA3p2Kna1reHWkNJ3GWMint1X7cXdU7oJpe2TTkRZ65DCWp2kyxM8RNnEPstlWr4A==" crossorigin="anonymous" referrerpolicy="no-referrer">
     <style>
-        body {
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
             background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
             color: #f8fafc;
             font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 40px 20px;
+            box-sizing: border-box;
+        }
+
+        /* Modern Mode Defaults */
+        body.testsuite-view-modern {
+            overflow-y: auto;
             min-height: 100vh;
+            padding: 30px 20px;
+            display: block;
+        }
+        body.testsuite-view-modern .cli-prompt {
+            display: none !important;
         }
         
         .header-container {
@@ -484,10 +497,88 @@
             display: none !important;
         }
         body.testsuite-view-console #terminal-view {
-            display: block !important;
+            display: flex !important;
         }
         body.testsuite-view-modern #terminal-view {
             display: none !important;
+        }
+
+        /* Console Mode: Full Height, Zero Outer Scroll, Hacky Compact Header */
+        body.testsuite-view-console {
+            height: 100vh;
+            overflow: hidden !important;
+            display: flex;
+            flex-direction: column;
+            padding: 10px 14px;
+            background: #060911;
+            box-sizing: border-box;
+        }
+
+        body.testsuite-view-console .header-container {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 6px 12px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            border-radius: 8px;
+            text-align: left;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        body.testsuite-view-console .header-title {
+            font-family: 'Consolas', 'Fira Code', 'Courier New', monospace;
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin: 0;
+            background: none;
+            -webkit-text-fill-color: initial;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: 0;
+        }
+
+        body.testsuite-view-console .cli-prompt {
+            display: inline !important;
+            color: #4ade80;
+            font-weight: 700;
+        }
+
+        body.testsuite-view-console .header-subtitle {
+            display: none !important;
+        }
+
+        body.testsuite-view-console .back-link {
+            padding: 5px 10px;
+            font-size: 0.78rem;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Fira Code', 'Courier New', monospace;
+            font-weight: 600;
+            gap: 6px;
+        }
+
+        body.testsuite-view-console .terminal-container {
+            flex: 1;
+            min-height: 0;
+            height: auto;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            max-width: 100%;
+            border-radius: 10px;
+        }
+
+        body.testsuite-view-console .terminal-body {
+            flex: 1;
+            min-height: 0;
+            max-height: none !important;
+            overflow-y: auto;
+            padding: 16px 20px;
         }
 
         /* Complete Isolation: Hide everything appended to body during tests except the test runner UI */
@@ -508,15 +599,20 @@
 </head>
 <body class="testsuite-view-console">
     <div class="header-container">
-        <h1 class="header-title">ComicVault Test Runner</h1>
-        <p class="header-subtitle">In-Browser Unit Tests mit Mocha & Chai</p>
-        <div style="display: inline-flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center;">
+        <div class="header-title-wrap">
+            <h1 class="header-title">
+                <span class="cli-prompt" style="color: #4ade80; display: none;">root@comicvault:~$</span>
+                <span class="cli-title">ComicVault Test Runner</span>
+            </h1>
+            <p class="header-subtitle">In-Browser Unit Tests mit Mocha & Chai</p>
+        </div>
+        <div class="header-controls" style="display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap;">
             <a href="index.html" class="back-link" id="btn-back-to-app"><i class="fa-solid fa-arrow-left"></i> Zurück zur App</a>
             <button class="back-link" id="btn-toggle-testsuite-view" style="cursor: pointer; border: 1px solid rgba(192, 132, 252, 0.4); background: rgba(192, 132, 252, 0.15); color: #e9d5ff;">
                 <i class="fa-solid fa-palette"></i> <span id="view-mode-label">Modern UI</span>
             </button>
             <button class="back-link" id="btn-rerun-tests" style="cursor: pointer; border: 1px solid rgba(192, 132, 252, 0.4); background: rgba(192, 132, 252, 0.15); color: #e9d5ff;">
-                <i class="fa-solid fa-rotate-right"></i> Tests erneut ausführen (Rerun)
+                <i class="fa-solid fa-rotate-right"></i> Rerun
             </button>
         </div>
     </div>
