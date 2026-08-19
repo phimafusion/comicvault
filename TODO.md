@@ -8,19 +8,23 @@ Dieses Dokument dient als zentrale Entwicklungs-Roadmap, Refactoring-Protokoll u
 
 | Bereich | Status | Details |
 | :--- | :--- | :--- |
-| **Testsuite** | 🟢 **265 / 265 Passing** | All unit & integration tests passing 100% green |
+| **Testsuite** | 🟢 **278 / 278 Passing** | All unit & integration tests passing 100% green |
 | **PWA & Mobile** | 🟢 **v2.4 Ready** | Standalone PWA, Service Worker Cache v24, Favicon & Superhero Logo |
-| **Architektur** | 🟢 **Refactored** | Repositories (`js/db/`), StorageService, Utility Modules, ExportService, ModalService |
+| **Architektur** | 🟢 **Refactored** | Repositories (`js/db/`), StorageService, Utility Modules, ExportService, ModalService, ValidationService |
 | **Sicherheit** | 🟢 **Vollständig Gehärtet** | DOM-XSS Fixes, CSP Meta-Tag, SRI Hashes & Formula Injection Schutz 100% grün |
 
 ---
 
 ## 📌 Aktuelle Agenda (Nächste Schritte)
 
-### 📋 1. Zentraler Validierungs-Service (`validationService.js` - `[25]`)
-- [ ] Zentralisierung von Validierungsregeln für Comic-Felder (Pflichtfelder, ISBN/EAN Prüfziffern, Jahreszahlen)
-- [ ] Vorbereitung für Barcode-Scanner & Auto-Fill Integration
-- [ ] Eigene Testsuite `js/tests/validation.test.js`
+### 📸 1. Cover-Bilder & Scans (`[2]`)
+- [ ] Bildersuche und Upload für Comic-Cover hinzufügen
+- [ ] Responsive Cover-Grid-Vorschau in Detail- & Sammlungsansichten
+- [ ] Cover bearbeiten und löschen
+
+### 📷 2. Barcode-Scanner & Auto-Fill (`[4]`)
+- [ ] Barcode-Scanner (ISBN/EAN) über Smartphone-Kamera (z. B. via QuaggaJS / HTML5-QRCode)
+- [ ] Automatisches Abfragen von Metadaten über freie APIs (z. B. Open Library / Google Books)
 
 ---
 
@@ -53,7 +57,7 @@ Dieses Dokument dient als zentrale Entwicklungs-Roadmap, Refactoring-Protokoll u
 
 ### 🤖 3. Automated CI/CD Test Pipeline (`[8]`)
 - [ ] GitHub Actions Workflow (`.github/workflows/test.yml`)
-- [ ] Automatisches Ausführen der 265 Mocha-Tests via Headless Playwright/Chrome bei jedem Push / PR
+- [ ] Automatisches Ausführen der 278 Mocha-Tests via Headless Playwright/Chrome bei jedem Push / PR
 - [ ] Build Status Badge im README einbinden
 
 ### 📤 4. Native Web Share API (`[12]`)
@@ -86,8 +90,9 @@ Dieses Dokument dient als zentrale Entwicklungs-Roadmap, Refactoring-Protokoll u
 - [x] Eigene Testsuite `js/tests/modal.test.js` mit 100% Testabdeckung (265 Tests gesamt)
 
 ### 📋 5. Zentraler Validierungs-Service (`validationService.js` - `[25]`)
-- [ ] Zentralisierung von Validierungsregeln für Comic-Felder (Pflichtfelder, ISBN/EAN Prüfziffern, Jahreszahlen)
-- [ ] Vorbereitung für Barcode-Scanner & Auto-Fill Integration
+- [x] Zentralisierung von Validierungsregeln für Comic-Felder (Pflichtfelder, ISBN/EAN Prüfziffern, Jahreszahlen)
+- [x] Vorbereitung für Barcode-Scanner & Auto-Fill Integration
+- [x] Eigene Testsuite `js/tests/validation.test.js` mit 100% Testabdeckung (278 Tests gesamt)
 
 ---
 

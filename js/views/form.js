@@ -4,6 +4,7 @@ import { initAutocomplete } from '../components/autocomplete.js';
 import { initStarRating } from '../components/star-rating.js';
 import { generateFormHtml, generateBulkFormHtml } from './form/templates.js';
 import { modalService } from '../services/modalService.js';
+import { validationService } from '../services/validationService.js';
 
 const modal = document.getElementById('comic-modal');
 const form = document.getElementById('comic-form');
@@ -192,6 +193,12 @@ btnSave.addEventListener('click', async (e) => {
 
     if (isWishlist) {
         comicData.vorbestellt = formData.get('vorbestellt') === 'true';
+        const validation = validationService.validateWishlist(comicData);
+        if (!validation.isValid) {
+            const firstError = Object.values(validation.errors)[0];
+            alert(firstError);
+            return;
+        }
         await db.saveWish(comicData);
     } else {
         // Bild-Verarbeitung vorerst deaktiviert, bestehendes Bild beibehalten falls vorhanden
@@ -222,6 +229,14 @@ btnSave.addEventListener('click', async (e) => {
             bewertung: formData.get('bewertung') ? parseInt(formData.get('bewertung')) : 0,
             bild: finalImageUrl
         });
+
+        const validation = validationService.validateComic(comicData);
+        if (!validation.isValid) {
+            const firstError = Object.values(validation.errors)[0];
+            alert(firstError);
+            return;
+        }
+
         await db.saveComic(comicData);
 
         if (transferFromWishId) {
