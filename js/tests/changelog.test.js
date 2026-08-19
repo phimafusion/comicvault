@@ -4,7 +4,7 @@ import { setupTestEnv, cleanup, tick } from './testHelper.js';
 
 const { expect } = chai;
 
-describe('Changelog Feature Tests', () => {
+describe('Changelog- & Änderungshistorie-Funktionen', () => {
     let testEnv;
     let originalGetCollection;
     let originalGetChangelogCollection;

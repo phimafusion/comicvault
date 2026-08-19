@@ -12,7 +12,7 @@ import { db } from '../db.js';
 
 const { expect } = chai;
 
-describe('ComicVault Duplicate Finder Tests', () => {
+describe('ComicVault Dubletten- & Duplikat-Finder Tests', () => {
     let testEnv;
     let container;
 
@@ -25,7 +25,7 @@ describe('ComicVault Duplicate Finder Tests', () => {
         cleanup();
     });
 
-    describe('Duplicate Helper & Matching Logic', () => {
+    describe('Duplikat-Erkennung & Matching-Logik', () => {
         it('sollte Texte korrekt normalisieren (Kleinschreibung, Sonderzeichen entfernen)', () => {
             expect(normalizeText('Spider-Man: Blue!')).to.equal('spider man blue');
             expect(normalizeText('Batman (Vol. 2)')).to.equal('batman vol 2');
@@ -96,7 +96,7 @@ describe('ComicVault Duplicate Finder Tests', () => {
         });
     });
 
-    describe('Duplicate Finder UI & Interactions', () => {
+    describe('Duplikat-Finder Benutzeroberfläche & Aktionen', () => {
         it('sollte die Duplikat-Finder Ansicht rendern und Duplikate anzeigen', async () => {
             const mockComics = [
                 { id: '101', titel: 'Batman Year One', serie: 'Batman', nummer: '1', verlag: 'DC', format: 'Hardcover', me: 1 },

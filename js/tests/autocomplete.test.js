@@ -5,7 +5,7 @@ import { db } from '../db.js';
 
 const { expect } = chai;
 
-describe('Autocomplete Feature Tests', () => {
+describe('Autovervollständigung (Autocomplete) Tests', () => {
     let container;
     let input;
     let suggestions;

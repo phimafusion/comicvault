@@ -6,7 +6,7 @@ import { db } from '../db.js';
 
 const { expect } = chai;
 
-describe('ComicVault UI Integration Tests (Collection View)', () => {
+describe('ComicVault Benutzeroberflächen- & Integrations-Tests (Sammlung)', () => {
     let testEnv;
     let container;
     let mockComics = [];
@@ -201,7 +201,7 @@ describe('ComicVault UI Integration Tests (Collection View)', () => {
     });
 });
 
-describe('ComicVault Database Caching Tests', () => {
+describe('ComicVault Datenbank-Caching & Performance-Tests', () => {
     let originalCollection;
     let originalCurrentUserDescriptor;
     let mockComicsData;
@@ -465,7 +465,7 @@ describe('ComicVault Database Caching Tests', () => {
         }
     });
 
-    describe('Collection Sorting Logic', () => {
+    describe('Sortierlogik der Sammlungsansicht', () => {
         it('sollte Comics in derselben Serie alphabetisch nach Titel sortieren', async () => {
             const seriesComics = [
                 { id: '10', titel: 'Mimi\'s Tales of Terror', serie: 'Junji Ito Deluxe Edition', verlag: 'Carlsen', me: 1, bestand: 'vorhanden' },
@@ -524,7 +524,7 @@ describe('ComicVault Database Caching Tests', () => {
         });
     });
 
-    describe('Settings Testsuite Mode Logic', () => {
+    describe('Testsuite-Modus Einstellungen & Logik', () => {
         it('sollte den Testsuite-Modus in den Einstellungen auf Hacker-Konsole voreinstellen und ändern können', async () => {
             const settingsContainer = document.createElement('div');
             settingsContainer.id = 'settings-container';

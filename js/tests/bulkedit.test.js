@@ -5,7 +5,7 @@ import { db } from '../db.js';
 
 const { expect } = chai;
 
-describe('ComicVault Bulk Edit Tests', () => {
+describe('ComicVault Stapelbearbeitungs-Funktionen (Bulk Edit)', () => {
     let testEnv;
     let container;
     let mockComics = [];

@@ -9,7 +9,7 @@ function normalizeFontFamily(font) {
     return font.toLowerCase().replace(/['"]/g, '').trim();
 }
 
-describe('Theme Fonts Settings & Application Tests', () => {
+describe('Design- & Schriftart-Einstellungen (Theme Fonts)', () => {
     let testEnv;
     let container;
     let appInstance;

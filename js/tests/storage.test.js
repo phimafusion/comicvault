@@ -2,7 +2,7 @@ import { storageService, STORAGE_KEYS } from '../services/storageService.js';
 
 const { expect } = chai;
 
-describe('StorageService Unit Tests', () => {
+describe('StorageService Modultests', () => {
     beforeEach(() => {
         storageService.clear();
     });

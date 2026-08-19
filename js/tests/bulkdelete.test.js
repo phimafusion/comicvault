@@ -3,7 +3,7 @@ import { setupTestEnv, cleanup, tick } from './testHelper.js';
 
 const { expect } = chai;
 
-describe('ComicVault Bulk Delete & Multi-Select Tests', () => {
+describe('ComicVault Mehrfachauswahl- & Stapellöschungs-Funktionen', () => {
     let testEnv;
     let container;
     let mockComics = [];

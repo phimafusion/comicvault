@@ -2,7 +2,7 @@ import { setupTestEnv, cleanup } from './testHelper.js';
 
 const { expect } = chai;
 
-describe('PWA (Progressive Web App) Integration Tests', () => {
+describe('PWA- & Offline-Funktionen (Progressive Web App)', () => {
     let testEnv;
     let appInstance;
 

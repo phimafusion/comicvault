@@ -5,7 +5,7 @@ import { db } from '../db.js';
 
 const { expect } = chai;
 
-describe('Responsive Layout & Mobile Menu Tests', () => {
+describe('Responsives Layout & Mobile Navigationstests', () => {
     let testEnv;
     let container;
     let appInstance;

@@ -5,8 +5,8 @@ import { db } from '../db.js';
 
 const { expect } = chai;
 
-describe('Random Picker Tests', () => {
-    describe('randomPickService Unit Tests', () => {
+describe('Comic-Roulette & Zufallsauswahl Tests', () => {
+    describe('randomPickService Unit-Tests', () => {
         const mockComics = [
             { id: '1', titel: 'Batman #1', verlag: 'Panini', format: 'Heft', bestand: 'vorhanden', gelesen: false, kaufdatum: '2026-01-01' },
             { id: '2', titel: 'Spider-Man #1', verlag: 'Panini', format: 'Trade Paperback', bestand: 'vorhanden', gelesen: true, gelesen_am: '2026-02-01', kaufdatum: '2026-01-02' },
@@ -58,7 +58,7 @@ describe('Random Picker Tests', () => {
         });
     });
 
-    describe('DOM & Integration Tests', () => {
+    describe('DOM- & Integrationstests', () => {
         let testEnv;
         let container;
 

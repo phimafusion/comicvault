@@ -5,7 +5,7 @@ import { db } from '../db.js';
 
 const { expect } = chai;
 
-describe('JSON Import Feature Tests', () => {
+describe('JSON-Import Funktionen & Validierung', () => {
     let testEnv;
     let container;
     let savedComics = [];
@@ -339,7 +339,7 @@ describe('JSON Import Feature Tests', () => {
     });
 });
 
-describe('Excel (XLSX) Export Feature Tests', () => {
+describe('Excel- (XLSX) & CSV-Export Funktionen', () => {
     let testEnv;
     let container;
 
@@ -448,7 +448,7 @@ describe('Excel (XLSX) Export Feature Tests', () => {
     });
 });
 
-describe('Excel (XLSX) Import Feature Tests', () => {
+describe('Excel- (XLSX) & CSV-Import Funktionen', () => {
     let testEnv;
     let container;
     let savedComics = [];
@@ -598,7 +598,7 @@ describe('Excel (XLSX) Import Feature Tests', () => {
         }
     });
 
-    describe('CSV / Excel Formula Injection Protection Tests', () => {
+    describe('Schutz vor CSV- & Formel-Injection', () => {
         it('sollte gefaehrliche Formel-Steuerzeichen (=, +, -, @) beim Export mit einem Hochkomma sanitisieren', () => {
             expect(sanitizeFormulaValue('=1+2')).to.equal("'=1+2");
             expect(sanitizeFormulaValue('+SUM(A1:A10)')).to.equal("'+SUM(A1:A10)");

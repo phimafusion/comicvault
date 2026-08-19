@@ -3,7 +3,7 @@ import { db } from '../db.js';
 import { renderSubscriptions, cleanupSubscriptions } from '../views/subscriptions.js';
 import { setupTestEnv, cleanup, tick } from './testHelper.js';
 
-describe('Subscriptions (Abos) Feature', function() {
+describe('Abonnements (Abos) Feature Tests', function() {
     let container;
     let testEnv;
 
@@ -22,7 +22,7 @@ describe('Subscriptions (Abos) Feature', function() {
         cleanup();
     });
 
-    it('should save and retrieve a subscription from DB', async function() {
+    it('sollte ein Abonnement in der Datenbank speichern und abrufen', async function() {
         const subData = {
             titel: 'Test Abo 1',
             verlag: 'Test Verlag',
@@ -38,7 +38,7 @@ describe('Subscriptions (Abos) Feature', function() {
         expect(subs[0].haendler).to.equal('Test Händler');
     });
 
-    it('should delete a subscription from DB', async function() {
+    it('sollte ein Abonnement aus der Datenbank löschen', async function() {
         const subData = {
             titel: 'To Delete Abo',
             verlag: 'V',
@@ -56,7 +56,7 @@ describe('Subscriptions (Abos) Feature', function() {
         expect(subs).to.have.lengthOf(0);
     });
 
-    it('should render the subscriptions view correctly with empty state', async function() {
+    it('sollte die Abonnements-Ansicht korrekt mit Leerzustand rendern', async function() {
         await renderSubscriptions(container);
         
         const title = container.querySelector('.view-title');
@@ -72,7 +72,7 @@ describe('Subscriptions (Abos) Feature', function() {
         expect(tbody.textContent).to.include('Keine Abonnements gefunden');
     });
 
-    it('should render existing subscriptions in the table', async function() {
+    it('sollte vorhandene Abonnements in der Tabelle anzeigen', async function() {
         await db.saveSubscription({
             titel: 'Batman',
             verlag: 'Panini',
@@ -90,7 +90,7 @@ describe('Subscriptions (Abos) Feature', function() {
         expect(tbody.textContent).to.include('Comic Shop');
     });
 
-    it('should filter subscriptions correctly', async function() {
+    it('sollte Abonnements über das Suchfeld korrekt filtern', async function() {
         await db.saveSubscription({ titel: 'Batman', verlag: 'Panini' });
         await db.saveSubscription({ titel: 'Spider-Man', verlag: 'Marvel' });
 
@@ -108,7 +108,7 @@ describe('Subscriptions (Abos) Feature', function() {
         expect(tbody.textContent).to.not.include('Spider-Man');
     });
 
-    it('should initialize autocomplete for publisher and vendor fields in the modal', async function() {
+    it('sollte Autocomplete für Verlag- und Händler-Felder im Modal initialisieren', async function() {
         // Prepare some data
         testEnv.setMockComics([{ verlag: 'DC Comics' }]);
         await db.saveSubscription({ titel: 'Sub 1', verlag: 'Marvel', haendler: 'Comicladen XY' });

@@ -24,9 +24,9 @@ import * as domUtils from '../utils/domUtils.js';
 
 const { expect } = chai;
 
-describe('ComicVault Utility Module Tests', () => {
+describe('ComicVault Utility- & Hilfsmodul Tests', () => {
 
-    describe('Modular Sub-exports (dateUtils, formatUtils, domUtils)', () => {
+    describe('Modulare Sub-Module (dateUtils, formatUtils, domUtils)', () => {
         it('sollte alle Funktionen über die fokussierten Module exportieren', () => {
             expect(dateUtils.parseToDate).to.be.a('function');
             expect(dateUtils.displayDate).to.be.a('function');

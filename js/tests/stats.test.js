@@ -332,7 +332,7 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
     });
 });
 
-describe('statsService Unit Tests', () => {
+describe('Statistik-Service Modultests (statsService)', () => {
     describe('parseToDate', () => {
         it('sollte ISO-Format YYYY-MM-DD korrekt parsen', () => {
             const date = statsUtils.parseToDate('2026-05-29');

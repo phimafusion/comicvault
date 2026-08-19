@@ -2,7 +2,7 @@ import { setMockMode, logout, getCurrentUser, loginWithGoogle } from '../auth.js
 
 const { expect } = chai;
 
-describe('Auth & Login Module Tests', () => {
+describe('Authentifizierung & Login-Funktionen', () => {
 
     afterEach(() => {
         setMockMode(false);

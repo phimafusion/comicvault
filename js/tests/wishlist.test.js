@@ -3,7 +3,7 @@ import { setupTestEnv, cleanup, tick } from './testHelper.js';
 
 const { expect } = chai;
 
-describe('ComicVault Wishlist Feature & Transfer Tests', () => {
+describe('ComicVault Wunschlisten- & Transfer-Funktionen', () => {
     let testEnv;
     let container;
     let mockWishes = [];
