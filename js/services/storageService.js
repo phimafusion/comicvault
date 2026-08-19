@@ -13,7 +13,8 @@ export const STORAGE_KEYS = {
     AI_INSIGHTS_TIMESTAMP: 'comicvault_ai_insights_timestamp',
     FORCE_MOBILE: 'comicvault_force_mobile',
     THEME: 'comicvault_theme',
-    MOCK_MODE: 'mock_mode'
+    MOCK_MODE: 'mock_mode',
+    TESTSUITE_MODE: 'comicvault_testsuite_mode'
 };
 
 class StorageService {

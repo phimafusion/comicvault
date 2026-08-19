@@ -8,7 +8,7 @@ Dieses Dokument dient als zentrale Entwicklungs-Roadmap, Refactoring-Protokoll u
 
 | Bereich | Status | Details |
 | :--- | :--- | :--- |
-| **Testsuite** | 🟢 **232 / 232 Passing** | All unit & integration tests passing 100% green |
+| **Testsuite** | 🟢 **233 / 233 Passing** | All unit & integration tests passing 100% green |
 | **PWA & Mobile** | 🟢 **v2.4 Ready** | Standalone PWA, Service Worker Cache v24, Favicon & Superhero Logo |
 | **Architektur** | 🟢 **Refactored** | 4 Repositories (`js/db/`), StorageService, StateStore, Template Extraktion |
 | **Sicherheit** | 🟢 **Vollständig Gehärtet** | DOM-XSS Fixes, CSP Meta-Tag, SRI Hashes & Formula Injection Schutz 100% grün |

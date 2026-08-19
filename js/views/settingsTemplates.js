@@ -51,6 +51,14 @@ export function getSettingsHtml(settings) {
                         </select>
                     </div>
                     
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label class="form-label">Testsuite-Darstellung</label>
+                        <select id="settings-testsuite-mode" class="form-control">
+                            <option value="modern" ${settings.testsuiteMode !== 'console' ? 'selected' : ''}>🎨 Modern UI (Grafisch)</option>
+                            <option value="console" ${settings.testsuiteMode === 'console' ? 'selected' : ''}>💻 Hacker-Konsole (CLI Terminal)</option>
+                        </select>
+                    </div>
+                    
                     <div class="form-group">
                         <label class="form-label">Modus</label>
                         <button class="btn btn-secondary" id="settings-toggle-dark" style="justify-content: flex-start; width: 100%;">

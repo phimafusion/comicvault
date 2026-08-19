@@ -370,28 +370,185 @@
             box-shadow: 0 0 8px rgba(244, 63, 94, 0.5) !important;
         }
         
-        body.filter-failures-only #mocha .test.pass {
+        /* Hacker Console / Terminal View Styles */
+        .terminal-container {
+            max-width: 1400px;
+            margin: 0 auto 40px auto;
+            background: #080b11;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 14px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.12);
+            overflow: hidden;
+            font-family: 'Consolas', 'Fira Code', 'Courier New', monospace;
+        }
+        .terminal-header {
+            background: #0f172a;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            user-select: none;
+        }
+        .terminal-traffic-lights {
+            display: flex;
+            gap: 8px;
+        }
+        .term-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .term-dot-red { background: #ff5f56; border: 1px solid #e0443e; }
+        .term-dot-yellow { background: #ffbd2e; border: 1px solid #dea123; }
+        .term-dot-green { background: #27c93f; border: 1px solid #1aab29; }
+        .terminal-title {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .terminal-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .term-action-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: #64748b;
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .term-action-btn:hover {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.1);
+            border-color: rgba(56, 189, 248, 0.2);
+        }
+        .term-action-btn.active {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.15);
+        }
+        .terminal-body {
+            padding: 24px;
+            max-height: 680px;
+            overflow-y: auto;
+            color: #e2e8f0;
+            font-size: 0.92rem;
+            line-height: 1.65;
+            background: #050811;
+        }
+        .term-line {
+            margin-bottom: 3px;
+            word-break: break-word;
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .term-user { color: #4ade80; font-weight: 700; }
+        .term-path { color: #38bdf8; }
+        .term-cmd { color: #f8fafc; font-weight: 600; }
+        .term-dim { color: #475569; width: 100%; }
+        .term-info { color: #94a3b8; width: 100%; }
+        .term-separator { color: #1e293b; margin: 8px 0; width: 100%; }
+        .term-duration { color: #64748b; font-size: 0.82rem; min-width: 50px; text-align: right; }
+        .term-suite { color: #38bdf8; font-weight: 600; }
+        .term-test-title { color: #cbd5e1; }
+        .term-tag {
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .term-tag-pass { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+        .term-tag-fail { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .term-tag-info { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+        .term-cursor {
+            animation: termBlink 1s step-start infinite;
+            color: #38bdf8;
+            font-weight: 900;
+        }
+        @keyframes termBlink {
+            50% { opacity: 0; }
+        }
+        body.testsuite-view-console #mocha,
+        body.testsuite-view-console #mocha-stats {
             display: none !important;
         }
-        body.filter-failures-only #mocha-report > li.suite:not(:has(.test.fail)) {
+        body.testsuite-view-console #terminal-view {
+            display: block !important;
+        }
+        body.testsuite-view-modern #terminal-view {
             display: none !important;
         }
     </style>
 </head>
-<body>
+<body class="testsuite-view-modern">
     <div class="header-container">
         <h1 class="header-title">ComicVault Test Runner</h1>
         <p class="header-subtitle">In-Browser Unit Tests mit Mocha & Chai</p>
         <div style="display: inline-flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center;">
             <a href="index.html" class="back-link" id="btn-back-to-app"><i class="fa-solid fa-arrow-left"></i> Zurück zur App</a>
+            <button class="back-link" id="btn-toggle-testsuite-view" style="cursor: pointer; border: 1px solid rgba(56, 189, 248, 0.4); background: rgba(56, 189, 248, 0.15); color: #7dd3fc;">
+                <i class="fa-solid fa-terminal"></i> <span id="view-mode-label">Hacker-Konsole</span>
+            </button>
             <button class="back-link" id="btn-rerun-tests" style="cursor: pointer; border: 1px solid rgba(192, 132, 252, 0.4); background: rgba(192, 132, 252, 0.15); color: #e9d5ff;">
                 <i class="fa-solid fa-rotate-right"></i> Tests erneut ausführen (Rerun)
             </button>
         </div>
     </div>
 
-    <!-- Mocha output div -->
+    <!-- Modern Mocha UI container -->
     <div id="mocha"></div>
+
+    <!-- Hacker Console / Terminal View container -->
+    <div id="terminal-view" class="terminal-container" style="display: none;">
+        <div class="terminal-header">
+            <div class="terminal-traffic-lights">
+                <span class="term-dot term-dot-red"></span>
+                <span class="term-dot term-dot-yellow"></span>
+                <span class="term-dot term-dot-green"></span>
+            </div>
+            <div class="terminal-title">
+                <i class="fa-solid fa-terminal" style="font-size: 0.8rem; color: #38bdf8;"></i>
+                bash — comicvault-testsuite (x86_64) — 120x35
+            </div>
+            <div class="terminal-actions">
+                <button id="btn-term-autoscroll" class="term-action-btn active" title="Autoscroll toggeln"><i class="fa-solid fa-angles-down"></i></button>
+                <button id="btn-term-clear" class="term-action-btn" title="Konsole leeren"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+        </div>
+        <div class="terminal-body" id="terminal-body">
+            <div class="term-line term-intro">
+                <span class="term-user">root@comicvault</span>:<span class="term-path">~/tests</span># <span class="term-cmd">./run-testsuite.sh --all --verbose</span>
+            </div>
+            <div class="term-line term-dim">================================================================================</div>
+            <div class="term-line" style="color: #38bdf8; font-weight: 700; white-space: pre; font-size: 0.8rem; line-height: 1.2; width: 100%;">
+  ____                 _      __     __            _ _   
+ / ___|___  _ __ ___ (_) ___ \ \   / /_ _ _   _ _| | |_ 
+| |   / _ \| '_ ` _ \| |/ __| \ \ / / _` | | | | | __|
+| |__| (_) | | | | | | | (__   \ V / (_| | |_| | | |_ 
+ \____\___/|_| |_| |_|_|\___|   \_/ \__,_|\__,_|_|\__|  [TEST RUNNER CLI]
+            </div>
+            <div class="term-line term-dim">================================================================================</div>
+            <div class="term-line term-info"><span class="term-tag term-tag-info">[INIT]</span> Initializing Mocha/Chai execution environment...</div>
+            <div class="term-line term-info"><span class="term-tag term-tag-info">[SUITES]</span> Discovered test cases across 23 test modules.</div>
+            <div class="term-line term-separator">────────────────────────────────────────────────────────────────────────────────</div>
+            <div id="terminal-logs"></div>
+            <div id="terminal-summary" style="margin-top: 16px;"></div>
+            <div class="term-line prompt-line" id="terminal-prompt-line" style="margin-top: 12px; display: none;">
+                <span class="term-user">root@comicvault</span>:<span class="term-path">~/tests</span># <span class="term-cursor">█</span>
+            </div>
+        </div>
+    </div>
 
     <!-- Mock UI Elements for load-time DOM selections in views -->
     <div style="display: none;">
@@ -552,7 +709,7 @@
 
             // Autoscroll to the latest executed test & update custom progress
             let lastScrollTime = 0;
-            runner.on('test end', () => {
+            runner.on('test end', (test) => {
                 moveStatsBox();
                 
                 // Custom progress bar update
@@ -584,11 +741,163 @@
                     }
                     lastScrollTime = now;
                 }
+
+                // --- Hacker Console / Terminal Live Stream ---
+                const terminalLogs = document.getElementById('terminal-logs');
+                if (terminalLogs) {
+                    const duration = test.duration !== undefined ? `${test.duration}ms` : '<1ms';
+                    const isPass = test.state === 'passed';
+                    const isPending = test.pending;
+                    const suiteTitle = test.parent ? test.parent.fullTitle() : '';
+                    
+                    const line = document.createElement('div');
+                    line.className = 'term-line';
+                    
+                    if (isPass) {
+                        line.innerHTML = `
+                            <span class="term-tag term-tag-pass">[PASS]</span>
+                            <span class="term-duration">(${duration.padStart(5)})</span>
+                            <span class="term-suite">${suiteTitle ? suiteTitle + ' > ' : ''}</span>
+                            <span class="term-test-title">${test.title}</span>
+                        `;
+                    } else if (isPending) {
+                        line.innerHTML = `
+                            <span class="term-tag" style="background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3);">[SKIP]</span>
+                            <span class="term-duration">( ---- )</span>
+                            <span class="term-suite">${suiteTitle ? suiteTitle + ' > ' : ''}</span>
+                            <span class="term-test-title" style="color: #facc15;">${test.title}</span>
+                        `;
+                    } else {
+                        line.innerHTML = `
+                            <span class="term-tag term-tag-fail">[FAIL]</span>
+                            <span class="term-duration">(${duration.padStart(5)})</span>
+                            <span class="term-suite">${suiteTitle ? suiteTitle + ' > ' : ''}</span>
+                            <span class="term-test-title" style="color: #f87171; font-weight: 600;">${test.title}</span>
+                        `;
+                        if (test.err) {
+                            line.innerHTML += `
+                                <div style="width: 100%; padding-left: 28px; color: #fca5a5; font-size: 0.84rem; margin-top: 2px; font-family: monospace;">
+                                    ✖ ${test.err.message || test.err}
+                                </div>
+                            `;
+                        }
+                    }
+                    terminalLogs.appendChild(line);
+
+                    // Terminal Autoscroll
+                    if (window.terminalAutoScroll !== false) {
+                        const termBody = document.getElementById('terminal-body');
+                        if (termBody) {
+                            termBody.scrollTop = termBody.scrollHeight;
+                        }
+                    }
+                }
+            });
+
+            runner.on('end', () => {
+                const stats = runner.stats;
+                const isAllGreen = stats.failures === 0;
+                const summaryEl = document.getElementById('terminal-summary');
+                if (summaryEl) {
+                    const statusColor = isAllGreen ? '#4ade80' : '#f87171';
+                    const durationSec = (stats.duration / 1000).toFixed(2);
+                    summaryEl.innerHTML = `
+                        <div style="border: 1px solid ${statusColor}; background: rgba(0,0,0,0.65); padding: 16px 20px; border-radius: 8px; font-family: monospace; margin-top: 12px; box-shadow: 0 0 20px ${isAllGreen ? 'rgba(74, 222, 128, 0.15)' : 'rgba(248, 113, 113, 0.15)'};">
+                            <div style="color: ${statusColor}; font-weight: 800; font-size: 1.05rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                                ${isAllGreen ? '✓ [SUCCESS]' : '✖ [FAILED]'} ${isAllGreen ? 'ALL TESTS PASSED — 100% GREEN' : `${stats.failures} TEST(S) FAILED`}
+                            </div>
+                            <div style="color: #94a3b8; font-size: 0.88rem; line-height: 1.6;">
+                                Total Tests: <strong style="color: #fff;">${stats.tests}</strong> &nbsp;|&nbsp; 
+                                Passed: <strong style="color: #4ade80;">${stats.passes}</strong> &nbsp;|&nbsp; 
+                                Failed: <strong style="color: ${stats.failures > 0 ? '#f87171' : '#fff'};">${stats.failures}</strong> &nbsp;|&nbsp; 
+                                Duration: <strong style="color: #38bdf8;">${durationSec}s</strong>
+                            </div>
+                        </div>
+                    `;
+                    const promptLine = document.getElementById('terminal-prompt-line');
+                    if (promptLine) promptLine.style.display = 'block';
+
+                    const termBody = document.getElementById('terminal-body');
+                    if (termBody && window.terminalAutoScroll !== false) {
+                        termBody.scrollTop = termBody.scrollHeight;
+                    }
+                }
             });
         }
 
-        // Event-Listener für Rerun-Buttons (Header & Floating Box)
+        // --- View Mode Steuerung (Modern UI vs. Hacker-Konsole) ---
+        function applyTestsuiteViewMode(mode) {
+            const label = document.getElementById('view-mode-label');
+            const toggleBtn = document.getElementById('btn-toggle-testsuite-view');
+            const icon = toggleBtn ? toggleBtn.querySelector('i') : null;
+            
+            if (mode === 'console') {
+                document.body.classList.remove('testsuite-view-modern');
+                document.body.classList.add('testsuite-view-console');
+                if (label) label.textContent = 'Modern UI';
+                if (icon) icon.className = 'fa-solid fa-palette';
+                if (toggleBtn) {
+                    toggleBtn.style.borderColor = 'rgba(192, 132, 252, 0.4)';
+                    toggleBtn.style.background = 'rgba(192, 132, 252, 0.15)';
+                    toggleBtn.style.color = '#e9d5ff';
+                }
+            } else {
+                document.body.classList.remove('testsuite-view-console');
+                document.body.classList.add('testsuite-view-modern');
+                if (label) label.textContent = 'Hacker-Konsole';
+                if (icon) icon.className = 'fa-solid fa-terminal';
+                if (toggleBtn) {
+                    toggleBtn.style.borderColor = 'rgba(56, 189, 248, 0.4)';
+                    toggleBtn.style.background = 'rgba(56, 189, 248, 0.15)';
+                    toggleBtn.style.color = '#7dd3fc';
+                }
+            }
+        }
+
+        // Initialen Modus aus Settings / LocalStorage laden
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentMode = urlParams.get('view') || localStorage.getItem('comicvault_testsuite_mode');
+        if (!currentMode) {
+            try {
+                const settings = JSON.parse(localStorage.getItem('comicvault_settings') || '{}');
+                currentMode = settings.testsuiteMode || 'modern';
+            } catch {
+                currentMode = 'modern';
+            }
+        }
+        applyTestsuiteViewMode(currentMode);
+
+        window.terminalAutoScroll = true;
+
+        // Event-Listener für Rerun, View-Toggle & Terminal Buttons
         document.addEventListener('click', (e) => {
+            // View Mode umschalten
+            const viewToggleBtn = e.target.closest('#btn-toggle-testsuite-view');
+            if (viewToggleBtn) {
+                const isConsole = document.body.classList.contains('testsuite-view-console');
+                const newMode = isConsole ? 'modern' : 'console';
+                localStorage.setItem('comicvault_testsuite_mode', newMode);
+                applyTestsuiteViewMode(newMode);
+                return;
+            }
+
+            // Terminal Clear
+            const termClearBtn = e.target.closest('#btn-term-clear');
+            if (termClearBtn) {
+                const logs = document.getElementById('terminal-logs');
+                if (logs) logs.innerHTML = '';
+                return;
+            }
+
+            // Terminal Autoscroll Toggle
+            const termScrollBtn = e.target.closest('#btn-term-autoscroll');
+            if (termScrollBtn) {
+                window.terminalAutoScroll = !window.terminalAutoScroll;
+                termScrollBtn.classList.toggle('active', window.terminalAutoScroll);
+                return;
+            }
+
+            // Rerun Buttons (Header & Floating Box)
             const rerunBtn = e.target.closest('#btn-rerun-tests, #btn-rerun-tests-stats');
             if (rerunBtn) {
                 const url = new URL(window.location.href);

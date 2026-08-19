@@ -367,6 +367,16 @@ export function renderSettings(container) {
         });
     }
 
+    const testsuiteModeSelect = container.querySelector('#settings-testsuite-mode');
+    if (testsuiteModeSelect) {
+        testsuiteModeSelect.addEventListener('change', (e) => {
+            const newMode = e.target.value;
+            const currentSettings = db.getSettings();
+            currentSettings.testsuiteMode = newMode;
+            db.saveSettings(currentSettings);
+        });
+    }
+
     const toggleDarkBtn = container.querySelector('#settings-toggle-dark');
     if (toggleDarkBtn) {
         toggleDarkBtn.addEventListener('click', () => {

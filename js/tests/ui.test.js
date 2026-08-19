@@ -1,4 +1,5 @@
 import { renderCollection, attachCollectionEvents } from '../views/collection.js';
+import { renderSettings } from '../views/settings.js';
 import { defaultVisibleFields, renderTile, renderDetailsItem } from '../views/collection/templates.js';
 import { setupTestEnv, cleanup, tick } from './testHelper.js';
 import { db } from '../db.js';
@@ -519,6 +520,27 @@ describe('ComicVault Database Caching Tests', () => {
             const htmlDetails = renderDetailsItem(xssComic, defaultVisibleFields, false, new Set());
             expect(htmlDetails).to.include('&quot; onerror=&quot;alert');
             expect(htmlDetails).to.not.include('" onerror="alert');
+        });
+    });
+
+    describe('Settings Testsuite Mode Logic', () => {
+        it('sollte den Testsuite-Modus in den Einstellungen ändern und speichern', async () => {
+            const settingsContainer = document.createElement('div');
+            document.body.appendChild(settingsContainer);
+
+            renderSettings(settingsContainer);
+            const select = settingsContainer.querySelector('#settings-testsuite-mode');
+            expect(select).to.not.be.null;
+
+            // Ändern auf Konsole
+            select.value = 'console';
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            await tick();
+
+            const savedSettings = db.getSettings();
+            expect(savedSettings.testsuiteMode).to.equal('console');
+
+            settingsContainer.remove();
         });
     });
 });
