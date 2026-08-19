@@ -490,20 +490,17 @@
             display: none !important;
         }
 
-        /* Prevent temporary test environment DOM fixtures from flickering on screen */
-        #test-environment-container,
-        #test-container,
-        #test-fixture,
-        #settings-container,
-        #view-container,
-        .test-fixture {
+        /* Complete Isolation: Hide everything appended to body during tests except the test runner UI */
+        body > *:not(.header-container):not(#terminal-view):not(#mocha):not(#mocha-stats) {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
             position: fixed !important;
             left: -9999px !important;
             top: -9999px !important;
-            width: 1200px !important;
-            height: 800px !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
+            width: 0 !important;
+            height: 0 !important;
             overflow: hidden !important;
             z-index: -9999 !important;
         }
@@ -751,7 +748,7 @@
                 }
                 
                 const now = Date.now();
-                if (now - lastScrollTime > 80) { // Throttle to prevent scroll jitter and improve performance
+                if (!document.body.classList.contains('testsuite-view-console') && (now - lastScrollTime > 80)) { // Throttle to prevent scroll jitter in modern view
                     const tests = document.querySelectorAll('#mocha .test');
                     if (tests.length > 0) {
                         const lastTest = tests[tests.length - 1];
