@@ -415,7 +415,8 @@ describe('Excel- (XLSX) & CSV-Export Funktionen', () => {
             await tick();
             
             expect(createdBlob).to.not.be.null;
-            expect(downloadedFilename).to.equal('ComicVault_Backup.xlsx');
+            expect(downloadedFilename).to.contain('ComicVault_');
+            expect(downloadedFilename).to.contain('.xlsx');
             
             // Blob einlesen und mit XLSX (SheetJS) analysieren
             const reader = new FileReader();

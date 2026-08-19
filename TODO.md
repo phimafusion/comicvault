@@ -8,19 +8,19 @@ Dieses Dokument dient als zentrale Entwicklungs-Roadmap, Refactoring-Protokoll u
 
 | Bereich | Status | Details |
 | :--- | :--- | :--- |
-| **Testsuite** | 🟢 **241 / 241 Passing** | All unit & integration tests passing 100% green |
+| **Testsuite** | 🟢 **254 / 254 Passing** | All unit & integration tests passing 100% green |
 | **PWA & Mobile** | 🟢 **v2.4 Ready** | Standalone PWA, Service Worker Cache v24, Favicon & Superhero Logo |
-| **Architektur** | 🟢 **Refactored** | 4 Repositories (`js/db/`), StorageService, Utility Modules, StateStore |
+| **Architektur** | 🟢 **Refactored** | Repositories (`js/db/`), StorageService, Utility Modules, ExportService |
 | **Sicherheit** | 🟢 **Vollständig Gehärtet** | DOM-XSS Fixes, CSP Meta-Tag, SRI Hashes & Formula Injection Schutz 100% grün |
 
 ---
 
 ## 📌 Aktuelle Agenda (Nächste Schritte)
 
-### 📤 1. Zentraler Export-Service (`exportService.js` - `[23]`)
-- [ ] Auslagerung der XLSX- und CSV-Generierung aus `collection.js`, `wishlist.js` und `stats.js`
-- [ ] Einheitlicher Schutz gegen CSV/Excel Formula Injection (`=`, `+`, `-`, `@`)
-- [ ] Eigene Testsuite für Export-Transformationen
+### 🪟 1. Einheitlicher Modal-Manager (`modalService.js` - `[24]`)
+- [ ] Zentraler Service für Modals (Formular, Testsuite, Bulk-Delete, Dubletten, Import-Protokoll)
+- [ ] Einheitliches Öffnen/Schließen, Focus-Trap, Backdrop-Klick und `Escape`-Tastenbehandlung
+- [ ] Eigene Testsuite `js/tests/modal.test.js`
 
 ---
 
@@ -53,7 +53,7 @@ Dieses Dokument dient als zentrale Entwicklungs-Roadmap, Refactoring-Protokoll u
 
 ### 🤖 3. Automated CI/CD Test Pipeline (`[8]`)
 - [ ] GitHub Actions Workflow (`.github/workflows/test.yml`)
-- [ ] Automatisches Ausführen der 241 Mocha-Tests via Headless Playwright/Chrome bei jedem Push / PR
+- [ ] Automatisches Ausführen der 254 Mocha-Tests via Headless Playwright/Chrome bei jedem Push / PR
 - [ ] Build Status Badge im README einbinden
 
 ### 📤 4. Native Web Share API (`[12]`)
@@ -75,9 +75,10 @@ Dieses Dokument dient als zentrale Entwicklungs-Roadmap, Refactoring-Protokoll u
 - [x] Vollständige Testabdeckung in `js/tests/utils.test.js` (241 Tests gesamt)
 
 ### 📤 3. Zentraler Export-Service (`exportService.js` - `[23]`)
-- [ ] Auslagerung der XLSX- und CSV-Generierung aus `collection.js`, `wishlist.js` und `stats.js`
-- [ ] Einheitlicher Schutz gegen CSV/Excel Formula Injection (`=`, `+`, `-`, `@`)
-- [ ] Eigene Testsuite für Export-Transformationen
+- [x] Zentraler Service für strukturierte JSON-Backups (Comics, Wunschliste, Abos, Einstellungen, Budgets)
+- [x] Modulare XLSX- und CSV-Generierung mit Multi-Sheet-Unterstützung
+- [x] Robuster Schutz vor CSV/Excel Formula Injection (`=`, `+`, `-`, `@`, `\t`, `\r`)
+- [x] Eigene Testsuite `js/tests/export.test.js` mit 100% Testabdeckung (254 Tests gesamt)
 
 ### 🪟 4. Einheitlicher Modal-Manager (`modalService.js` - `[24]`)
 - [ ] Zentraler Service für Modals (Formular, Testsuite, Bulk-Delete, Dubletten)

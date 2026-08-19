@@ -18,6 +18,8 @@ import './subscriptions.test.js';
 import './duplicates.test.js';
 import './mockup.test.js';
 import './randomPick.test.js';
+import './storage.test.js';
+import './export.test.js';
 
 if (typeof window !== 'undefined' && window.mocha) {
     const runner = window.mocha.run();

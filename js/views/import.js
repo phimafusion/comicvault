@@ -9,6 +9,7 @@ import {
     analyzeJSONImport,
     executeImportPlan
 } from '../services/importExportService.js';
+import { exportService } from '../services/exportService.js';
 
 let viewContainer = null;
 
@@ -488,34 +489,11 @@ async function handleJSONImport() {
 // Export Logic
 async function handleExport(format) {
     try {
-        const comics = await db.getAllComics();
-        if (comics.length === 0) return alert('Sammlung leer.');
-        if (format === 'json') {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(comics, null, 2));
-            downloadFile(dataStr, "ComicVault_Backup.json");
-        } else if (format === 'csv') {
-            const csvStr = generateCSV(comics);
-            const dataStr = "data:text/csv;charset=utf-8," + encodeURIComponent(csvStr);
-            downloadFile(dataStr, "ComicVault_Backup.csv");
-        } else if (format === 'xlsx') {
-            const xlsxBuffer = generateXLSX(comics);
-            const blob = new Blob([xlsxBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = URL.createObjectURL(blob);
-            downloadFile(url, "ComicVault_Backup.xlsx");
-        }
+        await exportService.executeExport(format);
     } catch (e) {
         console.error("Export Error:", e);
-        alert('Export-Fehler.');
+        alert(e.message || 'Export-Fehler.');
     }
-}
-
-function downloadFile(dataStr, filename) {
-    const a = document.createElement('a');
-    a.href = dataStr;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
 }
 
 const FIELD_LABELS = {
