@@ -105,7 +105,6 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
     });
 
     it('sollte die Statistiken-View korrekt rendern (Filter, KPIs, Canvas-Container)', () => {
-        console.log('DEBUG CONTAINER INNERHTML:', container.innerHTML);
         // Filter prüfen
         const filters = container.querySelectorAll('.stats-filter-trigger');
         expect(filters.length).to.equal(6); // Verlag, Serie, Format, Bestand, Sprache, Typ
@@ -169,8 +168,9 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
         expect(savedSettings.readingGoal).to.equal(10);
     });
 
-    it('sollte die KPI-Werte bei Änderung des Zeitraum-Filters anpassen', async () => {
+    it('sollte den Zeitraum-Filter am Liniendiagramm ändern und die Timeline anpassen, während KPIs stabil bleiben', async () => {
         const timeframeSelect = container.querySelector('#select-stats-timeframe');
+        expect(timeframeSelect).to.not.be.null;
         
         // Zeitraum auf "Dieses Jahr" (2026) stellen
         timeframeSelect.value = 'thisYear';
@@ -179,17 +179,10 @@ describe('ComicVault Statistiken & Lesestapel Tests', () => {
 
         const kpiCards = container.querySelectorAll('#stats-summary .stats-kpi-card');
         
-        // In 2026: c1, c2, c3 (Kaufdatum in 2026). c4 ist in 2025 gekauft/gelesen.
-        // Comics gefiltert: 3
-        expect(kpiCards[0].firstElementChild.textContent).to.equal('3');
-
-        // Sammlungswert in 2026: c1 (12.50) + c2 (20.00) + c3 (15.00) = 47.50
+        // KPIs bleiben unberührt vom Liniendiagramm-Filter: alle 4 Comics
+        expect(kpiCards[0].firstElementChild.textContent).to.equal('4');
         expect(kpiCards[1].firstElementChild.textContent).to.contain('47,50');
-
-        // Gelesen-Quote in 2026: Nur c1 ist gelesen -> 1 von 3 = 33,33%
-        expect(kpiCards[2].firstElementChild.textContent).to.equal('33,33%');
-
-        // TBR-Anzahl in 2026: c2, c3 ungelesen -> 2
+        expect(kpiCards[2].firstElementChild.textContent).to.equal('50,00%');
         expect(kpiCards[3].firstElementChild.textContent).to.equal('2');
     });
 

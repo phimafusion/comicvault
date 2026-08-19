@@ -26,7 +26,7 @@ let activeStatsFilters = {
     sprache: [],
     typ: [],
     serie: [],
-    zeitraum: 'currentAndLastYear'
+    timelineTimeframe: 'currentAndLastYear'
 };
 
 let activeTop10TabKey = 'oldestUnread';
@@ -43,7 +43,7 @@ export async function renderStats(container) {
         sprache: [],
         typ: [],
         serie: [],
-        zeitraum: 'currentAndLastYear'
+        timelineTimeframe: 'currentAndLastYear'
     };
     const comics = await db.getAllComics();
     
@@ -94,7 +94,6 @@ export async function renderStats(container) {
                     ${renderStatsMultiSelect('bestand', 'Bestand', bestände, activeStatsFilters)}
                     ${renderStatsMultiSelect('sprache', 'Sprache', sprachen, activeStatsFilters)}
                     ${renderStatsMultiSelect('typ', 'Typ', typen, activeStatsFilters)}
-                    ${renderTimeframeSelect(sortedYears, activeStatsFilters.zeitraum)}
                     
                     <button id="btn-reset-stats-filters" class="btn btn-secondary" style="height: 36px; width: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border-radius: 8px; border-color: transparent;" title="Alle Filter zurücksetzen">
                         <i class="fa-solid fa-rotate-left"></i>
@@ -179,10 +178,16 @@ export async function renderStats(container) {
         <!-- Timeline Chart (TBR-Verlauf) -->
         <div class="stats-grid" style="display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 24px;">
             <div class="details-card" style="flex-direction: column; padding: 24px;">
-                <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 8px; display: flex; align-items: center; gap: 10px;">
-                    <i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i>
-                    <span>Lesestapel- & Leseaktivitätsverlauf</span>
-                </h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 8px;">
+                    <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin: 0; display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-chart-line" style="color: var(--secondary-color);"></i>
+                        <span>Lesestapel- & Leseaktivitätsverlauf</span>
+                    </h3>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;">Zeitraum:</span>
+                        ${renderTimeframeSelect(sortedYears, activeStatsFilters.timelineTimeframe)}
+                    </div>
+                </div>
                 <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px;">
                     Vergleicht den Zuwachs an Käufen (kumuliert) mit den gelesenen Comics (kumuliert). Die gefüllte Fläche zeigt die Größe deines Lesestapels (TBR) über die Zeit.
                 </p>
@@ -325,11 +330,11 @@ function attachStatsEvents() {
         });
     });
 
-    // Zeitraum ändern
+    // Zeitraum für Liniendiagramm ändern
     const timeframeSelect = document.getElementById('select-stats-timeframe');
     if (timeframeSelect) {
         timeframeSelect.addEventListener('change', (e) => {
-            activeStatsFilters.zeitraum = e.target.value;
+            activeStatsFilters.timelineTimeframe = e.target.value;
             updateStats();
         });
     }
@@ -354,7 +359,7 @@ function attachStatsEvents() {
     const resetBtn = document.getElementById('btn-reset-stats-filters');
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
-            activeStatsFilters = { verlag: [], format: [], bestand: [], sprache: [], typ: [], serie: [], zeitraum: 'all' };
+            activeStatsFilters = { verlag: [], format: [], bestand: [], sprache: [], typ: [], serie: [], timelineTimeframe: 'currentAndLastYear' };
             const container = document.getElementById('view-container');
             renderStats(container);
         });
@@ -408,14 +413,11 @@ async function updateStatsChallengeOnly() {
 async function updateStats() {
     const allComics = await db.getAllComics();
     
-    // 1. Dropdown-Filter anwenden
+    // 1. Dropdown-Filter anwenden (Verlag, Serie, Format, Bestand, Sprache, Typ)
     const filteredComics = filterComicsByDropdowns(allComics, activeStatsFilters);
 
-    // 2. Zeitraum-Filter für KPIs, Averages und Verteilungs-Charts anwenden
-    const kpiComics = filteredComics.filter(c => isComicInTimeframe(c, activeStatsFilters.zeitraum));
-
-    // Berechnungen für KPIs
-    const { totalComics, totalValue, readCount, readPercent, tbrCount, tbrValue } = calculateKPIs(kpiComics, activeStatsFilters.zeitraum);
+    // 2. Berechnungen für KPIs (stets über den gesamten gefilterten Bestand)
+    const { totalComics, totalValue, readCount, readPercent, tbrCount, tbrValue } = calculateKPIs(filteredComics, 'all');
 
     const currencySymbol = db.getSettings().currency || '€';
 
@@ -428,7 +430,7 @@ async function updateStats() {
     // 2b. Typ-spezifische KPIs befüllen
     const typeContainer = document.getElementById('stats-by-type-container');
     if (typeContainer) {
-        const typeStats = calculateTypeStats(kpiComics, activeStatsFilters.zeitraum);
+        const typeStats = calculateTypeStats(filteredComics, 'all');
         if (typeStats.length === 0) {
             typeContainer.innerHTML = '';
             typeContainer.style.display = 'none';
@@ -452,8 +454,8 @@ async function updateStats() {
     const goalInput = document.getElementById('input-reading-goal');
     if (goalInput) goalInput.value = readingGoal;
 
-    // Highlights befüllen
-    const { avgPrice, speedText, topPurchaseMonth, topPurchaseVal, topReadMonth, topReadVal, maxPriceComic } = calculateHighlights(kpiComics, allComics, activeStatsFilters.zeitraum);
+    // Highlights befüllen (über filteredComics)
+    const { avgPrice, speedText, topPurchaseMonth, topPurchaseVal, topReadMonth, topReadVal, maxPriceComic } = calculateHighlights(filteredComics, allComics, 'all');
     const teuersterText = maxPriceComic ? `${maxPriceComic.titel} (${Number(maxPriceComic.preis).toFixed(2)} ${currencySymbol})` : '-';
 
     const highlightsEl = document.getElementById('stats-highlights');
@@ -461,14 +463,14 @@ async function updateStats() {
         highlightsEl.innerHTML = renderHighlightsCards({ avgPrice, speedText, topPurchaseMonth, topPurchaseVal, topReadMonth, topReadVal, maxPriceComic }, currencySymbol);
     }
 
-    // 3. Timeline-Daten (TBR-Verlauf) vorbereiten
-    const displayTimeline = calculateTimelineData(filteredComics, activeStatsFilters.zeitraum);
+    // 3. Timeline-Daten (TBR-Verlauf) vorbereiten – isoliert auf timelineTimeframe
+    const displayTimeline = calculateTimelineData(filteredComics, activeStatsFilters.timelineTimeframe);
 
-    // 4. Verteilungsdaten für Diagramme sammeln (aus kpiComics)
-    const { formatData, bestandData, quellenSpend } = calculateDistributionData(kpiComics);
+    // 4. Verteilungsdaten für Diagramme sammeln (aus filteredComics)
+    const { formatData, bestandData, quellenSpend } = calculateDistributionData(filteredComics);
 
     // Top Listen berechnen
-    const { topPublishers, topSeries } = calculateTopLists(kpiComics);
+    const { topPublishers, topSeries } = calculateTopLists(filteredComics);
 
     // Tabellen rendern
     const publishersTable = document.getElementById('table-top-publishers');
