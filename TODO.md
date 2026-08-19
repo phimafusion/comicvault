@@ -8,17 +8,19 @@ Dieses Dokument dient als zentrale Entwicklungs-Roadmap, Refactoring-Protokoll u
 
 | Bereich | Status | Details |
 | :--- | :--- | :--- |
-| **Testsuite** | 🟢 **233 / 233 Passing** | All unit & integration tests passing 100% green |
+| **Testsuite** | 🟢 **241 / 241 Passing** | All unit & integration tests passing 100% green |
 | **PWA & Mobile** | 🟢 **v2.4 Ready** | Standalone PWA, Service Worker Cache v24, Favicon & Superhero Logo |
-| **Architektur** | 🟢 **Refactored** | 4 Repositories (`js/db/`), StorageService, StateStore, Template Extraktion |
+| **Architektur** | 🟢 **Refactored** | 4 Repositories (`js/db/`), StorageService, Utility Modules, StateStore |
 | **Sicherheit** | 🟢 **Vollständig Gehärtet** | DOM-XSS Fixes, CSP Meta-Tag, SRI Hashes & Formula Injection Schutz 100% grün |
 
 ---
 
 ## 📌 Aktuelle Agenda (Nächste Schritte)
 
-### 🧩 1. Konsolidierung von Utility-Modulen (`[22]`)
-- [ ] Strukturierung verstreuter Hilfsfunktionen (`utils.js` & `statsUtils.js`) in fokussierte Module (`dateUtils.js`, `formatUtils.js`, `domUtils.js`)
+### 📤 1. Zentraler Export-Service (`exportService.js` - `[23]`)
+- [ ] Auslagerung der XLSX- und CSV-Generierung aus `collection.js`, `wishlist.js` und `stats.js`
+- [ ] Einheitlicher Schutz gegen CSV/Excel Formula Injection (`=`, `+`, `-`, `@`)
+- [ ] Eigene Testsuite für Export-Transformationen
 
 ---
 
@@ -51,7 +53,7 @@ Dieses Dokument dient als zentrale Entwicklungs-Roadmap, Refactoring-Protokoll u
 
 ### 🤖 3. Automated CI/CD Test Pipeline (`[8]`)
 - [ ] GitHub Actions Workflow (`.github/workflows/test.yml`)
-- [ ] Automatisches Ausführen der 232 Mocha-Tests via Headless Playwright/Chrome bei jedem Push / PR
+- [ ] Automatisches Ausführen der 241 Mocha-Tests via Headless Playwright/Chrome bei jedem Push / PR
 - [ ] Build Status Badge im README einbinden
 
 ### 📤 4. Native Web Share API (`[12]`)
@@ -67,7 +69,23 @@ Dieses Dokument dient als zentrale Entwicklungs-Roadmap, Refactoring-Protokoll u
 - [x] Eigene Testsuite `js/tests/storage.test.js` mit 100% Testabdeckung
 
 ### 🧩 2. Konsolidierung von Utility-Modulen (`[22]`)
-- [ ] Strukturierung verstreuter Hilfsfunktionen (`utils.js` & `statsUtils.js`) in fokussierte Module (`dateUtils.js`, `formatUtils.js`, `domUtils.js`)
+- [x] Strukturierung verstreuter Hilfsfunktionen (`utils.js`, `statsUtils.js`) in fokussierte Module (`dateUtils.js`, `formatUtils.js`, `domUtils.js`)
+- [x] Barrel-Export in `utils.js` für vollständige Abwärtskompatibilität
+- [x] Vereinheitlichung von Datums-Parsing, Datums-Formatierung und Währungshelfern
+- [x] Vollständige Testabdeckung in `js/tests/utils.test.js` (241 Tests gesamt)
+
+### 📤 3. Zentraler Export-Service (`exportService.js` - `[23]`)
+- [ ] Auslagerung der XLSX- und CSV-Generierung aus `collection.js`, `wishlist.js` und `stats.js`
+- [ ] Einheitlicher Schutz gegen CSV/Excel Formula Injection (`=`, `+`, `-`, `@`)
+- [ ] Eigene Testsuite für Export-Transformationen
+
+### 🪟 4. Einheitlicher Modal-Manager (`modalService.js` - `[24]`)
+- [ ] Zentraler Service für Modals (Formular, Testsuite, Bulk-Delete, Dubletten)
+- [ ] Einheitliches Öffnen/Schließen, Focus-Trap, Backdrop-Klick und `Escape`-Tastenbehandlung
+
+### 📋 5. Zentraler Validierungs-Service (`validationService.js` - `[25]`)
+- [ ] Zentralisierung von Validierungsregeln für Comic-Felder (Pflichtfelder, ISBN/EAN Prüfziffern, Jahreszahlen)
+- [ ] Vorbereitung für Barcode-Scanner & Auto-Fill Integration
 
 ---
 
